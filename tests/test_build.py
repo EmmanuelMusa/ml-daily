@@ -112,5 +112,110 @@ class ParseTests(unittest.TestCase):
         self.assertEqual(normalize_fill("k_means"), "k means")
 
 
+VENV_PY = ROOT / "tools" / ".venv" / "Scripts" / "python.exe"
+
+
+def write_content(tmp, topic, questions):
+    d = Path(tmp)
+    (d / f"{topic}.json").write_text(json.dumps(questions), encoding="utf-8")
+    return d
+
+
+def make_q(topic, n, difficulty=1):
+    q = fixture("mcq")
+    q["id"] = f"{build.TOPICS[topic][0]}-{n:04d}"
+    q["topic"] = topic
+    q["difficulty"] = difficulty
+    return q
+
+
+class CheckTests(unittest.TestCase):
+    def test_run_check_returns_result(self):
+        self.assertEqual(build.run_check("result = 40/80", sys.executable), 0.5)
+
+    @unittest.skipUnless(VENV_PY.exists(), "check venv missing")
+    def test_run_check_uses_pandas_from_venv(self):
+        code = "import pandas as pd\nresult = int(pd.Series([1, 2]).sum())"
+        self.assertEqual(build.run_check(code, build.check_python()), 3)
+
+    def test_run_check_error_raises(self):
+        with self.assertRaises(build.CheckError):
+            build.run_check("result = 1/0", sys.executable)
+        with self.assertRaises(build.CheckError):
+            build.run_check("x = 1", sys.executable)
+
+
+class BuildTests(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.out = Path(self.tmp.name) / "out" / "bank.json"
+
+    def test_check_mismatch_is_build_error(self):
+        q = fixture("numeric")
+        q["answer"] = 0.6
+        d = Path(self.tmp.name) / "c"
+        d.mkdir()
+        write_content(d, "evaluation", [q])
+        import io, contextlib
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            code = build.main(["--content", str(d), "--out", str(self.out)])
+        self.assertEqual(code, 1)
+        self.assertIn(q["id"], buf.getvalue())
+
+    def test_duplicate_ids_are_error(self):
+        d = Path(self.tmp.name) / "c"
+        d.mkdir()
+        a = make_q("evaluation", 1)
+        b = make_q("data", 1)
+        b["id"] = "data-0001"
+        c = make_q("data", 2)
+        c["id"] = "data-0001"
+        write_content(d, "evaluation", [a])
+        write_content(d, "data", [b, c])
+        import io, contextlib
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(build.main(["--content", str(d), "--out", str(self.out)]), 1)
+
+    def test_bank_has_no_check_field(self):
+        import io, contextlib
+        with contextlib.redirect_stdout(io.StringIO()):
+            code = build.main(["--content", str(FIXTURES), "--out", str(self.out)])
+        self.assertEqual(code, 0)
+        bank = json.loads(self.out.read_text(encoding="utf-8"))
+        self.assertEqual(bank["version"], 1)
+        self.assertEqual(len(bank["questions"]), 6)
+        self.assertTrue(all("check" not in q for q in bank["questions"]))
+        self.assertEqual(bank["topics"][0], {"key": "foundations", "title": "ML foundations"})
+
+
+class OrderTests(unittest.TestCase):
+    def sample(self):
+        qs = []
+        for t in ("evaluation", "data", "math"):
+            for i, d in enumerate((3, 1, 2, 1), start=1):
+                qs.append(make_q(t, i, d))
+        return qs
+
+    def test_order_is_stable(self):
+        a = [q["id"] for q in build.order_bank(self.sample())]
+        b = [q["id"] for q in build.order_bank(self.sample())]
+        self.assertEqual(a, b)
+
+    def test_order_rotates_topics(self):
+        topics = [q["topic"] for q in build.order_bank(self.sample())]
+        self.assertEqual(set(topics[:3]), {"evaluation", "data", "math"})
+        for a, b in zip(topics, topics[1:]):
+            self.assertNotEqual(a, b, topics)
+
+    def test_order_easier_first_within_topic(self):
+        ordered = build.order_bank(self.sample())
+        for t in ("evaluation", "data", "math"):
+            ds = [q["difficulty"] for q in ordered if q["topic"] == t]
+            self.assertEqual(ds, sorted(ds))
+
+
 if __name__ == "__main__":
     unittest.main()

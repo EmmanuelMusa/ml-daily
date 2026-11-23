@@ -3,7 +3,19 @@
 Usage: python tools/build.py [--content DIR] [--out FILE] [--no-checks]
 Standard library only. Answer checks run in tools/.venv when it exists.
 """
+import argparse
+import datetime
+import json
+import os
+import random
 import re
+import subprocess
+import sys
+import tempfile
+import zlib
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
 
 TOPICS = {
     "foundations": ("fnd", "ML foundations"),
@@ -147,3 +159,152 @@ def validate_question(q, topic_key):
     for text in prose:
         errors += prose_violations(text)
     return errors
+
+
+# ---------------------------------------------------------------- checks
+
+
+
+class CheckError(Exception):
+    pass
+
+
+def check_python():
+    venv = ROOT / "tools" / ".venv"
+    for candidate in (venv / "Scripts" / "python.exe", venv / "bin" / "python"):
+        if candidate.exists():
+            return str(candidate)
+    return sys.executable
+
+
+def run_check(code, python, timeout=60):
+    """Run a check snippet and return the JSON value of its `result`."""
+    script = code + "\n\nimport json as _json\nprint(_json.dumps(result))\n"
+    fd, path = tempfile.mkstemp(suffix=".py")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            f.write(script)
+        try:
+            proc = subprocess.run([python, "-I", path], capture_output=True, text=True,
+                                  timeout=timeout, cwd=tempfile.gettempdir())
+        except subprocess.TimeoutExpired:
+            raise CheckError(f"check timed out after {timeout}s")
+        if proc.returncode != 0:
+            last = (proc.stderr.strip().splitlines() or ["unknown error"])[-1]
+            raise CheckError(f"check failed: {last}")
+        lines = proc.stdout.strip().splitlines()
+        try:
+            return json.loads(lines[-1])
+        except (IndexError, ValueError):
+            raise CheckError("check printed no result")
+    finally:
+        os.unlink(path)
+
+
+def check_matches(q, value):
+    fmt = q["format"]
+    if fmt == "numeric":
+        return isinstance(value, (int, float)) and abs(value - q["answer"]) <= q["tolerance"] + 1e-12
+    if fmt == "fill":
+        accepted = {normalize_fill(a) for a in [q["answer"], *q.get("accept", [])]}
+        return normalize_fill(str(value)) in accepted
+    if fmt == "mcq":
+        return str(value) == q["options"][q["answer"]]
+    return False
+
+
+# ---------------------------------------------------------------- order
+
+def order_bank(questions, seed=20261123):
+    """Deal order: rotate through topics, easier questions earlier within each topic."""
+    by_topic = {}
+    for q in questions:
+        by_topic.setdefault(q["topic"], []).append(q)
+    for key, qs in by_topic.items():
+        rng = random.Random(seed + zlib.crc32(key.encode()))
+        keyed = [(q["difficulty"], rng.random(), q["id"], q) for q in sorted(qs, key=lambda q: q["id"])]
+        by_topic[key] = [k[3] for k in sorted(keyed, key=lambda k: k[:3])]
+    out, last, rnd = [], None, 0
+    while any(by_topic.values()):
+        topics = sorted(k for k, qs in by_topic.items() if qs)
+        random.Random(seed + rnd).shuffle(topics)
+        if len(topics) > 1 and topics[0] == last:
+            topics.append(topics.pop(0))
+        for t in topics:
+            out.append(by_topic[t].pop(0))
+        last = out[-1]["topic"]
+        rnd += 1
+    return out
+
+
+# ---------------------------------------------------------------- main
+
+def main(argv):
+    ap = argparse.ArgumentParser(description=__doc__)
+    ap.add_argument("--content", default=str(ROOT / "content"))
+    ap.add_argument("--out", default=str(ROOT / "data" / "bank.json"))
+    ap.add_argument("--no-checks", action="store_true")
+    args = ap.parse_args(argv)
+
+    content = Path(args.content)
+    errors, questions, seen = [], [], {}
+    python = check_python()
+    for key in TOPICS:
+        path = content / f"{key}.json"
+        if not path.exists():
+            continue
+        try:
+            items = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError as e:
+            errors.append(f"{path.name}: not valid JSON ({e})")
+            continue
+        if not isinstance(items, list):
+            errors.append(f"{path.name}: must hold a list of questions")
+            continue
+        for q in items:
+            qid = q.get("id", "?") if isinstance(q, dict) else "?"
+            if not isinstance(q, dict):
+                errors.append(f"{path.name}:?: not an object")
+                continue
+            errs = validate_question(q, key)
+            if qid in seen:
+                errs.append(f"duplicate id, also in {seen[qid]}")
+            seen[qid] = path.name
+            if not errs and q.get("check") and not args.no_checks:
+                try:
+                    value = run_check(q["check"], python)
+                    if not check_matches(q, value):
+                        errs.append(f"check gave {value!r}, which does not match the answer")
+                except CheckError as e:
+                    errs.append(str(e))
+            errors += [f"{path.name}:{qid}: {e}" for e in errs]
+            questions.append(q)
+
+    if errors:
+        for e in errors:
+            print(e)
+        print(f"{len(errors)} error(s)")
+        return 1
+
+    ordered = [{k: v for k, v in q.items() if k != "check"} for q in order_bank(questions)]
+    bank = {
+        "version": 1,
+        "built": datetime.date.today().isoformat(),
+        "topics": [{"key": k, "title": t} for k, (_, t) in TOPICS.items()],
+        "questions": ordered,
+    }
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_text(json.dumps(bank, ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n")
+    counts = {}
+    for q in questions:
+        counts[q["topic"]] = counts.get(q["topic"], 0) + 1
+    for k in TOPICS:
+        if k in counts:
+            print(f"{k:14} {counts[k]}")
+    print(f"{'total':14} {len(questions)}")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main(sys.argv[1:]))
