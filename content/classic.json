@@ -627,5 +627,430 @@
    "spam",
    "text"
   ]
+ },
+ {
+  "id": "cls-0025",
+  "topic": "classic",
+  "subtopic": "the naive assumption",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A naive Bayes model routes support tickets to billing, technical or account queues from the words they contain. It scores each queue as P(queue) × P(word₁ | queue) × P(word₂ | queue) × ..., with one factor per word. That product is only exact if the words are ______ given the queue.",
+  "answer": "conditionally independent",
+  "accept": [
+   "independent",
+   "conditional independence",
+   "conditionally independant",
+   "mutually independent",
+   "independent of each other",
+   "conditionally independent of each other"
+  ],
+  "explanation": "By the chain rule, the joint probability of all the words given the queue can always be written exactly as a product, but each factor depends on the words before it, such as P(word₂ | word₁, queue). Naive Bayes drops those dependencies and keeps only P(wordᵢ | queue). That is exact only when the words are conditionally independent given the queue: once you know a ticket is about billing, seeing \"refund\" tells you nothing more about whether \"charge\" appears.\n\nThat is rarely true. \"Refund\" and \"charge\" travel together inside billing tickets, so the model counts the same evidence twice and its probabilities come out too close to 0 or 1. The ranking of queues is often still right, which is why naive Bayes works well for text despite the false assumption.\n\nA common mistake is to say naive Bayes assumes the features are independent overall. It does not. Two words can be strongly correlated across all tickets simply because both are common in billing. The assumption is only about what happens inside each class.",
+  "deeper": "Interviewers often ask why naive Bayes still makes a good text baseline. It trains in one pass over word counts, copes with huge vocabularies and needs little data. A strong candidate adds that Laplace smoothing stops an unseen word from zeroing out a whole class, and that its probabilities need calibrating before you set a threshold on them.",
+  "tags": [
+   "naive-bayes",
+   "text"
+  ],
+  "concepts": [
+   "naive-bayes",
+   "conditional-probability"
+  ]
+ },
+ {
+  "id": "cls-0026",
+  "topic": "classic",
+  "subtopic": "SVM margin and C",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A clinic screens blood test results for a kidney condition with a linear SVM on 15 standardised lab values. A new teammate asks what the model is actually optimising and what the C setting does. Explain the maximum-margin idea, what support vectors are, and how raising or lowering C changes the model.",
+  "answer": "Many boundaries can separate the two classes. A linear SVM picks the one with the widest margin, the gap between the boundary and the nearest training points of each class. A wide margin leaves room for new patients whose values differ a little from the training data, so it tends to generalise better. The support vectors are the training points that sit on the margin or inside it, including any on the wrong side. Only they decide where the boundary goes. Moving any other point slightly changes nothing. Real data overlaps, so the soft-margin SVM lets points violate the margin at a cost, and C sets that cost. A large C punishes violations heavily, giving a narrow margin that hugs the training data and can overfit. A small C accepts more violations in exchange for a wider margin, which means stronger regularisation and usually more support vectors. I would tune C with cross-validation.",
+  "points": [
+   "Picks the separating boundary with the widest margin to the nearest points",
+   "Support vectors sit on or inside the margin, and only they set the boundary",
+   "Soft margin allows violations, and C is the penalty on them",
+   "Large C: narrow margin, fewer training errors, risk of overfitting",
+   "Small C: wider margin, more violations, stronger regularisation",
+   "Tune C with cross-validation on scaled features"
+  ],
+  "explanation": "The SVM objective makes the idea concrete. It minimises ½‖w‖² + C × Σξᵢ. The margin width is 2 / ‖w‖, and each ξᵢ measures how far point i falls inside the margin or past the boundary. Shrinking ‖w‖ widens the margin, the second term charges for violations, and C decides which of the two wins.\n\nThe most common mistake is to read C like the regularisation strength λ in ridge or lasso. It works the other way round. C multiplies the error term, so raising C means weaker regularisation and a model that bends to fit noisy or mislabelled training points. With a few wrong lab labels, a very large C chases them and generalises worse.\n\nA second slip is to think every training point shapes the boundary. Points safely outside the margin get zero weight in the solution, so deleting them leaves the same model. For kernel SVMs this is also why prediction cost grows with the number of support vectors rather than with the size of the training set.",
+  "deeper": "A strong answer adds that SVMs need scaled features, because the margin is measured in raw distance, and that SVM scores are not probabilities, so you calibrate them, for example with Platt scaling, before setting a clinical threshold. A good follow-up is class imbalance, which per-class weights on C can handle.",
+  "tags": [
+   "svm",
+   "regularisation"
+  ],
+  "concepts": [
+   "support-vector-machine",
+   "regularization"
+  ]
+ },
+ {
+  "id": "cls-0027",
+  "topic": "classic",
+  "subtopic": "non-linear SVMs",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "Readings from a gas turbine form a ring of normal operation around a central blob of faulty states, so no straight line separates them. An SVM that compares points with the Gaussian similarity exp(−γ‖x − z‖²) still finds a curved boundary. It computes inner products as if the points had been mapped into a much higher-dimensional space, without ever building the mapped features. This shortcut is called the ______.",
+  "answer": "kernel trick",
+  "accept": [
+   "the kernel trick",
+   "kernel method",
+   "kernel methods",
+   "kernel substitution"
+  ],
+  "explanation": "Training and prediction for an SVM use the data only through inner products between pairs of points, xᵢ · xⱼ. The kernel trick swaps each inner product for a kernel function K(xᵢ, xⱼ) that equals the inner product after some mapping φ, without ever computing φ. The RBF kernel, K(x, z) = exp(−γ‖x − z‖²), matches a mapping with infinitely many dimensions, so building those features is impossible, yet the kernel needs just one distance calculation.\n\nIn the mapped space a flat boundary can separate the ring from the blob. Back in the original space that flat boundary shows up as a curve.\n\nThe common mistake is to think the SVM explicitly creates polynomial or other extra features. That is ordinary feature expansion. It works, but the feature count explodes: all polynomial terms up to degree 3 of 100 inputs give more than 170,000 columns. The kernel trick avoids that cost. The price is that kernel SVMs work with a matrix over pairs of training points, so training gets slow once the data reaches hundreds of thousands of rows.",
+  "deeper": "Interviewers often ask what γ does in the RBF kernel. A large γ makes each point's influence very local and gives wiggly boundaries that can overfit, while a small γ gives smooth ones. γ and C are tuned together, usually on a log-scale grid. On large datasets teams switch to linear models on approximate kernel features.",
+  "tags": [
+   "svm",
+   "kernels"
+  ],
+  "concepts": [
+   "support-vector-machine",
+   "kernel-trick"
+  ]
+ },
+ {
+  "id": "cls-0028",
+  "topic": "classic",
+  "subtopic": "one k-means iteration",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A retailer runs k-means with k = 2 on six store locations, given as (x, y) in km: P1 (2, 3), P2 (3, 4), P3 (4, 2), P4 (9, 8), P5 (10, 9) and P6 (6, 5). The starting centroids are A = (3, 3) and B = (9, 9). Do one assignment step using Euclidean distance, then one centroid update. What is the x-coordinate of the new centroid A? Give it as a decimal to 2 places.",
+  "answer": 3.75,
+  "tolerance": 0.005,
+  "check": "import math\npts = [(2, 3), (3, 4), (4, 2), (9, 8), (10, 9), (6, 5)]\nA, B = (3, 3), (9, 9)\nin_a = [p for p in pts if math.dist(p, A) < math.dist(p, B)]\nresult = sum(p[0] for p in in_a) / len(in_a)",
+  "explanation": "In the assignment step each point joins its nearest centroid. P1, P2 and P3 are all within about 1.4 km of A and far from B. P4 and P5 are each 1 km from B. The only point that needs care is P6 at (6, 5).\n\nDistance from P6 to A: √((6 − 3)² + (5 − 3)²) = √13 ≈ 3.61.\n\nDistance from P6 to B: √((6 − 9)² + (5 − 9)²) = √25 = 5.\n\nSo P6 joins A. In the update step each centroid moves to the mean of its points. Cluster A now holds P1, P2, P3 and P6, so its new x is (2 + 3 + 4 + 6) / 4 = 15 / 4 = 3.75. Its new y is (3 + 4 + 2 + 5) / 4 = 3.5.\n\nThe common mistake is to judge P6 by eye. It looks like it sits between the groups, so people send it to B or leave it out. Either way cluster A keeps only P1 to P3 and its x comes out as (2 + 3 + 4) / 3 = 3.00. Always compute the distance for borderline points.",
+  "deeper": "k-means repeats these two steps until no point changes cluster. Each step can only lower the within-cluster sum of squares, so it always converges, but to a local minimum that depends on the start. That is why libraries use k-means++ seeding and several restarts. An interviewer may ask why the mean is the point that minimises the summed squared distance.",
+  "tags": [
+   "k-means",
+   "by-hand"
+  ],
+  "concepts": [
+   "k-means"
+  ]
+ },
+ {
+  "id": "cls-0029",
+  "topic": "classic",
+  "subtopic": "choosing k for k-means",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "An analyst clusters 30,000 delivery drivers on standardised features and tries k = 2, 3, 4, 5 and 6.\n\n- Inertia (within-cluster sum of squares): 9,100, 5,200, 4,700, 4,350, 4,050\n- Mean silhouette score: 0.44, 0.51, 0.39, 0.33, 0.30\n\nWhich k do these numbers best support?",
+  "options": [
+   "k = 6, since it gives the lowest inertia of all the values tried.",
+   "k = 2, since the largest single drop in inertia starts from k = 2.",
+   "k = 3, since inertia stops dropping fast and silhouette peaks there.",
+   "k = 4, since inertia keeps falling and silhouette is still close to 0.4."
+  ],
+  "answer": 2,
+  "explanation": "The elbow method looks for the k after which extra clusters stop paying off. Going from 2 to 3 cuts inertia by 3,900. Each later step cuts it by only 300 to 500. So the bend is at k = 3. The silhouette score, which rewards points that sit close to their own cluster and far from the next one, also peaks at k = 3 with 0.51. Two separate signals agree, which is the best case you can hope for.\n\nPicking k = 6 for its low inertia is the classic misuse. Inertia always falls as k grows and reaches 0 when every point is its own cluster, so the lowest value simply picks the largest k you tried. The big drop from 2 to 3 is evidence for 3, not 2, because it shows that k = 2 was merging two real groups. Moving to k = 4 lowers inertia only a little while silhouette falls to 0.39, so the extra cluster mostly splits an existing group.\n\nEach tool can mislead on its own. Elbows are often blurry, and silhouette favours round, well-separated clusters, so it can prefer k = 2 on data with odd shapes or one dominant split.",
+  "deeper": "In real projects these numbers narrow the range and the business picks within it. If the operations team can only run two driver programmes, three segments may still be too many. A strong candidate also checks stability by rerunning with different seeds or on bootstrap samples and seeing whether the same groups come back.",
+  "tags": [
+   "k-means",
+   "elbow",
+   "silhouette"
+  ],
+  "concepts": [
+   "k-means",
+   "silhouette-score"
+  ]
+ },
+ {
+  "id": "cls-0030",
+  "topic": "classic",
+  "subtopic": "scoring cluster separation",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "For one customer in a clustering, let a be its mean distance to the other members of its own cluster and b its mean distance to the members of the nearest other cluster. The per-point score (b − a) / max(a, b) runs from −1 to 1, and its average over all points is used to compare clusterings. This score is called the ______.",
+  "answer": "silhouette score",
+  "accept": [
+   "silhouette",
+   "silhouette coefficient",
+   "silhouette value",
+   "silhouette width",
+   "mean silhouette",
+   "average silhouette",
+   "mean silhouette score",
+   "average silhouette score",
+   "silhouette index"
+  ],
+  "explanation": "The silhouette asks, for each point, whether it is closer to its own cluster than to the next best one. If a = 2 and b = 5, the score is (5 − 2) / 5 = 0.6, a point that clearly belongs where it is. A score near 0 means a and b are about equal, so the point sits on the border between two clusters. A negative score means b is smaller than a. The point is on average closer to another cluster, which suggests it was assigned badly. Averaging over all points gives one number per clustering, so you can compare different values of k.\n\nA common mistake is to confuse it with inertia, the sum of squared distances from points to their centroids. Inertia only measures how tight the clusters are, and it always falls as k grows. The silhouette also rewards separation between clusters, so it can go down when you add one. Another slip is to swap a and b, which flips the sign and makes well-placed points look badly placed.",
+  "deeper": "An exact silhouette needs every pairwise distance, which costs O(n²), so on millions of points teams score a random sample. Interviewers may also ask about its bias: it prefers compact, convex clusters, so it can rate a correct DBSCAN result on curved shapes lower than a wrong k-means one.",
+  "tags": [
+   "clustering",
+   "silhouette"
+  ],
+  "concepts": [
+   "silhouette-score",
+   "k-means"
+  ]
+ },
+ {
+  "id": "cls-0031",
+  "topic": "classic",
+  "subtopic": "density-based clustering",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A ride-hailing team has a month of pickup GPS points for one city. Busy pickup areas stretch along roads and around stations in irregular shapes, nobody knows how many there are, and many points are scattered one-offs that belong to no busy area. Which method fits best, and what do its main settings control?",
+  "options": [
+   "k-means with a large k, since each centroid marks a busy area and far-off points get dropped as noise.",
+   "DBSCAN, where eps sets a neighbourhood radius and min_samples sets how many points make a dense core.",
+   "DBSCAN, where eps sets the number of busy areas and min_samples sets how far apart they must be.",
+   "A Gaussian mixture, since its components bend along roads and leave low-probability points unassigned."
+  ],
+  "answer": 1,
+  "explanation": "DBSCAN builds clusters from density instead of centres. A point is a core point if at least min_samples points, counting itself in scikit-learn, lie within distance eps of it. Clusters grow by chaining core points that are within eps of each other, and they take in border points that sit near a core. Everything else is labelled noise. That fits this data: busy areas of any shape, no need to set how many there are, and the one-off pickups set aside.\n\nk-means needs k up front, assumes round clusters around centres and assigns every point to some cluster, so the scattered pickups would pull centroids around rather than be dropped. The option that gives eps and min_samples the jobs of a cluster count and a minimum gap mixes up what they do. DBSCAN never takes a cluster count. eps is a radius, and the number of clusters falls out of the data. A Gaussian mixture fits ellipses, which cannot follow a curving road, and it gives every point a probability under each component rather than labelling noise by itself.",
+  "deeper": "The hard part in practice is choosing eps. A common trick is the k-distance plot: sort each point's distance to its min_samples-th nearest neighbour and look for the knee. One eps also struggles when busy areas differ a lot in density, such as downtown against the suburbs, which is where HDBSCAN helps. For raw GPS, use haversine distance.",
+  "tags": [
+   "dbscan",
+   "clustering",
+   "geo"
+  ],
+  "concepts": [
+   "dbscan",
+   "k-means"
+  ]
+ },
+ {
+  "id": "cls-0032",
+  "topic": "classic",
+  "subtopic": "mixtures vs k-means",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A logistics team clusters delivery stops on two standardised features. One true group is small and tight. The other is large and stretched along a diagonal, and its far tip comes close to the small group. k-means with k = 2 gives many points at that tip to the small group. A Gaussian mixture with two full-covariance components labels them correctly. What is the main reason?",
+  "options": [
+   "k-means stopped in a poor local minimum, while EM for the mixture is guaranteed to reach the global best fit.",
+   "The mixture's soft assignments let tip points belong partly to both groups, and that alone fixes their labels.",
+   "k-means splits at the midline between centres, while the mixture also weighs each group's shape and size.",
+   "k-means minimises squared distances, while the mixture directly maximises the silhouette of its final labels."
+  ],
+  "answer": 2,
+  "explanation": "k-means gives each point to the nearest centre, so the boundary between two clusters is the straight midline between their centres. It ignores how spread out each group is. A point at the tip of the long group can be closer to the small group's centre than to its own, so it gets the wrong label.\n\nA Gaussian mixture asks how likely each component is to have produced the point. A full covariance matrix lets a component stretch along the diagonal, so a point far out along that axis is still likely under it. The mixing weight adds that the large group holds more points. Together these push the boundary toward the small, tight group.\n\nSoft assignments are useful but are not the fix. With equal weights and the same round covariance for every component, the most likely component is just the nearest centre, the same boundary as k-means. EM is not guaranteed a global optimum either. It can get stuck like k-means, which is why you run several starts. And a mixture maximises the likelihood of the data, not the silhouette.",
+  "deeper": "Interviewers like to ask how the two methods relate. k-means is the limit of EM for a mixture with equal weights and a shared round covariance as that variance shrinks to zero, which turns soft responsibilities into hard labels. Full covariances cost about d²/2 parameters per component, so in high dimensions teams often use diagonal ones and choose the component count with BIC.",
+  "tags": [
+   "gmm",
+   "k-means",
+   "clustering"
+  ],
+  "concepts": [
+   "gaussian-mixture-model",
+   "k-means"
+  ]
+ },
+ {
+  "id": "cls-0033",
+  "topic": "classic",
+  "subtopic": "how isolation forest scores",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "An isolation forest scores server readings of CPU load and memory use. One reading needs an average of 3 random splits to end up alone in a leaf, while most readings need about 11. Why does the model flag that reading as an anomaly?",
+  "options": [
+   "A short path means the trees split on a labelled anomaly flag, and this reading reached a pure leaf early.",
+   "A short path means the reading sits near the centre of the data, where the trees need the fewest random cuts.",
+   "A short path means the reading appeared in few of the trees' subsamples, so the model knows little about it.",
+   "A short path means the reading lies away from the dense mass, so a few random cuts were enough to isolate it."
+  ],
+  "answer": 3,
+  "explanation": "Each isolation tree picks a random feature and a random split value between that feature's minimum and maximum, and keeps splitting until points are alone. A reading inside a dense crowd has many neighbours with similar values, so it takes many cuts to separate it from them. A reading far from the crowd, such as a CPU spike with normal memory use, is likely to be cut off by one of the first few random splits. Averaging the path length over many trees gives the score: shorter means more anomalous.\n\nNo labels are used anywhere, so the option about splitting on an anomaly flag describes a supervised tree, not an isolation forest. Readings near the centre of the data are the hardest to isolate, so they get the longest paths, not the shortest. How often a reading appeared in the training subsamples does not set its score either. Each tree scores every reading by passing it down the tree, whether or not it was sampled.",
+  "deeper": "Isolation forest trains each tree on a small subsample, often 256 rows, which makes it fast on millions of readings. Its weak spots are anomalies that are only odd in combination, or that hide in dense local pockets, where local outlier factor can do better. The contamination setting only moves the flagging threshold, not the scores.",
+  "tags": [
+   "anomaly",
+   "isolation-forest"
+  ],
+  "concepts": [
+   "isolation-forest",
+   "anomaly-detection"
+  ]
+ },
+ {
+  "id": "cls-0034",
+  "topic": "classic",
+  "subtopic": "reading a t-SNE plot",
+  "format": "multi",
+  "difficulty": 3,
+  "prompt": "A support team embeds 50,000 tickets with a text encoder and plots them with t-SNE. The plot shows several islands of different sizes with different gaps between them. Which readings of the plot are sound? Select all that apply.",
+  "options": [
+   "Tickets drawn right next to each other were probably close in the original embedding space.",
+   "An island drawn twice as wide as another likely holds tickets that vary roughly twice as much in the embeddings.",
+   "Two islands far apart on the plot are more different than two islands that nearly touch.",
+   "An island that persists across runs with different seeds and perplexities is more likely a real group.",
+   "The two plot coordinates can serve as stable features in a routing model for new tickets.",
+   "Switching from t-SNE to UMAP makes island sizes and the gaps between islands broadly safe to read literally."
+  ],
+  "answer": [
+   0,
+   3
+  ],
+  "explanation": "t-SNE turns distances in the original space into neighbour probabilities and places points in 2D so that each point keeps roughly the same near neighbours. That is why close pairs on the plot are a fair sign of close pairs in the embeddings. The layout comes from a random start and depends on perplexity, so a pattern that comes back across seeds and perplexities is far more trustworthy than one seen once.\n\nSizes and gaps are not preserved. t-SNE adapts its scale to each point's local density, so it tends to expand tight groups and shrink loose ones, and island widths say little about spread. Its loss barely cares about pairs that are far apart, so the distances between islands are mostly arbitrary. The axes have no fixed meaning and change every run, and standard t-SNE cannot place a new ticket without rerunning, so the coordinates cannot serve as model features. Feed the original embeddings to the model instead. UMAP keeps somewhat more global structure, but its sizes and gaps are still distorted, so the same caution applies.",
+  "deeper": "A strong candidate treats t-SNE as a way to ask questions, not answer them. If an island looks like a new kind of ticket, sample tickets from it and read them, or cluster the original embeddings and compare. Interviewers may also ask about perplexity, which roughly sets how many neighbours each point tries to keep.",
+  "tags": [
+   "t-sne",
+   "visualisation"
+  ],
+  "concepts": [
+   "t-sne",
+   "embedding"
+  ]
+ },
+ {
+  "id": "cls-0035",
+  "topic": "classic",
+  "subtopic": "predicting a rating from factors",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A recipe app predicts star ratings with a matrix factorisation model that has bias terms. The global mean rating is 3.6. A user has bias +0.3 and a recipe has bias −0.4. The user's latent vector is (0.8, −0.5, 1.2) and the recipe's is (0.5, 0.6, 0.3). The prediction is the global mean plus both biases plus the dot product of the two vectors. What rating does the model predict for this user and recipe? Give it as a decimal to 2 places.",
+  "answer": 3.96,
+  "tolerance": 0.005,
+  "check": "mu, bu, bi = 3.6, 0.3, -0.4\np = [0.8, -0.5, 1.2]\nq = [0.5, 0.6, 0.3]\nresult = mu + bu + bi + sum(a * b for a, b in zip(p, q))",
+  "explanation": "The model is r̂ = μ + b_u + b_i + p_u · q_i.\n\nDot product, one factor at a time: 0.8 × 0.5 = 0.40, then −0.5 × 0.6 = −0.30, then 1.2 × 0.3 = 0.36. The sum is 0.40 − 0.30 + 0.36 = 0.46.\n\nAdd the rest: 3.6 + 0.3 − 0.4 + 0.46 = 3.96.\n\nThe most common slip is losing the minus sign on the middle factor. That gives 0.40 + 0.30 + 0.36 = 1.06 and a prediction of 4.56. Another is leaving out the global mean, which gives 0.36, nowhere near a star rating.\n\nEach part has a meaning. The biases capture that this user rates 0.3 stars above average and this recipe gets 0.4 below average from everyone. The dot product adds the personal fit. Here the third factor, where both vectors are positive, does most of the work, while the second factor, which the user dislikes and the recipe has, pulls the prediction down.",
+  "deeper": "In an interview, explain that the biases and vectors are learned by minimising squared error on known ratings with L2 regularisation, using SGD or alternating least squares. A good follow-up is cold start: a brand-new recipe has no learned bias or vector, so you fall back on the global mean plus the user bias, or on content features.",
+  "tags": [
+   "recsys",
+   "factorisation"
+  ],
+  "concepts": [
+   "matrix-factorization",
+   "collaborative-filtering"
+  ]
+ },
+ {
+  "id": "cls-0036",
+  "topic": "classic",
+  "subtopic": "stacking without leakage",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A team stacks three click-prediction models: gradient-boosted trees, logistic regression and a 1-nearest-neighbour model. They train each base model on the full training set, then fit a logistic regression meta-model on the base models' predictions for those same training rows. The meta-model puts almost all its weight on the nearest-neighbour model, and the stack scores worse on validation than the boosted trees alone. What is the problem, and what is the fix?",
+  "options": [
+   "The meta-model is too simple to see when each base model fails. Replace it with a deep gradient-boosted model.",
+   "The meta-model saw in-sample predictions, which flatter the most overfit model. Use out-of-fold predictions.",
+   "The meta-model lacks context about each row. Give it the raw features as well as the base model predictions.",
+   "Learned stacking weights always overfit. Average the three base model predictions with equal weights instead."
+  ],
+  "answer": 1,
+  "explanation": "A 1-nearest-neighbour model predicts each training row from itself, so its predictions on rows it was trained on are perfect. The boosted trees also fit their own training rows better than they will fit new data. The meta-model sees these in-sample predictions and learns to trust whichever base model looks best on them, which is the most overfit one. On new data that model is much weaker, so the stack falls apart.\n\nThe fix is out-of-fold predictions. Split the training set into K folds, train each base model on K − 1 folds and predict the held-out fold, so every row gets a prediction from a model that never saw it. Fit the meta-model on those, then refit the base models on all the data for serving.\n\nA more complex meta-model would overfit the same misleading inputs even harder. Adding raw features can help a well-built stack but leaves the leak in place. Equal weights avoid the leak but throw away the point of stacking, and learned weights are not doomed to overfit. With out-of-fold inputs and a simple, regularised meta-model, they generalise well.",
+  "deeper": "scikit-learn's stacking estimators do the out-of-fold step for you with internal cross-validation. In an interview, add that the folds must respect the data's structure. With time-ordered clicks, use time-based folds, or the out-of-fold predictions leak the future too. Stacking gains are often small, so weigh them against the cost of serving several models.",
+  "tags": [
+   "stacking",
+   "leakage",
+   "ensembles"
+  ],
+  "concepts": [
+   "stacking",
+   "cross-validation",
+   "data-leakage"
+  ]
+ },
+ {
+  "id": "cls-0037",
+  "topic": "classic",
+  "subtopic": "explaining gradient boosting",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "In an interview for an insurance pricing team, you are asked how gradient boosting builds its model step by step, and which hyperparameters you would tune first on 200,000 claims with 40 features. How would you answer?",
+  "answer": "Gradient boosting builds an additive model one small tree at a time. It starts from a constant, such as the mean claim cost. At each round it computes the negative gradient of the loss for every row, which for squared error is just the residual, the gap between the target and the current prediction. It fits a shallow tree to those values, scales the tree's output by a learning rate, and adds it to the model. Each new tree corrects what the ensemble still gets wrong. I would tune the learning rate and the number of trees together, using early stopping on a validation set so the tree count picks itself. Next I would tune tree size, through max depth or number of leaves, and the minimum samples per leaf, which control how complex each tree is. Then row and column subsampling and L2 regularisation to curb overfitting further.",
+  "points": [
+   "Starts from a constant prediction and adds trees one at a time",
+   "Each tree fits the negative gradient of the loss, the residuals for squared error",
+   "Each tree's output is shrunk by the learning rate before it is added",
+   "Tune learning rate and number of trees together, with early stopping",
+   "Then tree depth or leaf count and minimum samples per leaf",
+   "Then row and column subsampling and regularisation"
+  ],
+  "explanation": "The heart of the answer is that boosting is sequential. Each tree depends on all the ones before it, because it is trained on what they still get wrong. The gradient part is what makes the method general. For squared error the negative gradient is the residual. For log loss in a classifier it is the label minus the predicted probability. The same loop then works for any differentiable loss, such as a Poisson or Tweedie loss for claim amounts.\n\nThe most common mistake is to describe a random forest instead: many deep trees trained independently and averaged. Boosting uses shallow trees added in sequence, so it mainly reduces bias, while bagging mainly reduces variance. A second mistake is tuning the number of trees on its own. A smaller learning rate needs more trees to reach the same fit but usually generalises better, so the two must move together, and early stopping on a validation set handles that cleanly. Tree depth comes next because it sets how many features one tree can combine in a single interaction.",
+  "deeper": "A strong candidate adds practical points. Modern libraries bin features into histograms for speed, handle missing values natively and can enforce monotonic constraints, which pricing teams often need so that predicted cost never falls as prior claims rise. A likely follow-up is how you would explain a single quoted price, where SHAP values on the trees are the usual answer.",
+  "tags": [
+   "boosting",
+   "tuning"
+  ],
+  "concepts": [
+   "gradient-boosting",
+   "early-stopping"
+  ]
+ },
+ {
+  "id": "cls-0038",
+  "topic": "classic",
+  "subtopic": "customer segmentation without labels",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A regional bank wants to split its 400,000 retail customers into segments so the marketing team can tailor offers. There are no labels. Walk through your plan: which features you would use and how you would prepare them, which algorithm, how you would choose the number of segments, and how you would check that the segments are useful.",
+  "answer": "Features: behaviour marketing can act on, measured over a fixed recent window, such as balances, number of products, transactions by channel, card spend by category and tenure. I would leave out IDs and near-duplicate features. Money amounts are heavily skewed, so I would log-transform them and cap extremes, then standardise everything, because k-means works on distances. Categoricals could be one-hot encoded with care, or kept out of the clustering and used to describe segments. Algorithm: k-means as a fast, explainable baseline, with a Gaussian mixture as a check if clusters look stretched. To pick k, I would compare the elbow plot and silhouette score over a range such as 3 to 10, then let the number of campaigns marketing can run narrow it. To check usefulness, segments should be stable across seeds and in a later month, large enough to target and clearly different in their profiles. The final test is tailored offers beating a generic offer against a control group.",
+  "points": [
+   "Actionable behavioural features over a fixed time window",
+   "Log-transform skewed amounts, cap outliers, then standardise",
+   "k-means baseline, with a mixture or other method if shapes call for it",
+   "Choose k with elbow and silhouette, then business constraints",
+   "Check stability across seeds and time, plus segment size and profiles",
+   "Prove value with a controlled campaign test"
+  ],
+  "explanation": "Unsupervised work has no accuracy score to fall back on, so the plan has to build in its own checks. Scaling is the step most often missed. Without it, a balance in the tens of thousands swamps a count of logins, and k-means effectively clusters on one feature. Skew matters too. A handful of very wealthy customers can become their own cluster or drag centroids far from everyone else, which log transforms and capping prevent.\n\nThe most common mistake is treating the silhouette score as the goal. A clustering can score well and still be useless, for example by splitting customers mainly by age, which marketing already knows. Segments have to be described in plain terms, be large enough to act on and stay stable when you rerun them, or the team cannot build campaigns around them. Usefulness is finally a business result: tailored offers to a segment should beat a generic offer in a controlled test. A strong answer also flags sensitive attributes, since segment-based offers can end up treating protected groups unfairly.",
+  "deeper": "Interviewers often probe what happens over time. Customers move between segments, so you need a plan to reassign them each month while keeping segment definitions fixed, or the marketing team's labels drift. Many teams fit the centroids once, freeze them, and refit only when monitoring shows the segment profiles have shifted.",
+  "tags": [
+   "segmentation",
+   "k-means",
+   "unsupervised"
+  ],
+  "concepts": [
+   "k-means",
+   "feature-scaling",
+   "silhouette-score"
+  ]
+ },
+ {
+  "id": "cls-0039",
+  "topic": "classic",
+  "subtopic": "coefficients that swing between retrains",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A marketing analyst fits a linear regression of weekly sales on search ad spend and social ad spend. The two spends have a correlation of 0.97 because budgets are set together. After each weekly retrain, the coefficient on social spend jumps between large positive and large negative values, yet predicted sales barely change. Explain to the analyst why this happens and what to do about it.",
+  "answer": "The two features carry nearly the same information. When they always move together, the data can pin down their combined effect but not how to split it between them. Many coefficient pairs fit almost equally well. For example, with both spends standardised, +3 on search and −1 on social gives about the same predictions as −1 on search and +3 on social, because both pairs sum to 2 and the spends rise together. One more week of data tips the fit toward a different pair. Predictions stay stable because they depend on the combined effect, which is well estimated. The single coefficients have huge standard errors and should not be read as each channel's effect. To fix it, I would add L2 regularisation (ridge), which favours small, balanced coefficients and makes them stable. Combining the two into total ad spend, or dropping one, also works. If the business needs each channel's separate effect, this data cannot show it, and an experiment that varies one budget alone is needed.",
+  "points": [
+   "High correlation means the individual coefficients are poorly determined",
+   "Many coefficient combinations give almost the same predictions",
+   "Predictions are stable because the combined effect is well estimated",
+   "Single coefficients have large standard errors and should not be interpreted",
+   "Use ridge, or combine or drop the correlated features",
+   "Separating the channels' effects needs an experiment"
+  ],
+  "explanation": "Picture the squared-error loss over the two coefficients. It forms a long, nearly flat valley. Moving along the valley, raising one coefficient while lowering the other, barely changes the loss, because the two features rise and fall together. Small changes in the data move the lowest point a long way along the valley, which is why the coefficients swing while the predictions do not. The variance inflation factor puts a number on it. With a correlation of 0.97 between two features, VIF = 1 / (1 − 0.97²) ≈ 16.9, so each coefficient's variance is about 17 times what it would be with uncorrelated features.\n\nThe common mistake is to treat the swings as a training bug, or to fix them with lasso. L1 tends to keep one feature and zero out the other, but which one survives can flip between retrains for the same reason. Ridge adds λ‖w‖² to the loss, which curves the valley floor so there is one clear minimum with smaller, similar weights. Note that predictions only stay stable while the spends keep moving together. If marketing later shifts budget from one channel to the other, the model is extrapolating and its predictions become unreliable too.",
+  "deeper": "This comes up whenever teams read coefficients as business levers, as in marketing mix models. A strong candidate separates prediction from explanation. Correlated features are fine for forecasting while their relationship holds, but attribution needs a different design, such as budget-split or geo experiments. SHAP values on correlated features suffer from the same ambiguity.",
+  "tags": [
+   "multicollinearity",
+   "ridge"
+  ],
+  "concepts": [
+   "linear-regression",
+   "l2-regularization",
+   "correlation"
+  ]
+ },
+ {
+  "id": "cls-0040",
+  "topic": "classic",
+  "subtopic": "from binary to multiclass",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A support team wants to route tickets into five categories with logistic regression, which at heart is a binary model. Which statements about extending it to five classes are correct? Select all that apply.",
+  "options": [
+   "One-vs-rest trains five binary models, each class against the rest, and picks the class with the top score.",
+   "A multinomial model trains jointly and turns five class scores into probabilities with a softmax.",
+   "With the softmax model, the five predicted probabilities for each ticket always add up to exactly 1.",
+   "With one-vs-rest, the five raw probabilities from the separate models always add up to exactly 1.",
+   "One-vs-one needs only five binary models in total, one built around each of the five classes.",
+   "Coding the classes as 0 to 4 and rounding a single linear regression output works just as well."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "One-vs-rest trains a separate binary classifier per class and predicts the class whose model is most confident, so it is a valid extension. Multinomial logistic regression learns one weight vector per class and passes the five scores through a softmax, exp(zₖ) / Σⱼ exp(zⱼ). By construction that gives positive values that add up to 1, so both statements about the multinomial model are correct.\n\nThe one-vs-rest models are trained separately, so nothing ties their outputs together. A ticket can get 0.7 from the billing model and 0.6 from the technical model. Libraries often rescale these to sum to 1 afterwards, but the raw outputs do not. One-vs-one trains a model for every pair of classes, which for five classes is 5 × 4 / 2 = 10 models, then takes a vote. Coding the classes as numbers and rounding a regression output invents an order and spacing, so the model treats the category coded 2 as halfway between those coded 1 and 3, which means nothing for ticket types.",
+  "deeper": "Multinomial is the usual default for logistic regression and tends to give better-calibrated probabilities, which matter if only confident tickets are routed automatically. One-vs-rest is handy when one category needs its own threshold. An interviewer may ask what changes if a ticket can belong to several categories at once. Then you want independent sigmoids, not a softmax.",
+  "tags": [
+   "multiclass",
+   "softmax"
+  ],
+  "concepts": [
+   "logistic-regression",
+   "softmax"
+  ]
  }
 ]
