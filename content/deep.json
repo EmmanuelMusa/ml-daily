@@ -148,5 +148,358 @@
    "gradient-clipping",
    "learning-rate"
   ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0007",
+  "subtopic": "output layer and loss pairing",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A content moderation model reads a post and must flag any of 12 policy labels, such as spam, harassment and graphic violence. One post can carry several labels at once, or none at all. Which output layer and loss fit this task?",
+  "options": [
+   "12 sigmoid outputs, each trained with binary cross-entropy against that label's own 0 or 1 target.",
+   "A softmax over the 12 outputs, trained with categorical cross-entropy, then flag every label above 1/12.",
+   "A single sigmoid output trained with binary cross-entropy, read as the chance the post breaks any policy.",
+   "A softmax over 13 outputs, the 12 labels plus a \"none\" class, trained with categorical cross-entropy."
+  ],
+  "answer": 0,
+  "explanation": "Each of the 12 labels is its own yes or no question, and the answers do not compete. A sigmoid on each output turns its logit into an independent probability between 0 and 1, and binary cross-entropy on each one trains it against that label's target. The total loss is the sum or mean over the 12 labels, so a post can score high on spam and harassment at the same time.\n\nSoftmax forces the 12 scores to add up to 1, so the labels compete. If a post is both spam and harassment, raising one probability must lower the other, and a cut-off of 1/12 has no real meaning. Adding a \"none\" class to the softmax does not help, because the model still picks only one class per post. A single sigmoid output collapses 12 questions into one, so the team can no longer tell which policy was broken.\n\nThe general rule is simple. For a binary task, use one sigmoid with binary cross-entropy. For one label out of many, use softmax with categorical cross-entropy. For any number of labels at once, use one sigmoid per label with binary cross-entropy.",
+  "deeper": "In practice the model outputs raw logits and the loss function applies the sigmoid or softmax inside, which is more numerically stable. A strong candidate also mentions that each label in a multi-label model usually needs its own threshold, tuned on validation data, since rare labels like graphic violence seldom reach 0.5.",
+  "tags": [
+   "multi-label",
+   "loss"
+  ],
+  "concepts": [
+   "activation-function",
+   "softmax",
+   "cross-entropy-loss"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0008",
+  "subtopic": "softmax by hand",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A banking chatbot's intent classifier outputs logits of 3.0 for \"check balance\", 1.0 for \"transfer money\" and 0.0 for \"report fraud\". What softmax probability does it give \"check balance\"? Use e ≈ 2.71828 and give the answer as a decimal to 2 places.",
+  "answer": 0.84,
+  "tolerance": 0.005,
+  "check": "import math\nlogits = [3.0, 1.0, 0.0]\nexps = [math.exp(z) for z in logits]\nresult = exps[0] / sum(exps)",
+  "explanation": "Softmax turns logits into probabilities by exponentiating each one and dividing by the total.\n\n- e³ ≈ 20.086\n- e¹ ≈ 2.718\n- e⁰ = 1\n- Sum ≈ 20.086 + 2.718 + 1 = 23.804\n- P(check balance) ≈ 20.086 / 23.804 ≈ 0.84\n\nThe other two intents get about 0.11 and 0.04, and all three add up to 1.\n\nThe common mistake is to divide the logits directly: 3 / (3 + 1 + 0) = 0.75. That skips the exponent, which is what makes softmax favour the largest logit more strongly than a plain ratio would. Plain division also breaks for negative logits, which it cannot turn into probabilities. Only the gaps between logits matter. A gap of 2 means a ratio of e² ≈ 7.4 between two probabilities, whatever the logits' absolute values are.",
+  "deeper": "Interviewers often follow up with temperature. Dividing every logit by a temperature T above 1 flattens the distribution, and T below 1 sharpens it. The same idea controls randomness in LLM sampling and is used to calibrate classifiers after training, where a single T is fitted on validation data.",
+  "tags": [
+   "softmax"
+  ],
+  "concepts": [
+   "softmax",
+   "temperature"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0009",
+  "subtopic": "numerically stable softmax",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A colleague computes a fraud model's loss by hand in float32: exponentiate each of the 3 logits, divide by their sum, then take −log of the true class's probability. For a transaction with logits [1000, 990, 0] labelled as the first class, the loss is NaN. They subtract the largest logit from every logit before exponentiating, and the NaN goes away. But for a transaction with the same logits labelled as the third class, the loss is still inf. Which explanation is right?",
+  "options": [
+   "Softmax is unchanged when a constant is subtracted from every logit, so the shift is safe. The inf remains because exp(−1000) underflows to 0 before the log. Computing log-softmax directly in log space gives a finite loss of about 1000.",
+   "Subtracting the max slightly changes the probabilities, so it is better to subtract the mean logit, which keeps softmax exact. Centring the logits that way keeps every exponent small, so the third class no longer underflows and its loss becomes finite.",
+   "At this scale no shift can remove the overflow in float32. Recomputing the loss in float64 keeps exp(1000) finite, and its far wider range also stops exp(−1000) from rounding to 0, so the naive formula then works for all three classes.",
+   "The third class's loss really is infinite, because the model gives it a probability of exactly 0. The standard fix is to clip every probability to at least 10⁻⁷ before the log, which returns the exact loss and keeps gradients flowing to the logits."
+  ],
+  "answer": 0,
+  "explanation": "Subtracting the same constant c from every logit multiplies every exp term, top and bottom, by e^(−c), so the probabilities do not change. Subtracting the largest logit makes every exponent 0 or below, so nothing can overflow. That fixes the NaN, which came from inf / inf. It cannot fix the third class, whose shifted logit is −1000. exp(−1000) is far below the smallest float32 value, so the probability rounds to exactly 0 and −log 0 is inf. Working in log space never forms that tiny number: log p = (z − max) − log Σ exp(z − max) = −1000 − log(1 + e⁻¹⁰ + e⁻¹⁰⁰⁰), so the loss is about 1000. This is why frameworks offer a cross-entropy that takes logits and fuses the log-softmax inside.\n\nSubtracting the mean is no more exact than subtracting the max, and here it leaves an exponent of about 337, which still overflows float32. float64 does not rescue the naive formula either. exp overflows it above about 709, and e⁻¹⁰⁰⁰ is still below its smallest positive value. Clipping to 10⁻⁷ reports a loss of about 16 instead of about 1000, and a clipped probability passes back zero gradient, so the model gets no signal to fix its worst mistake.",
+  "deeper": "A strong candidate names the log-sum-exp trick and notes that the same issue gets worse in mixed precision, where fp16 overflows above about 65,504. In code review, a hand-written softmax followed by a log is a red flag. Pass raw logits to the framework's cross-entropy instead.",
+  "tags": [
+   "softmax",
+   "numerics"
+  ],
+  "concepts": [
+   "softmax",
+   "cross-entropy-loss"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0010",
+  "subtopic": "cross-entropy for one example",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A support-ticket router predicts probabilities of 0.60 for billing, 0.25 for technical and 0.15 for account. The ticket is really a technical one. What is the cross-entropy loss for this ticket, using the natural log? Give the answer as a decimal to 2 places.",
+  "answer": 1.39,
+  "tolerance": 0.005,
+  "check": "import math\nprobs = {\"billing\": 0.60, \"technical\": 0.25, \"account\": 0.15}\nresult = -math.log(probs[\"technical\"])",
+  "explanation": "For one example with a single true class, cross-entropy only looks at the probability given to that class: loss = −ln(p_true). The true class is technical, so p_true = 0.25 and the loss is −ln(0.25) = ln(4) ≈ 1.386, which rounds to 1.39.\n\nThe other two probabilities still matter, but only indirectly. Softmax ties all three together, so training that pushes technical up also pushes billing and account down.\n\nThe most common mistake is to plug in the model's top prediction, 0.60, which gives −ln(0.60) ≈ 0.51. That measures how sure the model is of its own guess, not how well it did on the true label. Another slip is to use log base 10, which gives about 0.60. A perfect prediction, p_true = 1, gives a loss of 0, and the loss grows without limit as p_true falls toward 0.",
+  "deeper": "Averaged over a dataset, this is the log loss, and it punishes confident mistakes hard. A ticket where the true class gets 0.01 costs about 4.6, as much as many well-handled tickets put together. Interviewers like candidates who connect this to label noise, since a few mislabelled examples can dominate the average loss.",
+  "tags": [
+   "loss"
+  ],
+  "concepts": [
+   "cross-entropy-loss"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0011",
+  "subtopic": "backprop through a tiny graph",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A one-feature model predicts delivery time as ŷ = w·x + b and is trained on the squared error L = (ŷ − y)². For one order, x = 2.5 and y = 4, and the current parameters are w = 0.8 and b = 0.5. What is ∂L/∂w at these values? Give the answer to 1 decimal place, with its sign.",
+  "answer": -7.5,
+  "tolerance": 0.05,
+  "check": "w, b = 0.8, 0.5\nx, y = 2.5, 4.0\ny_hat = w * x + b\nresult = 2 * (y_hat - y) * x",
+  "explanation": "Work forward first, then apply the chain rule backward.\n\n- Forward: ŷ = 0.8 × 2.5 + 0.5 = 2.5, so ŷ − y = 2.5 − 4 = −1.5\n- ∂L/∂ŷ = 2(ŷ − y) = 2 × (−1.5) = −3\n- ∂ŷ/∂w = x = 2.5\n- ∂L/∂w = −3 × 2.5 = −7.5\n\nThe negative sign says the loss falls if w grows, which makes sense because the prediction is too low. Gradient descent subtracts the gradient, so with a learning rate of 0.01 the new w would be 0.8 + 0.075 = 0.875.\n\nThe common mistakes are dropping the factor 2 from the square, which gives −3.75, and forgetting to multiply by x, which gives −3. That second value is actually the gradient for b, since ∂ŷ/∂b = 1. The other classic slip is a flipped sign, from differentiating (y − ŷ)² and forgetting the −1 from the inner term. A flipped sign sends the update the wrong way.",
+  "deeper": "Backpropagation in a deep network is this same move repeated: each node multiplies the gradient arriving from above by its own local derivative. Interviewers sometimes ask for the batch version in NumPy. For mean squared error over n rows, the gradient for the weights becomes (2/n) Xᵀ(ŷ − y).",
+  "tags": [
+   "backprop",
+   "gradients"
+  ],
+  "concepts": [
+   "backpropagation",
+   "chain-rule"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0012",
+  "subtopic": "units stuck at zero",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "An ad click-through model is trained with a very high learning rate for its first few thousand steps. Afterwards, many hidden units with ReLU activations output exactly 0 for every training example, and their incoming weights and biases no longer change at all. Units stuck in this state are called ______ ReLUs.",
+  "answer": "dead",
+  "accept": [
+   "dying",
+   "dead relu",
+   "dead relus",
+   "dying relu",
+   "dying relus",
+   "dead neurons",
+   "dead units"
+  ],
+  "explanation": "A ReLU outputs max(0, z). If a large update pushes a unit's weights or bias so far that z is below 0 for every input, the unit always outputs 0 and its local gradient is always 0. No gradient reaches its incoming weights, so nothing pulls it back. The unit is dead. It still costs memory and compute but adds nothing to the prediction. High learning rates are the usual trigger, because one oversized step can throw a unit into that region.\n\nA common wrong answer is vanishing. Vanishing gradients shrink gradually across many layers, as with saturating sigmoids, and slow learning everywhere. A dead ReLU is a hard zero in one unit, and it can happen in a shallow network too. Another wrong answer is saturated, which fits sigmoid or tanh units stuck near their flat ends, where the gradient is small but not exactly zero.",
+  "deeper": "To diagnose it, log the share of units in each layer that output zero across a whole validation batch. Fixes include a lower learning rate or warmup, He initialization, and activations with a nonzero slope for negative inputs, such as Leaky ReLU or GELU. A dead unit recovers only if earlier layers happen to shift its inputs back above zero.",
+  "tags": [
+   "relu",
+   "debugging"
+  ],
+  "concepts": [
+   "activation-function",
+   "learning-rate"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0013",
+  "subtopic": "why initialization matters",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A teammate builds a 10-layer ReLU network for credit risk scoring and sets every weight and bias to zero before training, to start from a neutral point. After many epochs the model still predicts the same default probability for every applicant. Explain what went wrong, and how schemes like Xavier and He initialization choose the scale of random starting weights.",
+  "answer": "With identical weights, all units in a layer compute the same value and get the same gradient, so they stay copies forever. This is the symmetry problem, and a layer of identical units is no better than a single unit. Zeros make it worse. ReLU(0) is 0, so every hidden output is 0, and with zero weights downstream every weight gradient is exactly 0. Only the output bias learns, so the model predicts the base default rate. Random weights break the symmetry, but the scale matters. Each layer multiplies the signal, so weights that are too small make activations shrink layer by layer and weights that are too large make them explode. Xavier sets the weight variance to about 2 / (fan_in + fan_out), which suits tanh or sigmoid. He sets it to 2 / fan_in for ReLU, doubling it because ReLU zeroes about half its inputs. Both keep activation and gradient variance roughly steady across layers.",
+  "points": [
+   "Identical starting weights make units in a layer compute and update identically (symmetry)",
+   "With zeros and ReLU every weight gradient is zero, so only the output bias learns the base rate",
+   "Random initialization breaks symmetry, but its scale must be chosen with care",
+   "Too small a scale makes activations vanish across layers, too large makes them explode",
+   "Xavier uses variance about 2 / (fan_in + fan_out) for tanh or sigmoid, He uses 2 / fan_in for ReLU"
+  ],
+  "explanation": "Gradient descent can only make units different if something makes them different to begin with. With identical weights, every unit in a layer sees the same inputs, computes the same output and gets the same gradient, so after any number of updates they are still copies. Random weights are the simplest way to break that symmetry. Biases can start at zero as long as the weights are random.\n\nThe scale matters because each layer multiplies the signal by its weights. If each layer scales the activation variance by a factor a little below 1, the signal is tiny after 10 layers, and a factor a little above 1 makes it blow up. Xavier and He pick the variance so that factor is about 1. The factor of 2 in He initialization makes up for ReLU zeroing about half of each layer's inputs.\n\nThe common mistake is to say zero initialization only slows training down. Symmetry caps what the network can ever learn, and here it stops every weight from learning at all. Another mistake is to think any small random values are fine. A fixed standard deviation of 0.01 in a deep ReLU network makes activations shrink toward zero layer by layer.",
+  "deeper": "Frameworks apply sensible defaults to standard layers, so this mostly bites in custom layers or hand-written code. A useful habit is to log the mean and standard deviation of each layer's activations at step 0. A bad initialization shows up there before you spend a full training run.",
+  "tags": [
+   "initialization"
+  ],
+  "concepts": [
+   "weight-initialization",
+   "activation-function"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0014",
+  "subtopic": "batch norm in training vs inference",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A team trains a CNN to spot cracks in high-resolution road scans. Memory allows only 2 images per batch, and the network uses batch normalization. Training loss falls nicely, but after calling `model.eval()` the validation predictions are poor. Oddly, the same validation images score much better when the model is left in training mode and fed in batches of 2. What is the most likely cause?",
+  "options": [
+   "Training normalized with the noisy statistics of 2 images per batch, but eval mode uses running averages that do not match what the layers learned.",
+   "Eval mode switches batch normalization off entirely, so at inference the layers receive raw activations at a scale never seen during training.",
+   "Eval mode recomputes the mean and variance over the whole validation set in one pass, and those statistics sit far from the ones gathered in training.",
+   "Switching to eval mode resets the learned scale and shift in every batch norm layer back to their starting values of 1 and 0, undoing what training learned."
+  ],
+  "answer": 0,
+  "explanation": "In training mode, batch norm normalizes each channel with the mean and variance of the current batch and also updates running averages of those statistics. In eval mode it uses the running averages instead, so a prediction does not depend on which other images share the batch. With only 2 images per batch, the batch statistics jump around from step to step, and the network learns to work with those noisy, batch-specific values. The smoothed running averages give the layers inputs unlike anything they saw in training, so eval mode underperforms. Feeding batches of 2 in training mode recreates the training conditions, which is why it looks better, but each prediction then depends on its batch partner, which is not usable in production.\n\nEval mode does not switch normalization off. It only changes which statistics are used. It does not compute fresh statistics over the validation set either, since that would make predictions depend on the test data. The learned scale and shift, γ and β, are ordinary trained parameters and stay exactly as trained. Common fixes are group or layer normalization, which do not depend on batch size, or synchronized batch norm across GPUs for a larger effective batch.",
+  "deeper": "When fine-tuning a pretrained CNN with tiny batches, many teams freeze the batch norm layers so the running statistics from pretraining stay fixed. Detection and segmentation models, which often train with only 1 or 2 images per GPU, commonly use group norm or frozen batch norm for exactly this reason.",
+  "tags": [
+   "batch-norm",
+   "debugging"
+  ],
+  "concepts": [
+   "batch-normalization",
+   "layer-normalization"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0015",
+  "subtopic": "what dropout does",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A churn model has dropout with a rate of 0.3 after each hidden layer. A new teammate asks what this actually does. Which description is correct?",
+  "options": [
+   "On each training step it zeroes each unit with probability 0.3, so no unit can rely on specific others. It is off at inference.",
+   "After training it removes the 30% of units with the smallest weights for good, so the served model is smaller and faster.",
+   "On each training step it drops a random 30% of the examples from the batch, so the model sees less data and overfits less.",
+   "At the start of training it picks 30% of the units at random and zeroes them on every step, so the rest learn to cover for them."
+  ],
+  "answer": 0,
+  "explanation": "Dropout makes a fresh random choice on every training step: each unit is zeroed with probability 0.3, independently. A unit can never count on a particular partner being present, so the network spreads what it learns across many units instead of building fragile co-adaptations. One way to see it is as training a huge family of thinned networks that share weights, with the full network at inference acting as a cheap average of them. At inference dropout is off, so predictions are deterministic, and the scaling applied during training keeps activation sizes consistent.\n\nRemoving the units with the smallest weights after training is pruning, a compression technique, not dropout. Dropping examples from the batch just makes the batch smaller, which changes gradient noise but adds no unit-level randomness. Picking one fixed set of units at the start simply builds a smaller network, because the zeroed units never train and never contribute. The fresh randomness on every step is what gives dropout its regularizing effect.",
+  "deeper": "Interviewers often ask where dropout belongs. It is common in fully connected layers and transformer blocks, and less common after convolutions. It slows convergence, so teams often lower it for very large datasets. A related idea is Monte Carlo dropout, which deliberately keeps dropout on at inference and runs several passes to estimate uncertainty.",
+  "tags": [
+   "dropout",
+   "regularization"
+  ],
+  "concepts": [
+   "dropout",
+   "regularization"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0016",
+  "subtopic": "inverted dropout scaling",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A music recommendation model applies inverted dropout to a hidden layer, where each unit is zeroed with probability 0.4 during training. One unit's activation is 1.8 before dropout, and on this step it survives. What value does the unit pass to the next layer? Give the answer to 1 decimal place.",
+  "answer": 3.0,
+  "tolerance": 0.05,
+  "check": "p_drop = 0.4\nactivation = 1.8\nkeep = 1 - p_drop\nresult = activation / keep",
+  "explanation": "Inverted dropout divides every surviving unit by the keep probability during training, so nothing needs to change at inference. The keep probability is 1 − 0.4 = 0.6, so the surviving value is 1.8 / 0.6 = 3.0.\n\nCheck the expected value. With probability 0.6 the unit outputs 3.0, and with probability 0.4 it outputs 0. The average is 0.6 × 3.0 + 0.4 × 0 = 1.8, exactly the original activation. That is the point of the scaling. The next layer sees inputs of the same average size in training and at inference, when dropout is off and the unit simply passes 1.8.\n\nThe most common mistake is dividing by the drop probability: 1.8 / 0.4 = 4.5, which makes the expected value 0.6 × 4.5 = 2.7, too large. Another is multiplying by the keep probability, 1.8 × 0.6 = 1.08. That is the scaling the original, non-inverted dropout applied at inference time, not something done to a surviving unit in training.",
+  "deeper": "Frameworks use the inverted form because it leaves the inference path free of dropout entirely. Interviewers sometimes push further: the expected value is preserved, but the variance is not. That shift in variance is one reason dropout placed just before a batch norm layer can hurt, since batch norm's running statistics are gathered with dropout on.",
+  "tags": [
+   "dropout"
+  ],
+  "concepts": [
+   "dropout"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0017",
+  "subtopic": "why residual connections help",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "On a plant disease photo dataset, a plain 50-layer CNN ends up with higher **training** error than a plain 18-layer one, even though the deeper model could in principle copy the shallow one and make its extra layers pass their input through. Adding skip connections, so each block outputs x + F(x), lets the 50-layer model beat the 18-layer one. Why do skip connections help here?",
+  "options": [
+   "The derivative of x + F(x) has an identity term, so gradients reach early layers directly, and a block can pass its input on by pushing F to 0.",
+   "Skip connections act as a regularizer much like dropout does, so the deeper network stops overfitting the training photos and generalizes better.",
+   "Skip connections reduce the number of trainable weights inside each block, so the deeper network has far fewer parameters that it needs to fit.",
+   "Adding the input back rescales each block's output to zero mean and unit variance, so activations stay stable much as they do with batch norm."
+  ],
+  "answer": 0,
+  "explanation": "The puzzle in the prompt is the degradation problem. A deeper plain network should be able to match a shallower one, yet the optimizer fails to find that solution and training error gets worse. With a skip connection, the block computes x + F(x). Its derivative with respect to x is the identity plus ∂F/∂x, so during backprop the gradient from later layers reaches earlier ones through the identity term, not only through a long product of layer derivatives. The block also finds identity easy: if its layers are not useful, the optimizer only has to drive F toward zero, which is far easier than making a stack of nonlinear layers reproduce their input exactly.\n\nThe regularization option fails on the evidence. The deeper plain model was worse on training error, so the problem is fitting, not overfitting. An identity skip adds no weights and removes none, so the parameter option is wrong. Adding x to F(x) does not normalize anything. Without normalization the variance of the sum tends to grow with depth, which is why residual networks still use normalization layers.",
+  "deeper": "Transformers rely on the same idea, since every attention and feed-forward sublayer adds onto a residual stream. A strong answer notes that when a block changes the shape, the skip path uses a 1×1 convolution or a linear projection. Interviewers may ask why residual branches are often initialized to output near zero at the start of training.",
+  "tags": [
+   "resnet",
+   "architecture"
+  ],
+  "concepts": [
+   "residual-connection",
+   "vanishing-gradients"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0018",
+  "subtopic": "convolution output size",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A crop-monitoring model takes 100×100 satellite tiles. Its first convolution layer uses a 7×7 kernel, a stride of 3, and 2 pixels of zero padding on every side, with 32 output channels. What is the height of the output feature map (the width is the same)? Give a whole number.",
+  "answer": 33,
+  "tolerance": 0.5,
+  "check": "n, k, s, p = 100, 7, 3, 2\nresult = (n + 2 * p - k) // s + 1",
+  "explanation": "The output size of a convolution is ⌊(n + 2p − k) / s⌋ + 1, where n is the input size, k the kernel size, s the stride and p the padding on each side.\n\n- Padded size: 100 + 2 × 2 = 104\n- Room for the kernel to move: 104 − 7 = 97\n- Steps of 3: 97 / 3 ≈ 32.33, which rounds down to 32\n- Add 1 for the starting position: 32 + 1 = 33\n\nThe output is 33 × 33 with 32 channels. The channel count does not affect the height or width.\n\nThe +1 counts the kernel's first position before any step is taken, and forgetting it gives 32. Adding the padding once instead of twice gives ⌊95 / 3⌋ + 1 = 32 as well. Rounding 32.33 up instead of down gives 34. The floor is there because the kernel can only start at positions where it fits fully inside the padded input. Leftover pixels at the far edge are simply skipped.",
+  "deeper": "Interviewers like to chain this through a few layers or ask for the padding that keeps the size unchanged. For stride 1 and an odd kernel size k, that is p = (k − 1) / 2, often called same padding. A shape mismatch at the first linear layer after the convolutions is a classic bug, so print the shapes once before training.",
+  "tags": [
+   "cnn",
+   "shapes"
+  ],
+  "concepts": [
+   "convolutional-neural-network"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0019",
+  "subtopic": "one filter everywhere",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A chest X-ray model's first convolution layer has 16 filters of size 3×3 over a 1-channel image. Each filter applies the same 9 weights and 1 bias at every position, so the layer has 160 parameters whether the X-ray is 256×256 or 2048×2048 pixels. Reusing one filter's weights at every position in the image is called ______.",
+  "answer": "weight sharing",
+  "accept": [
+   "parameter sharing",
+   "shared weights",
+   "shared parameters",
+   "weight tying",
+   "tied weights",
+   "sharing weights"
+  ],
+  "explanation": "A dense layer from a 256×256 image to 16 outputs would need a separate weight for every pixel and every output, which is 65,536 × 16, over a million weights. A convolution instead slides one small filter across the image and uses the same weights wherever it lands. That cuts the count to 16 × (9 + 1) = 160, makes it independent of image size, and means a pattern such as an edge or a nodule outline is detected the same way anywhere in the image.\n\nThe usual wrong answers are close neighbours. Local connectivity, also called sparse connectivity, means each output looks only at a small patch. That is a separate property: a layer could look at small patches but use different weights at every location, which would be locally connected without sharing. Translation equivariance is a result of weight sharing, not the sharing itself. It means that shifting the input shifts the feature map by the same amount.",
+  "deeper": "A strong candidate links weight sharing to the inductive bias of CNNs, the assumption that a useful feature can appear anywhere. That is why CNNs need less data than dense networks on images. Interviewers may ask when the assumption hurts, for example on aligned scans where the position of a finding itself carries meaning.",
+  "tags": [
+   "cnn"
+  ],
+  "concepts": [
+   "convolutional-neural-network"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0020",
+  "subtopic": "limits of RNNs",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A support team classifies long chat transcripts with a vanilla RNN. It misses cues from the start of chats that run to 300 tokens, and training is slow on GPUs even with large batches. Which statement explains both problems correctly?",
+  "options": [
+   "Gradients to early tokens pass through hundreds of multiplications by the recurrent weights and fade, and each state needs the previous one, so steps run in order.",
+   "An LSTM would fix both problems, because its gated cell state carries gradients across long gaps and its gates let all the time steps of one sequence run in parallel.",
+   "The RNN keeps a separate weight matrix for every time step, so long chats need far too many parameters to train well and far too much memory to batch on a GPU.",
+   "The RNN's cost grows with the square of the sequence length while self-attention grows only linearly, so long chats are slow and the early cues get diluted."
+  ],
+  "answer": 0,
+  "explanation": "In a vanilla RNN, the hidden state at step t is computed from the state at step t − 1. Backpropagating from the last token to the first multiplies the gradient by the recurrent weight matrix and an activation derivative once per step. Over 300 steps that product usually shrinks toward zero, or sometimes explodes, so early cues barely affect learning. The same chain of dependencies blocks parallelism. Step 200 cannot be computed until step 199 is done, so a GPU cannot spread the work across time steps.\n\nLSTMs and GRUs fix much of the first problem. Their cell state is updated mostly by addition, with a forget gate that can stay near 1, so gradients survive longer gaps. But they are still sequential, so the option claiming they run in parallel is wrong. RNNs share one set of weights across all time steps, so the parameter count does not grow with length. The complexity option is backwards. An RNN does work linear in sequence length, while self-attention compares every pair of tokens, which is quadratic. Transformers solve both problems because any token can attend to any other in one step, and all positions are computed at once in training.",
+  "deeper": "A strong candidate adds the trade-off in the other direction. An RNN generates each new token with fixed memory and cost, while a transformer's attention cost and cache grow with context length. That is why recurrent and state-space designs keep returning for very long sequences and on-device use.",
+  "tags": [
+   "rnn",
+   "sequences"
+  ],
+  "concepts": [
+   "recurrent-neural-network",
+   "vanishing-gradients",
+   "self-attention"
+  ]
+ },
+ {
+  "topic": "deep",
+  "id": "dl-0021",
+  "subtopic": "what Adam adds",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "An e-commerce team trains a recommendation model with item embeddings and dense layers. They switch the optimizer from plain SGD, which uses one learning rate for every parameter, to Adam. What does Adam add?",
+  "options": [
+   "It keeps running averages of each parameter's gradient and squared gradient, and divides the first by the root of the second, giving per-parameter step sizes.",
+   "It keeps a running average of each parameter's gradient and multiplies the learning rate by it, so parameters with larger gradients always take much larger steps.",
+   "It estimates the diagonal of the Hessian for each parameter using finite differences, and divides the gradient by it to take an exact Newton step.",
+   "It keeps a running average of each parameter's squared gradient and adds it to the loss as a penalty, which keeps the weights small during training."
+  ],
+  "answer": 0,
+  "explanation": "Adam keeps two moving averages per parameter. The first, m, is an exponential average of recent gradients. That is momentum: it smooths out noise and keeps moving in a consistent direction. The second, v, is an exponential average of recent squared gradients, a running estimate of how large that parameter's gradients usually are. The update is roughly lr × m / (√v + ε), after a bias correction for both averages starting at zero. Dividing by √v means a parameter with consistently small gradients still takes a reasonable step, and one with huge gradients is reined in. The size of each step stays roughly bounded by the learning rate, whatever the raw gradient scale.\n\nMultiplying the learning rate by the gradient average gets the effect backwards, since large gradients would then cause even larger steps. Adam's second moment is not a Hessian. It tracks gradient size, not curvature, and there are no finite differences or Newton steps. Adding squared gradients to the loss confuses Adam with a penalty such as weight decay. Adam changes how the update is computed, not the loss itself.",
+  "deeper": "Interviewers often ask about memory. Adam stores two extra numbers per parameter, so a model with 1 billion parameters needs about 8 GB of fp32 optimizer state on top of the weights. For large embedding tables, some teams use sparse or lazy variants that only update the rows seen in a batch.",
+  "tags": [
+   "optimizers"
+  ],
+  "concepts": [
+   "adam-optimizer",
+   "learning-rate"
+  ]
  }
 ]
