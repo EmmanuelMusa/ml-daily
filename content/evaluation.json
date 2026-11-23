@@ -1,167 +1,208 @@
 [
-  {
-    "id": "eval-0001",
-    "topic": "evaluation",
-    "subtopic": "metric for rare-event screening",
-    "format": "mcq",
-    "difficulty": 1,
-    "prompt": "A clinic uses a model to screen retina photos for a disease that appears in about 2% of patients. A missed case can lead to lasting vision loss. A false alarm costs one short review by a specialist. Which metric should the team put first when comparing models?",
-    "options": [
-      "Recall on the disease class, since each missed patient costs far more than one extra specialist review.",
-      "Overall accuracy, since it counts every photo and so reflects both kinds of mistake in one number.",
-      "Precision on the disease class, since it keeps specialists from spending their time on healthy patients.",
-      "Specificity, since almost all photos are healthy and it measures how well those patients are cleared."
-    ],
-    "answer": 0,
-    "explanation": "The costs here are lopsided. Missing a sick patient can mean lasting harm, while a false alarm only costs a few minutes of a specialist's time. Recall, TP / (TP + FN), measures the share of sick patients the model catches, so it is the metric that tracks the expensive mistake.\n\nAccuracy is dominated by the 98% of healthy photos. A model that calls everyone healthy scores 98% while catching nobody. Precision protects specialist time, which matters, but it is the cheap side of the trade in this setting. You would watch it as a constraint, not optimise it first. Specificity measures how many healthy patients are correctly cleared. It is the negative-class twin of recall and says nothing about how many sick patients were missed.",
-    "deeper": "A strong answer adds a guardrail: maximise recall subject to a workload limit, such as no more than 50 referrals a day. Interviewers like hearing that you would report recall at a fixed precision or referral rate, because recall alone is easy to max out by flagging everyone.",
-    "tags": [
-      "recall",
-      "screening",
-      "imbalance"
-    ]
-  },
-  {
-    "id": "eval-0002",
-    "topic": "evaluation",
-    "subtopic": "ROC-AUC vs PR-AUC under imbalance",
-    "format": "mcq",
-    "difficulty": 3,
-    "prompt": "A chat platform trains a model to flag abusive messages. About 0.1% of messages are abusive. On a large test set the model has ROC-AUC 0.97 but PR-AUC (average precision) of only 0.18. A product manager asks how both numbers can be right. Which statement correctly explains the gap?",
-    "options": [
-      "The false positive rate divides by the huge pool of clean messages, so even a tiny rate can swamp the few true hits.",
-      "PR-AUC is measured only at the default 0.5 threshold, so it misses the better thresholds that ROC-AUC averages over.",
-      "ROC-AUC also credits the model for ordering clean messages correctly among themselves, which inflates it when they dominate.",
-      "PR-AUC has a random baseline of 0.5, the same as ROC-AUC, so a score of 0.18 means the model ranks worse than chance."
-    ],
-    "answer": 0,
-    "explanation": "ROC curves plot recall against the false positive rate, FP / (FP + TN). With 999 clean messages for every abusive one, TN is enormous, so even a large number of false alarms is a small rate. Precision has no TN term, so it shows those false alarms directly.\n\nA worked case: 1,000,000 messages, 1,000 abusive. A threshold with recall 0.80 and a false positive rate of 1% catches 800 abusive messages but also flags 9,990 clean ones. That point looks excellent on a ROC curve, yet precision is 800 / 10,790, about 0.07.\n\nPR-AUC is threshold-free like ROC-AUC, so the option about a 0.5 threshold is wrong. ROC-AUC is the chance that a random positive outranks a random negative. Pairs of two negatives never count, so it gives no credit for ordering clean messages. The random baseline for PR-AUC is the positive rate, 0.001 here, not 0.5. So 0.18 is far better than chance, just weak in absolute terms.",
-    "deeper": "In an interview, say which number matches the cost. If moderators review every flag, precision at the review budget is what matters, and PR-AUC tracks it better. A good follow-up is to report precision at a fixed recall, or recall at the number of flags the team can review each day.",
-    "tags": [
-      "roc",
-      "pr-auc",
-      "imbalance"
-    ]
-  },
-  {
-    "id": "eval-0003",
-    "topic": "evaluation",
-    "subtopic": "precision from a confusion matrix",
-    "format": "numeric",
-    "difficulty": 1,
-    "prompt": "A vision model inspects 1,000 parts on a factory line. Its confusion matrix is:\n\n- Predicted defect, actually defect: 45\n- Predicted defect, actually fine: 15\n- Predicted fine, actually defect: 30\n- Predicted fine, actually fine: 910\n\nWhat is the model's precision for the defect class? Give it as a decimal to 2 places.",
-    "answer": 0.75,
-    "tolerance": 0.005,
-    "check": "tp = 45\nfp = 15\nfn = 30\ntn = 910\nresult = tp / (tp + fp)",
-    "explanation": "Precision asks: of the parts the model flagged as defects, how many really were? The model flagged 45 + 15 = 60 parts. Of those, 45 were real defects. So precision is 45 / 60 = 0.75.\n\nThe common mistake is to read the wrong row or column. Dividing by all real defects, 45 + 30 = 75, gives 45 / 75 = 0.60, which is recall. Another slip is to quote accuracy, (45 + 910) / 1,000 = 0.955, which looks strong only because most parts are fine. A simple habit helps: precision uses the predicted-positive counts as its denominator, recall uses the actual-positive counts.",
-    "deeper": "On a factory line, precision tells you how much good stock the model sends to scrap or re-inspection, and recall tells you how many bad parts reach customers. Interviewers often follow up by asking which of the two the plant manager cares about more, and what that implies for the threshold.",
-    "tags": [
-      "precision",
-      "confusion-matrix"
-    ]
-  },
-  {
-    "id": "eval-0004",
-    "topic": "evaluation",
-    "subtopic": "F1 score",
-    "format": "numeric",
-    "difficulty": 2,
-    "prompt": "A support team tests a classifier that marks tickets as urgent. On 1,000 tickets it has 30 true positives, 10 false positives and 50 false negatives. The rest are true negatives. What is the F1 score for the urgent class? Give it as a decimal to 2 places.",
-    "answer": 0.5,
-    "tolerance": 0.005,
-    "check": "tp = 30\nfp = 10\nfn = 50\nprecision = tp / (tp + fp)\nrecall = tp / (tp + fn)\nresult = 2 * precision * recall / (precision + recall)",
-    "explanation": "First get precision and recall. Precision is 30 / (30 + 10) = 0.75. Recall is 30 / (30 + 50) = 0.375. F1 is their harmonic mean: 2 × 0.75 × 0.375 / (0.75 + 0.375) = 0.5625 / 1.125 = 0.50. A shortcut gives the same result: F1 = 2TP / (2TP + FP + FN) = 60 / 120 = 0.50.\n\nThe common mistake is to take the plain average, (0.75 + 0.375) / 2 ≈ 0.56. The harmonic mean is pulled toward the smaller of the two values, so a model cannot hide weak recall behind strong precision. Notice that the true negatives play no part at all. F1 only looks at the positive class, which is why it is popular for imbalanced problems.",
-    "deeper": "If missing an urgent ticket hurts more than a false alarm, F1 weights them wrongly. A strong candidate mentions F-beta, where beta above 1 leans toward recall, or simply reports recall at an agreed precision. Also remember F1 depends on the threshold you chose.",
-    "tags": [
-      "f1",
-      "precision",
-      "recall"
-    ]
-  },
-  {
-    "id": "eval-0005",
-    "topic": "evaluation",
-    "subtopic": "ranking metrics",
-    "format": "fill",
-    "difficulty": 2,
-    "prompt": "A search team scores each results page by adding up graded relevance labels, dividing each label by log₂(position + 1), and then dividing the total by the score of the best possible ordering of those same results. A perfect ranking scores 1. This metric is called ______.",
-    "answer": "NDCG",
-    "accept": [
-      "normalized discounted cumulative gain",
-      "normalised discounted cumulative gain",
-      "ndcg@k",
-      "ndcg at k",
-      "normalized dcg",
-      "normalised dcg"
-    ],
-    "explanation": "The prompt walks through the three parts of the name. Cumulative gain is the sum of relevance labels. Discounted means each label is shrunk by log₂(position + 1), so a relevant result at rank 1 counts more than the same result at rank 8. Normalized means dividing by the ideal DCG, the score you would get by sorting the results from most to least relevant. That last step puts every query on a 0 to 1 scale, so queries with many relevant results do not dominate the average.\n\nThe common mistake is to answer DCG, which has the discount but not the division by the ideal score. Others answer MRR or MAP. MRR only looks at the rank of the first relevant result, and MAP works with binary relevant or not relevant labels, so neither uses graded labels the way described here.",
-    "deeper": "In practice you report NDCG@k, such as NDCG@10, because users rarely scroll further. A good interview follow-up is where the graded labels come from: human raters, or clicks and purchases, which carry position bias and need correction before you trust the metric.",
-    "tags": [
-      "ranking",
-      "search",
-      "ndcg"
-    ]
-  },
-  {
-    "id": "eval-0006",
-    "topic": "evaluation",
-    "subtopic": "calibration",
-    "format": "mcq",
-    "difficulty": 3,
-    "prompt": "A lender trained a default model after downsampling non-default loans to balance the classes. On a holdout set with the natural default rate, ROC-AUC is 0.91. Among the 1,200 holdout loans the model scored between 0.8 and 0.9, only 40% defaulted. The pricing team wants to use the scores as default probabilities. What should you conclude?",
-    "options": [
-      "Ranking is strong but the scores overstate risk, so fit a calibration map on natural-rate data before pricing.",
-      "An AUC of 0.91 shows the scores are reliable probabilities, so the 40% default rate in that band is likely sampling noise.",
-      "Recalibrating will also lift AUC well above 0.91, because AUC penalises probabilities that are badly scaled.",
-      "Retrain with even heavier downsampling, so the model sees enough defaults to produce calibrated probabilities."
-    ],
-    "answer": 0,
-    "explanation": "Calibration means that among loans scored about 0.85, about 85% default. Here only 40% did, so the scores are far too high. AUC cannot catch this. It only checks whether defaulters are ranked above non-defaulters, and any order-preserving change to the scores leaves it the same. So a model can rank very well and still give badly wrong probabilities. The fix is to fit a calibration map, such as Platt scaling or isotonic regression, on held-out data that has the real default rate.\n\nThe noise option fails on sample size. With 1,200 loans, the standard error of a 40% rate is about 1.4 points, tiny next to a gap of at least 40 points. The option about lifting AUC is backwards: calibration keeps the ranking, so AUC stays about the same. Heavier downsampling makes things worse. Removing more non-defaults raises the default rate the model sees in training, which pushes its scores up even further.",
-    "deeper": "Downsampling is a common cause of this, and there is a known prior-correction formula that maps scores back to the true base rate. Interviewers like candidates who check a reliability diagram or expected calibration error before anyone multiplies a score by a loan amount.",
-    "tags": [
-      "calibration",
-      "auc",
-      "credit"
-    ]
-  },
-  {
-    "id": "eval-0007",
-    "topic": "evaluation",
-    "subtopic": "A/B test significance",
-    "format": "numeric",
-    "difficulty": 3,
-    "prompt": "An online shop tests a new checkout page. Control: 12,000 users, 600 purchases. Treatment: 8,000 users, 464 purchases. Using a two-proportion z-test with a pooled proportion, what is the z statistic for treatment minus control? Give it as a decimal to 2 places.",
-    "answer": 2.47,
-    "tolerance": 0.005,
-    "check": "import math\nn_c, x_c = 12000, 600\nn_t, x_t = 8000, 464\np_c = x_c / n_c\np_t = x_t / n_t\np_pool = (x_c + x_t) / (n_c + n_t)\nse = math.sqrt(p_pool * (1 - p_pool) * (1 / n_c + 1 / n_t))\nresult = (p_t - p_c) / se",
-    "explanation": "Step 1, the two rates: control is 600 / 12,000 = 0.050 and treatment is 464 / 8,000 = 0.058. The difference is 0.008.\n\nStep 2, the pooled rate, used because the null hypothesis says both groups share one rate: (600 + 464) / (12,000 + 8,000) = 1,064 / 20,000 = 0.0532.\n\nStep 3, the standard error: √(0.0532 × 0.9468 × (1/12,000 + 1/8,000)) = √(0.05037 × 0.00020833) ≈ 0.003239.\n\nStep 4, z = 0.008 / 0.003239 ≈ 2.47. That is above 1.96, so the lift is significant at the 5% level for a two-sided test.\n\nThe common mistake is the standard error. If you use only one group size, √(p(1 − p) / 12,000), you get about 3.90, which badly overstates the evidence. Using separate, unpooled variances gives about 2.44. That is close here, but the pooled form is the standard one for testing whether the two rates are equal.",
-    "deeper": "A significant z does not end the conversation. Interviewers ask whether the test ran for its planned length, whether anyone peeked and stopped early, and whether the sample split matched the planned ratio. A split that differs from plan, called sample ratio mismatch, often signals a bug in assignment.",
-    "tags": [
-      "ab-testing",
-      "z-test"
-    ]
-  },
-  {
-    "id": "eval-0008",
-    "topic": "evaluation",
-    "subtopic": "choosing a threshold from business costs",
-    "format": "open",
-    "difficulty": 2,
-    "prompt": "A telecom company has a churn model that outputs a probability for each customer. The retention team can make at most 300 calls a week. Each call costs $15. A churner who gets a call stays 25% of the time, and a customer who stays is worth $400. Calling a customer who was not going to churn gains nothing. How would you choose the score threshold for who gets a call?",
-    "answer": "I would set the threshold from expected value, not from 0.5. A call to a customer with churn probability p is worth p × 0.25 × $400 = $100p and costs $15, so it pays off when p is above 0.15. That is the break-even threshold. Capacity also binds. If more than 300 customers score above 0.15, I would call the 300 highest scores, so the real threshold becomes the 300th score. If fewer clear 0.15, I would call only those and leave spare capacity unused. This only works if the probabilities are calibrated, so I would check a reliability plot first. Then I would confirm the value with a holdout group that gets no calls, and revisit the threshold when costs, save rates or the score distribution change.",
-    "points": [
-      "Compare the cost of a wasted call with the value lost from a missed churner",
-      "Break-even probability is cost divided by value times save rate, here 0.15",
-      "The 300-call cap means taking the top 300 scores when many clear break-even",
-      "Scores must be calibrated for the break-even rule to hold",
-      "Validate with a no-call holdout and update the threshold as inputs change"
-    ],
-    "explanation": "The threshold is a business decision, so it should come from what each mistake costs. A false positive wastes a $15 call. A missed churner who could have been saved loses the expected value of the call, which is 0.25 × $400 = $100 for a sure churner. Setting p × 100 = 15 gives p = 0.15. Above that, a call is worth more than it costs on average.\n\nThe common mistake is to keep the default 0.5 or to pick the threshold that maximises F1. Both ignore the costs. Here 0.5 would skip many customers who are worth calling. The second mistake is to forget the capacity cap. When demand exceeds 300 calls, you rank by score and stop at 300, and the cap, not the break-even point, sets the cut. Finally, the break-even rule assumes a score of 0.2 really means a 20% chance of churn. An uncalibrated model breaks that link.",
-    "deeper": "A strong candidate notes that the 25% save rate is not the same for everyone. Some customers would stay anyway and some cannot be saved. Uplift modelling targets the customers whose behaviour the call actually changes, which often beats ranking by churn risk alone.",
-    "tags": [
-      "threshold",
-      "churn",
-      "costs"
-    ]
-  }
+ {
+  "id": "eval-0001",
+  "topic": "evaluation",
+  "subtopic": "metric for rare-event screening",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A clinic uses a model to screen retina photos for a disease that appears in about 2% of patients. A missed case can lead to lasting vision loss. A false alarm costs one short review by a specialist. Which metric should the team put first when comparing models?",
+  "options": [
+   "Recall on the disease class, since each missed patient costs far more than one extra specialist review.",
+   "Overall accuracy, since it counts every photo and so reflects both kinds of mistake in one number.",
+   "Precision on the disease class, since it keeps specialists from spending their time on healthy patients.",
+   "Specificity, since almost all photos are healthy and it measures how well those patients are cleared."
+  ],
+  "answer": 0,
+  "explanation": "The costs here are lopsided. Missing a sick patient can mean lasting harm, while a false alarm only costs a few minutes of a specialist's time. Recall, TP / (TP + FN), measures the share of sick patients the model catches, so it is the metric that tracks the expensive mistake.\n\nAccuracy is dominated by the 98% of healthy photos. A model that calls everyone healthy scores 98% while catching nobody. Precision protects specialist time, which matters, but it is the cheap side of the trade in this setting. You would watch it as a constraint, not optimise it first. Specificity measures how many healthy patients are correctly cleared. It is the negative-class twin of recall and says nothing about how many sick patients were missed.",
+  "deeper": "A strong answer adds a guardrail: maximise recall subject to a workload limit, such as no more than 50 referrals a day. Interviewers like hearing that you would report recall at a fixed precision or referral rate, because recall alone is easy to max out by flagging everyone.",
+  "tags": [
+   "recall",
+   "screening",
+   "imbalance"
+  ],
+  "concepts": [
+   "recall",
+   "precision",
+   "class-imbalance"
+  ]
+ },
+ {
+  "id": "eval-0002",
+  "topic": "evaluation",
+  "subtopic": "ROC-AUC vs PR-AUC under imbalance",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A chat platform trains a model to flag abusive messages. About 0.1% of messages are abusive. On a large test set the model has ROC-AUC 0.97 but PR-AUC (average precision) of only 0.18. A product manager asks how both numbers can be right. Which statement correctly explains the gap?",
+  "options": [
+   "The false positive rate divides by the huge pool of clean messages, so even a tiny rate can swamp the few true hits.",
+   "PR-AUC is measured only at the default 0.5 threshold, so it misses the better thresholds that ROC-AUC averages over.",
+   "ROC-AUC also credits the model for ordering clean messages correctly among themselves, which inflates it when they dominate.",
+   "PR-AUC has a random baseline of 0.5, the same as ROC-AUC, so a score of 0.18 means the model ranks worse than chance."
+  ],
+  "answer": 0,
+  "explanation": "ROC curves plot recall against the false positive rate, FP / (FP + TN). With 999 clean messages for every abusive one, TN is enormous, so even a large number of false alarms is a small rate. Precision has no TN term, so it shows those false alarms directly.\n\nA worked case: 1,000,000 messages, 1,000 abusive. A threshold with recall 0.80 and a false positive rate of 1% catches 800 abusive messages but also flags 9,990 clean ones. That point looks excellent on a ROC curve, yet precision is 800 / 10,790, about 0.07.\n\nPR-AUC is threshold-free like ROC-AUC, so the option about a 0.5 threshold is wrong. ROC-AUC is the chance that a random positive outranks a random negative. Pairs of two negatives never count, so it gives no credit for ordering clean messages. The random baseline for PR-AUC is the positive rate, 0.001 here, not 0.5. So 0.18 is far better than chance, just weak in absolute terms.",
+  "deeper": "In an interview, say which number matches the cost. If moderators review every flag, precision at the review budget is what matters, and PR-AUC tracks it better. A good follow-up is to report precision at a fixed recall, or recall at the number of flags the team can review each day.",
+  "tags": [
+   "roc",
+   "pr-auc",
+   "imbalance"
+  ],
+  "concepts": [
+   "pr-curve",
+   "roc-auc",
+   "false-positive-rate",
+   "class-imbalance"
+  ]
+ },
+ {
+  "id": "eval-0003",
+  "topic": "evaluation",
+  "subtopic": "precision from a confusion matrix",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A vision model inspects 1,000 parts on a factory line. Its confusion matrix is:\n\n- Predicted defect, actually defect: 45\n- Predicted defect, actually fine: 15\n- Predicted fine, actually defect: 30\n- Predicted fine, actually fine: 910\n\nWhat is the model's precision for the defect class? Give it as a decimal to 2 places.",
+  "answer": 0.75,
+  "tolerance": 0.005,
+  "check": "tp = 45\nfp = 15\nfn = 30\ntn = 910\nresult = tp / (tp + fp)",
+  "explanation": "Precision asks: of the parts the model flagged as defects, how many really were? The model flagged 45 + 15 = 60 parts. Of those, 45 were real defects. So precision is 45 / 60 = 0.75.\n\nThe common mistake is to read the wrong row or column. Dividing by all real defects, 45 + 30 = 75, gives 45 / 75 = 0.60, which is recall. Another slip is to quote accuracy, (45 + 910) / 1,000 = 0.955, which looks strong only because most parts are fine. A simple habit helps: precision uses the predicted-positive counts as its denominator, recall uses the actual-positive counts.",
+  "deeper": "On a factory line, precision tells you how much good stock the model sends to scrap or re-inspection, and recall tells you how many bad parts reach customers. Interviewers often follow up by asking which of the two the plant manager cares about more, and what that implies for the threshold.",
+  "tags": [
+   "precision",
+   "confusion-matrix"
+  ],
+  "concepts": [
+   "precision",
+   "confusion-matrix",
+   "recall"
+  ]
+ },
+ {
+  "id": "eval-0004",
+  "topic": "evaluation",
+  "subtopic": "F1 score",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A support team tests a classifier that marks tickets as urgent. On 1,000 tickets it has 30 true positives, 10 false positives and 50 false negatives. The rest are true negatives. What is the F1 score for the urgent class? Give it as a decimal to 2 places.",
+  "answer": 0.5,
+  "tolerance": 0.005,
+  "check": "tp = 30\nfp = 10\nfn = 50\nprecision = tp / (tp + fp)\nrecall = tp / (tp + fn)\nresult = 2 * precision * recall / (precision + recall)",
+  "explanation": "First get precision and recall. Precision is 30 / (30 + 10) = 0.75. Recall is 30 / (30 + 50) = 0.375. F1 is their harmonic mean: 2 × 0.75 × 0.375 / (0.75 + 0.375) = 0.5625 / 1.125 = 0.50. A shortcut gives the same result: F1 = 2TP / (2TP + FP + FN) = 60 / 120 = 0.50.\n\nThe common mistake is to take the plain average, (0.75 + 0.375) / 2 ≈ 0.56. The harmonic mean is pulled toward the smaller of the two values, so a model cannot hide weak recall behind strong precision. Notice that the true negatives play no part at all. F1 only looks at the positive class, which is why it is popular for imbalanced problems.",
+  "deeper": "If missing an urgent ticket hurts more than a false alarm, F1 weights them wrongly. A strong candidate mentions F-beta, where beta above 1 leans toward recall, or simply reports recall at an agreed precision. Also remember F1 depends on the threshold you chose.",
+  "tags": [
+   "f1",
+   "precision",
+   "recall"
+  ],
+  "concepts": [
+   "f1-score",
+   "precision",
+   "recall"
+  ]
+ },
+ {
+  "id": "eval-0005",
+  "topic": "evaluation",
+  "subtopic": "ranking metrics",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "A search team scores each results page by adding up graded relevance labels, dividing each label by log₂(position + 1), and then dividing the total by the score of the best possible ordering of those same results. A perfect ranking scores 1. This metric is called ______.",
+  "answer": "NDCG",
+  "accept": [
+   "normalized discounted cumulative gain",
+   "normalised discounted cumulative gain",
+   "ndcg@k",
+   "ndcg at k",
+   "normalized dcg",
+   "normalised dcg"
+  ],
+  "explanation": "The prompt walks through the three parts of the name. Cumulative gain is the sum of relevance labels. Discounted means each label is shrunk by log₂(position + 1), so a relevant result at rank 1 counts more than the same result at rank 8. Normalized means dividing by the ideal DCG, the score you would get by sorting the results from most to least relevant. That last step puts every query on a 0 to 1 scale, so queries with many relevant results do not dominate the average.\n\nThe common mistake is to answer DCG, which has the discount but not the division by the ideal score. Others answer MRR or MAP. MRR only looks at the rank of the first relevant result, and MAP works with binary relevant or not relevant labels, so neither uses graded labels the way described here.",
+  "deeper": "In practice you report NDCG@k, such as NDCG@10, because users rarely scroll further. A good interview follow-up is where the graded labels come from: human raters, or clicks and purchases, which carry position bias and need correction before you trust the metric.",
+  "tags": [
+   "ranking",
+   "search",
+   "ndcg"
+  ],
+  "concepts": [
+   "ndcg",
+   "precision-at-k",
+   "mean-reciprocal-rank"
+  ]
+ },
+ {
+  "id": "eval-0006",
+  "topic": "evaluation",
+  "subtopic": "calibration",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A lender trained a default model after downsampling non-default loans to balance the classes. On a holdout set with the natural default rate, ROC-AUC is 0.91. Among the 1,200 holdout loans the model scored between 0.8 and 0.9, only 40% defaulted. The pricing team wants to use the scores as default probabilities. What should you conclude?",
+  "options": [
+   "Ranking is strong but the scores overstate risk, so fit a calibration map on natural-rate data before pricing.",
+   "An AUC of 0.91 shows the scores are reliable probabilities, so the 40% default rate in that band is likely sampling noise.",
+   "Recalibrating will also lift AUC well above 0.91, because AUC penalises probabilities that are badly scaled.",
+   "Retrain with even heavier downsampling, so the model sees enough defaults to produce calibrated probabilities."
+  ],
+  "answer": 0,
+  "explanation": "Calibration means that among loans scored about 0.85, about 85% default. Here only 40% did, so the scores are far too high. AUC cannot catch this. It only checks whether defaulters are ranked above non-defaulters, and any order-preserving change to the scores leaves it the same. So a model can rank very well and still give badly wrong probabilities. The fix is to fit a calibration map, such as Platt scaling or isotonic regression, on held-out data that has the real default rate.\n\nThe noise option fails on sample size. With 1,200 loans, the standard error of a 40% rate is about 1.4 points, tiny next to a gap of at least 40 points. The option about lifting AUC is backwards: calibration keeps the ranking, so AUC stays about the same. Heavier downsampling makes things worse. Removing more non-defaults raises the default rate the model sees in training, which pushes its scores up even further.",
+  "deeper": "Downsampling is a common cause of this, and there is a known prior-correction formula that maps scores back to the true base rate. Interviewers like candidates who check a reliability diagram or expected calibration error before anyone multiplies a score by a loan amount.",
+  "tags": [
+   "calibration",
+   "auc",
+   "credit"
+  ],
+  "concepts": [
+   "calibration",
+   "resampling",
+   "log-loss"
+  ]
+ },
+ {
+  "id": "eval-0007",
+  "topic": "evaluation",
+  "subtopic": "A/B test significance",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "An online shop tests a new checkout page. Control: 12,000 users, 600 purchases. Treatment: 8,000 users, 464 purchases. Using a two-proportion z-test with a pooled proportion, what is the z statistic for treatment minus control? Give it as a decimal to 2 places.",
+  "answer": 2.47,
+  "tolerance": 0.005,
+  "check": "import math\nn_c, x_c = 12000, 600\nn_t, x_t = 8000, 464\np_c = x_c / n_c\np_t = x_t / n_t\np_pool = (x_c + x_t) / (n_c + n_t)\nse = math.sqrt(p_pool * (1 - p_pool) * (1 / n_c + 1 / n_t))\nresult = (p_t - p_c) / se",
+  "explanation": "Step 1, the two rates: control is 600 / 12,000 = 0.050 and treatment is 464 / 8,000 = 0.058. The difference is 0.008.\n\nStep 2, the pooled rate, used because the null hypothesis says both groups share one rate: (600 + 464) / (12,000 + 8,000) = 1,064 / 20,000 = 0.0532.\n\nStep 3, the standard error: √(0.0532 × 0.9468 × (1/12,000 + 1/8,000)) = √(0.05037 × 0.00020833) ≈ 0.003239.\n\nStep 4, z = 0.008 / 0.003239 ≈ 2.47. That is above 1.96, so the lift is significant at the 5% level for a two-sided test.\n\nThe common mistake is the standard error. If you use only one group size, √(p(1 − p) / 12,000), you get about 3.90, which badly overstates the evidence. Using separate, unpooled variances gives about 2.44. That is close here, but the pooled form is the standard one for testing whether the two rates are equal.",
+  "deeper": "A significant z does not end the conversation. Interviewers ask whether the test ran for its planned length, whether anyone peeked and stopped early, and whether the sample split matched the planned ratio. A split that differs from plan, called sample ratio mismatch, often signals a bug in assignment.",
+  "tags": [
+   "ab-testing",
+   "z-test"
+  ],
+  "concepts": [
+   "ab-testing",
+   "hypothesis-testing",
+   "p-value"
+  ]
+ },
+ {
+  "id": "eval-0008",
+  "topic": "evaluation",
+  "subtopic": "choosing a threshold from business costs",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A telecom company has a churn model that outputs a probability for each customer. The retention team can make at most 300 calls a week. Each call costs $15. A churner who gets a call stays 25% of the time, and a customer who stays is worth $400. Calling a customer who was not going to churn gains nothing. How would you choose the score threshold for who gets a call?",
+  "answer": "I would set the threshold from expected value, not from 0.5. A call to a customer with churn probability p is worth p × 0.25 × $400 = $100p and costs $15, so it pays off when p is above 0.15. That is the break-even threshold. Capacity also binds. If more than 300 customers score above 0.15, I would call the 300 highest scores, so the real threshold becomes the 300th score. If fewer clear 0.15, I would call only those and leave spare capacity unused. This only works if the probabilities are calibrated, so I would check a reliability plot first. Then I would confirm the value with a holdout group that gets no calls, and revisit the threshold when costs, save rates or the score distribution change.",
+  "points": [
+   "Compare the cost of a wasted call with the value lost from a missed churner",
+   "Break-even probability is cost divided by value times save rate, here 0.15",
+   "The 300-call cap means taking the top 300 scores when many clear break-even",
+   "Scores must be calibrated for the break-even rule to hold",
+   "Validate with a no-call holdout and update the threshold as inputs change"
+  ],
+  "explanation": "The threshold is a business decision, so it should come from what each mistake costs. A false positive wastes a $15 call. A missed churner who could have been saved loses the expected value of the call, which is 0.25 × $400 = $100 for a sure churner. Setting p × 100 = 15 gives p = 0.15. Above that, a call is worth more than it costs on average.\n\nThe common mistake is to keep the default 0.5 or to pick the threshold that maximises F1. Both ignore the costs. Here 0.5 would skip many customers who are worth calling. The second mistake is to forget the capacity cap. When demand exceeds 300 calls, you rank by score and stop at 300, and the cap, not the break-even point, sets the cut. Finally, the break-even rule assumes a score of 0.2 really means a 20% chance of churn. An uncalibrated model breaks that link.",
+  "deeper": "A strong candidate notes that the 25% save rate is not the same for everyone. Some customers would stay anyway and some cannot be saved. Uplift modelling targets the customers whose behaviour the call actually changes, which often beats ranking by churn risk alone.",
+  "tags": [
+   "threshold",
+   "churn",
+   "costs"
+  ],
+  "concepts": [
+   "decision-threshold",
+   "expected-value",
+   "precision-at-k"
+  ]
+ }
 ]

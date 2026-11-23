@@ -1,158 +1,191 @@
 [
-  {
-    "id": "ops-0001",
-    "topic": "mlops",
-    "subtopic": "data drift vs concept drift",
-    "format": "mcq",
-    "difficulty": 1,
-    "prompt": "A bank's loan default model has been live for a year. Monitoring shows the mix of applicants looks the same as in training: income, debt ratio and age have barely moved. But applicants with a given profile now default more often than the model predicts. What best describes this change?",
-    "options": [
-      "Concept drift: the same inputs now lead to different outcomes, so P(y | x) has changed.",
-      "Data drift: the inputs have moved away from the training data, so P(x) is now different.",
-      "Training-serving skew: production computes the features differently from the training pipeline.",
-      "Overfitting: the model memorised its training set, and this only shows up after months live."
-    ],
-    "answer": 0,
-    "explanation": "The clue is that the inputs look the same, but the outcome for the same inputs has changed. That is concept drift. The relationship the model learned, the chance of default given a profile, is no longer true. A recession or a change in lending rules can do this without changing who applies.\n\nData drift, also called covariate shift, means P(x) moves, for example a sudden wave of younger applicants. Monitoring says the inputs have barely moved, so that does not fit. Training-serving skew is a pipeline bug where features are built differently in production. It usually shows up as odd feature values from the first day, not as a gradual rise in defaults for the same profiles. Overfitting shows up as a gap between training and held-out scores before launch. It does not explain a model that was fine for months and then got worse.",
-    "deeper": "Concept drift is the harder kind to catch, because input monitoring cannot see it. You need labels, or a fast proxy for them, to notice. A strong answer adds that the usual fix is retraining on recent data, sometimes with more weight on recent rows, and checking whether the features still capture what drives the outcome.",
-    "tags": [
-      "drift",
-      "monitoring"
-    ]
-  },
-  {
-    "id": "ops-0002",
-    "topic": "mlops",
-    "subtopic": "shadow vs canary release",
-    "format": "mcq",
-    "difficulty": 2,
-    "prompt": "A payments company has a new fraud model with strong offline results. Before a full launch, the team wants to learn how the model's own decisions affect chargebacks and complaints from wrongly declined customers on real traffic. They also want to keep the damage small if the model turns out to be bad. Which rollout fits best?",
-    "options": [
-      "A canary release that sends a small share of live traffic to the new model and widens it while metrics hold.",
-      "A shadow deployment that scores all live traffic with the new model while the old model's decisions are used.",
-      "A blue-green switch that moves all traffic to the new model at once and keeps the old one ready for rollback.",
-      "A backtest that replays last month's logged transactions through the new model and compares the scores."
-    ],
-    "answer": 0,
-    "explanation": "The team wants to see the effect of the new model's decisions, and that only happens if some customers actually get those decisions. A canary does this for a small slice of traffic, say 1 to 5%, so a bad model can only hurt a few customers before it is rolled back. If chargebacks and complaints look fine, the share grows step by step.\n\nA shadow deployment answers a different question. It is safe and shows latency, errors and how often the two models disagree, but its decisions are never acted on. No customer is declined by it, so you cannot see the chargebacks or complaints it would cause. A blue-green switch does give real outcomes, but it exposes every customer at once, which breaks the need to keep the damage small. A backtest only has outcomes for what the old model decided. A transaction the old model declined has no chargeback record, so you cannot tell what would have happened if the new model had approved it.",
-    "deeper": "A common pattern uses both in order: shadow first to check latency, errors and score agreement at no risk, then a canary to measure real outcomes. Interviewers like to hear the rollback trigger agreed in advance, for example the decline rate or p99 latency crossing a set limit, so nobody argues about it in the middle of an incident.",
-    "tags": [
-      "deployment",
-      "canary"
-    ]
-  },
-  {
-    "id": "ops-0003",
-    "topic": "mlops",
-    "subtopic": "training-serving skew",
-    "format": "fill",
-    "difficulty": 2,
-    "prompt": "A churn model scored well offline but does poorly after launch. The team finds that `days_since_last_login` was computed for training by a nightly SQL job in UTC, while the live service computes it at request time, in local time, from a different table. This kind of problem is called ______.",
-    "answer": "training-serving skew",
-    "accept": [
-      "training serving skew",
-      "train-serve skew",
-      "train serve skew",
-      "training/serving skew",
-      "train/serve skew",
-      "train-serving skew",
-      "online-offline skew",
-      "offline-online skew",
-      "feature skew"
-    ],
-    "explanation": "Training-serving skew means the model receives features at serving time that are built differently from the ones it learned on. Here one feature name hides two pieces of code: a nightly batch job using UTC and one table, and a live service using local time and another table. The values can differ by a day or more for many users, and the model reads that as a real change in behaviour.\n\nThe common mistake is to call this data drift. Drift is a real change in the world, such as users logging in less often. Skew is a bug in your own pipelines, and it is often there from the first day of launch. The difference matters for the fix. Retraining on fresh data does not cure skew, because the training pipeline would still compute the feature the old way. You fix it by computing each feature from one shared definition, or by logging the features actually served and training on those logs.",
-    "deeper": "Feature stores exist largely to stop this bug, by giving training and serving one definition per feature. A quick test an interviewer may ask for: log the served features for a sample of requests, recompute the same rows with the training pipeline, and compare them column by column.",
-    "tags": [
-      "skew",
-      "features"
-    ]
-  },
-  {
-    "id": "ops-0004",
-    "topic": "mlops",
-    "subtopic": "monitoring without labels",
-    "format": "multi",
-    "difficulty": 2,
-    "prompt": "A lender's default model went live three months ago. The label is whether a loan defaults within 12 months, and no loan has reached the end of that window yet. What can the team usefully monitor right now? Select all that apply.",
-    "options": [
-      "The distribution of each input feature compared with training, for example with PSI",
-      "The distribution of predicted risk scores and the share of applicants approved",
-      "Null rates, out-of-range values and schema changes in incoming requests",
-      "Precision and recall on the 12-month default label for the loans issued so far",
-      "The share of approved borrowers who miss their first monthly payment",
-      "AUC on recent applications, using the model's own approve or decline decision as the label"
-    ],
-    "answer": [
-      0,
-      1,
-      2,
-      4
-    ],
-    "explanation": "Without labels you can still watch the inputs, the outputs and fast proxies for the outcome. Feature drift checks such as PSI show whether applicants now look different from the training data. Prediction drift, a shift in the score distribution or the approval rate, is often the first sign that something upstream changed. Data quality checks catch broken pipelines, such as a field that suddenly arrives empty, which can quietly wreck predictions. A missed first payment arrives within weeks and is strongly linked to later default, so it works as an early proxy.\n\nPrecision and recall on the 12-month label need that label, and no loan has it yet. Scoring the few early defaults against everyone else would count future defaulters as good loans. The AUC idea is a trap. Using the model's own decision as the label measures how well the model agrees with itself, so it will look excellent whatever the true quality is. None of the label-free signals prove the model is still accurate. They tell you where to look and when to worry.",
-    "deeper": "A strong answer also raises the selection problem. Declined applicants never get a loan, so their outcome is never seen, and the labels that do arrive come only from people the model approved. Some lenders approve a small random slice of borderline applicants to keep a less biased view of performance.",
-    "tags": [
-      "monitoring",
-      "drift"
-    ]
-  },
-  {
-    "id": "ops-0005",
-    "topic": "mlops",
-    "subtopic": "population stability index",
-    "format": "numeric",
-    "difficulty": 2,
-    "prompt": "A credit model's score is split into 5 bins. At training time the share of applicants in each bin was 0.10, 0.20, 0.40, 0.20 and 0.10. This month the shares are 0.05, 0.15, 0.35, 0.25 and 0.20. Compute the population stability index (PSI) using the natural log. Give it as a decimal to 3 places.",
-    "answer": 0.136,
-    "tolerance": 0.0005,
-    "check": "import math\nexpected = [0.10, 0.20, 0.40, 0.20, 0.10]\nactual = [0.05, 0.15, 0.35, 0.25, 0.20]\nresult = sum((a - e) * math.log(a / e) for a, e in zip(actual, expected))",
-    "explanation": "PSI adds one term per bin: (actual − expected) × ln(actual / expected). Every term is positive when the share moved, in either direction, because the difference and the log always have the same sign.\n\n- Bin 1: (0.05 − 0.10) × ln(0.5) = −0.05 × −0.693 = 0.0347\n- Bin 2: (0.15 − 0.20) × ln(0.75) = −0.05 × −0.288 = 0.0144\n- Bin 3: (0.35 − 0.40) × ln(0.875) = −0.05 × −0.134 = 0.0067\n- Bin 4: (0.25 − 0.20) × ln(1.25) = 0.05 × 0.223 = 0.0112\n- Bin 5: (0.20 − 0.10) × ln(2) = 0.10 × 0.693 = 0.0693\n\nThe sum is 0.136.\n\nTwo mistakes are common. Using log base 10 gives 0.059, which would wrongly read as no drift. Computing only Σ actual × ln(actual / expected) gives 0.070. That is the KL divergence in one direction. PSI is the symmetric version, the sum of the KL divergence taken in both directions.",
-    "deeper": "A common rule of thumb reads PSI below 0.1 as stable, 0.1 to 0.25 as a moderate shift worth a look, and above 0.25 as a major shift. At 0.136 this deserves a look, and half of it comes from the top bin doubling. Watch for empty bins: a share of zero breaks the log, so teams add a small floor such as 0.0001.",
-    "tags": [
-      "psi",
-      "drift"
-    ]
-  },
-  {
-    "id": "ops-0006",
-    "topic": "mlops",
-    "subtopic": "reproducible training",
-    "format": "mcq",
-    "difficulty": 1,
-    "prompt": "Six months after launch, an auditor asks your team to rebuild the production fraud model from scratch and show that the rebuilt model matches the one in production. Which set of things must have been versioned at training time to make this possible?",
-    "options": [
-      "Training data snapshot, code commit, config, package environment and random seeds",
-      "Code commit, config, package environment, random seeds and the final metrics report",
-      "Training data snapshot, code commit, config, random seeds and the model weights file",
-      "Training data snapshot, package environment, random seeds and the serving request logs"
-    ],
-    "answer": 0,
-    "explanation": "A trained model is the output of a recipe. To get the same output again you need every ingredient: the exact data, the exact code, the settings it ran with, the library versions, and the random seeds that controlled shuffling, initialisation and sampling. Miss any one and the rebuilt model can differ.\n\nThe set with the metrics report has no data snapshot. Tables change as rows are added or corrected, so rerunning the same query six months later gives different training data. The set with the weights file skips the package environment. Keeping the weights lets you serve the old model, but not rebuild it, and a library upgrade can change defaults or numerical results. The set with the serving logs has no code commit or config, so you cannot know which features, model type or hyperparameters were used. Serving logs record what the model saw after launch, not what it learned from.",
-    "deeper": "Even with all five versioned, GPU training can differ slightly between runs because some kernels are not deterministic. A strong answer says what matching should mean: identical weights if you force deterministic settings, or the same metrics within a small tolerance. Tools such as DVC or MLflow are simply ways to record these five things.",
-    "tags": [
-      "reproducibility",
-      "versioning"
-    ]
-  },
-  {
-    "id": "ops-0007",
-    "topic": "mlops",
-    "subtopic": "slow decay in production",
-    "format": "open",
-    "difficulty": 3,
-    "prompt": "A ticket-routing classifier for a support team fell from 88% to 79% accuracy over eight weeks, measured on tickets that agents later re-route by hand. Nobody changed the model or its code. How would you investigate, and what retraining and alerting policy would you put in place?",
-    "answer": "First I would confirm the drop is real, checking that the way labels are produced and the accuracy measure have not changed. Then I would slice accuracy by category, channel and language to find where it fell. Next I would compare recent feature and prediction distributions with the training data, to separate real drift, such as a new product creating new ticket types, from a broken upstream feed. I would also read a sample of misrouted tickets. If new categories or wording appeared, I would retrain on recent labelled data, test it on a holdout from the latest weeks, and roll it out as a canary. For policy, I would alert daily on input and prediction drift and weekly on labelled accuracy against a set threshold. I would retrain on a regular schedule and whenever an alert fires, always gated by evaluation on recent data.",
-    "points": [
-      "Confirm the drop is real: same labelling process, same metric, enough volume",
-      "Slice performance by segment to find where it fell",
-      "Compare input and prediction distributions to separate drift from pipeline bugs",
-      "Retrain on recent data, validate on the latest weeks, roll out safely",
-      "Alert on drift and labelled metrics with thresholds, retrain on a schedule plus on triggers"
-    ],
-    "explanation": "A slow, steady fall with no code change usually points to the world changing rather than a bug, since bugs tend to cause sudden drops. Still, the first step is to check the measurement. Here the labels come from agents re-routing tickets, so a new team rule about re-routing would move accuracy without any change in the model.\n\nSlicing matters because an average hides the cause. A product launch might create a ticket type the model has never seen while every other category stays fine. Reading real misrouted tickets is often the fastest way to spot this.\n\nThe common mistake is to jump straight to retraining every night. Blind retraining can bake in a broken feed or bad labels, and it hides the root cause. Retraining should be gated: the new model must beat the current one on the most recent labelled weeks before it ships.",
-    "deeper": "Interviewers often push on thresholds. A good answer ties them to cost, for example alerting when weekly accuracy falls 3 points below the launch baseline, and gives each alert an owner and a runbook. It also notes that if new ticket categories appear, retraining is not enough on its own: the label set itself has to change.",
-    "tags": [
-      "monitoring",
-      "retraining"
-    ]
-  }
+ {
+  "id": "ops-0001",
+  "topic": "mlops",
+  "subtopic": "data drift vs concept drift",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A bank's loan default model has been live for a year. Monitoring shows the mix of applicants looks the same as in training: income, debt ratio and age have barely moved. But applicants with a given profile now default more often than the model predicts. What best describes this change?",
+  "options": [
+   "Concept drift: the same inputs now lead to different outcomes, so P(y | x) has changed.",
+   "Data drift: the inputs have moved away from the training data, so P(x) is now different.",
+   "Training-serving skew: production computes the features differently from the training pipeline.",
+   "Overfitting: the model memorised its training set, and this only shows up after months live."
+  ],
+  "answer": 0,
+  "explanation": "The clue is that the inputs look the same, but the outcome for the same inputs has changed. That is concept drift. The relationship the model learned, the chance of default given a profile, is no longer true. A recession or a change in lending rules can do this without changing who applies.\n\nData drift, also called covariate shift, means P(x) moves, for example a sudden wave of younger applicants. Monitoring says the inputs have barely moved, so that does not fit. Training-serving skew is a pipeline bug where features are built differently in production. It usually shows up as odd feature values from the first day, not as a gradual rise in defaults for the same profiles. Overfitting shows up as a gap between training and held-out scores before launch. It does not explain a model that was fine for months and then got worse.",
+  "deeper": "Concept drift is the harder kind to catch, because input monitoring cannot see it. You need labels, or a fast proxy for them, to notice. A strong answer adds that the usual fix is retraining on recent data, sometimes with more weight on recent rows, and checking whether the features still capture what drives the outcome.",
+  "tags": [
+   "drift",
+   "monitoring"
+  ],
+  "concepts": [
+   "concept-drift",
+   "data-drift",
+   "distribution-shift"
+  ]
+ },
+ {
+  "id": "ops-0002",
+  "topic": "mlops",
+  "subtopic": "shadow vs canary release",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A payments company has a new fraud model with strong offline results. Before a full launch, the team wants to learn how the model's own decisions affect chargebacks and complaints from wrongly declined customers on real traffic. They also want to keep the damage small if the model turns out to be bad. Which rollout fits best?",
+  "options": [
+   "A canary release that sends a small share of live traffic to the new model and widens it while metrics hold.",
+   "A shadow deployment that scores all live traffic with the new model while the old model's decisions are used.",
+   "A blue-green switch that moves all traffic to the new model at once and keeps the old one ready for rollback.",
+   "A backtest that replays last month's logged transactions through the new model and compares the scores."
+  ],
+  "answer": 0,
+  "explanation": "The team wants to see the effect of the new model's decisions, and that only happens if some customers actually get those decisions. A canary does this for a small slice of traffic, say 1 to 5%, so a bad model can only hurt a few customers before it is rolled back. If chargebacks and complaints look fine, the share grows step by step.\n\nA shadow deployment answers a different question. It is safe and shows latency, errors and how often the two models disagree, but its decisions are never acted on. No customer is declined by it, so you cannot see the chargebacks or complaints it would cause. A blue-green switch does give real outcomes, but it exposes every customer at once, which breaks the need to keep the damage small. A backtest only has outcomes for what the old model decided. A transaction the old model declined has no chargeback record, so you cannot tell what would have happened if the new model had approved it.",
+  "deeper": "A common pattern uses both in order: shadow first to check latency, errors and score agreement at no risk, then a canary to measure real outcomes. Interviewers like to hear the rollback trigger agreed in advance, for example the decline rate or p99 latency crossing a set limit, so nobody argues about it in the middle of an incident.",
+  "tags": [
+   "deployment",
+   "canary"
+  ],
+  "concepts": [
+   "shadow-deployment",
+   "canary-release"
+  ]
+ },
+ {
+  "id": "ops-0003",
+  "topic": "mlops",
+  "subtopic": "training-serving skew",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "A churn model scored well offline but does poorly after launch. The team finds that `days_since_last_login` was computed for training by a nightly SQL job in UTC, while the live service computes it at request time, in local time, from a different table. This kind of problem is called ______.",
+  "answer": "training-serving skew",
+  "accept": [
+   "training serving skew",
+   "train-serve skew",
+   "train serve skew",
+   "training/serving skew",
+   "train/serve skew",
+   "train-serving skew",
+   "online-offline skew",
+   "offline-online skew",
+   "feature skew"
+  ],
+  "explanation": "Training-serving skew means the model receives features at serving time that are built differently from the ones it learned on. Here one feature name hides two pieces of code: a nightly batch job using UTC and one table, and a live service using local time and another table. The values can differ by a day or more for many users, and the model reads that as a real change in behaviour.\n\nThe common mistake is to call this data drift. Drift is a real change in the world, such as users logging in less often. Skew is a bug in your own pipelines, and it is often there from the first day of launch. The difference matters for the fix. Retraining on fresh data does not cure skew, because the training pipeline would still compute the feature the old way. You fix it by computing each feature from one shared definition, or by logging the features actually served and training on those logs.",
+  "deeper": "Feature stores exist largely to stop this bug, by giving training and serving one definition per feature. A quick test an interviewer may ask for: log the served features for a sample of requests, recompute the same rows with the training pipeline, and compare them column by column.",
+  "tags": [
+   "skew",
+   "features"
+  ],
+  "concepts": [
+   "training-serving-skew",
+   "feature-store"
+  ]
+ },
+ {
+  "id": "ops-0004",
+  "topic": "mlops",
+  "subtopic": "monitoring without labels",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A lender's default model went live three months ago. The label is whether a loan defaults within 12 months, and no loan has reached the end of that window yet. What can the team usefully monitor right now? Select all that apply.",
+  "options": [
+   "The distribution of each input feature compared with training, for example with PSI",
+   "The distribution of predicted risk scores and the share of applicants approved",
+   "Null rates, out-of-range values and schema changes in incoming requests",
+   "Precision and recall on the 12-month default label for the loans issued so far",
+   "The share of approved borrowers who miss their first monthly payment",
+   "AUC on recent applications, using the model's own approve or decline decision as the label"
+  ],
+  "answer": [
+   0,
+   1,
+   2,
+   4
+  ],
+  "explanation": "Without labels you can still watch the inputs, the outputs and fast proxies for the outcome. Feature drift checks such as PSI show whether applicants now look different from the training data. Prediction drift, a shift in the score distribution or the approval rate, is often the first sign that something upstream changed. Data quality checks catch broken pipelines, such as a field that suddenly arrives empty, which can quietly wreck predictions. A missed first payment arrives within weeks and is strongly linked to later default, so it works as an early proxy.\n\nPrecision and recall on the 12-month label need that label, and no loan has it yet. Scoring the few early defaults against everyone else would count future defaulters as good loans. The AUC idea is a trap. Using the model's own decision as the label measures how well the model agrees with itself, so it will look excellent whatever the true quality is. None of the label-free signals prove the model is still accurate. They tell you where to look and when to worry.",
+  "deeper": "A strong answer also raises the selection problem. Declined applicants never get a loan, so their outcome is never seen, and the labels that do arrive come only from people the model approved. Some lenders approve a small random slice of borderline applicants to keep a less biased view of performance.",
+  "tags": [
+   "monitoring",
+   "drift"
+  ],
+  "concepts": [
+   "model-monitoring",
+   "label-delay",
+   "population-stability-index"
+  ]
+ },
+ {
+  "id": "ops-0005",
+  "topic": "mlops",
+  "subtopic": "population stability index",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A credit model's score is split into 5 bins. At training time the share of applicants in each bin was 0.10, 0.20, 0.40, 0.20 and 0.10. This month the shares are 0.05, 0.15, 0.35, 0.25 and 0.20. Compute the population stability index (PSI) using the natural log. Give it as a decimal to 3 places.",
+  "answer": 0.136,
+  "tolerance": 0.0005,
+  "check": "import math\nexpected = [0.10, 0.20, 0.40, 0.20, 0.10]\nactual = [0.05, 0.15, 0.35, 0.25, 0.20]\nresult = sum((a - e) * math.log(a / e) for a, e in zip(actual, expected))",
+  "explanation": "PSI adds one term per bin: (actual − expected) × ln(actual / expected). Every term is positive when the share moved, in either direction, because the difference and the log always have the same sign.\n\n- Bin 1: (0.05 − 0.10) × ln(0.5) = −0.05 × −0.693 = 0.0347\n- Bin 2: (0.15 − 0.20) × ln(0.75) = −0.05 × −0.288 = 0.0144\n- Bin 3: (0.35 − 0.40) × ln(0.875) = −0.05 × −0.134 = 0.0067\n- Bin 4: (0.25 − 0.20) × ln(1.25) = 0.05 × 0.223 = 0.0112\n- Bin 5: (0.20 − 0.10) × ln(2) = 0.10 × 0.693 = 0.0693\n\nThe sum is 0.136.\n\nTwo mistakes are common. Using log base 10 gives 0.059, which would wrongly read as no drift. Computing only Σ actual × ln(actual / expected) gives 0.070. That is the KL divergence in one direction. PSI is the symmetric version, the sum of the KL divergence taken in both directions.",
+  "deeper": "A common rule of thumb reads PSI below 0.1 as stable, 0.1 to 0.25 as a moderate shift worth a look, and above 0.25 as a major shift. At 0.136 this deserves a look, and half of it comes from the top bin doubling. Watch for empty bins: a share of zero breaks the log, so teams add a small floor such as 0.0001.",
+  "tags": [
+   "psi",
+   "drift"
+  ],
+  "concepts": [
+   "population-stability-index",
+   "data-drift"
+  ]
+ },
+ {
+  "id": "ops-0006",
+  "topic": "mlops",
+  "subtopic": "reproducible training",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "Six months after launch, an auditor asks your team to rebuild the production fraud model from scratch and show that the rebuilt model matches the one in production. Which set of things must have been versioned at training time to make this possible?",
+  "options": [
+   "Training data snapshot, code commit, config, package environment and random seeds",
+   "Code commit, config, package environment, random seeds and the final metrics report",
+   "Training data snapshot, code commit, config, random seeds and the model weights file",
+   "Training data snapshot, package environment, random seeds and the serving request logs"
+  ],
+  "answer": 0,
+  "explanation": "A trained model is the output of a recipe. To get the same output again you need every ingredient: the exact data, the exact code, the settings it ran with, the library versions, and the random seeds that controlled shuffling, initialisation and sampling. Miss any one and the rebuilt model can differ.\n\nThe set with the metrics report has no data snapshot. Tables change as rows are added or corrected, so rerunning the same query six months later gives different training data. The set with the weights file skips the package environment. Keeping the weights lets you serve the old model, but not rebuild it, and a library upgrade can change defaults or numerical results. The set with the serving logs has no code commit or config, so you cannot know which features, model type or hyperparameters were used. Serving logs record what the model saw after launch, not what it learned from.",
+  "deeper": "Even with all five versioned, GPU training can differ slightly between runs because some kernels are not deterministic. A strong answer says what matching should mean: identical weights if you force deterministic settings, or the same metrics within a small tolerance. Tools such as DVC or MLflow are simply ways to record these five things.",
+  "tags": [
+   "reproducibility",
+   "versioning"
+  ],
+  "concepts": [
+   "reproducibility",
+   "model-registry",
+   "data-validation"
+  ]
+ },
+ {
+  "id": "ops-0007",
+  "topic": "mlops",
+  "subtopic": "slow decay in production",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A ticket-routing classifier for a support team fell from 88% to 79% accuracy over eight weeks, measured on tickets that agents later re-route by hand. Nobody changed the model or its code. How would you investigate, and what retraining and alerting policy would you put in place?",
+  "answer": "First I would confirm the drop is real, checking that the way labels are produced and the accuracy measure have not changed. Then I would slice accuracy by category, channel and language to find where it fell. Next I would compare recent feature and prediction distributions with the training data, to separate real drift, such as a new product creating new ticket types, from a broken upstream feed. I would also read a sample of misrouted tickets. If new categories or wording appeared, I would retrain on recent labelled data, test it on a holdout from the latest weeks, and roll it out as a canary. For policy, I would alert daily on input and prediction drift and weekly on labelled accuracy against a set threshold. I would retrain on a regular schedule and whenever an alert fires, always gated by evaluation on recent data.",
+  "points": [
+   "Confirm the drop is real: same labelling process, same metric, enough volume",
+   "Slice performance by segment to find where it fell",
+   "Compare input and prediction distributions to separate drift from pipeline bugs",
+   "Retrain on recent data, validate on the latest weeks, roll out safely",
+   "Alert on drift and labelled metrics with thresholds, retrain on a schedule plus on triggers"
+  ],
+  "explanation": "A slow, steady fall with no code change usually points to the world changing rather than a bug, since bugs tend to cause sudden drops. Still, the first step is to check the measurement. Here the labels come from agents re-routing tickets, so a new team rule about re-routing would move accuracy without any change in the model.\n\nSlicing matters because an average hides the cause. A product launch might create a ticket type the model has never seen while every other category stays fine. Reading real misrouted tickets is often the fastest way to spot this.\n\nThe common mistake is to jump straight to retraining every night. Blind retraining can bake in a broken feed or bad labels, and it hides the root cause. Retraining should be gated: the new model must beat the current one on the most recent labelled weeks before it ships.",
+  "deeper": "Interviewers often push on thresholds. A good answer ties them to cost, for example alerting when weekly accuracy falls 3 points below the launch baseline, and gives each alert an owner and a runbook. It also notes that if new ticket categories appear, retraining is not enough on its own: the label set itself has to change.",
+  "tags": [
+   "monitoring",
+   "retraining"
+  ],
+  "concepts": [
+   "model-monitoring",
+   "concept-drift",
+   "retraining-policy",
+   "data-drift"
+  ]
+ }
 ]

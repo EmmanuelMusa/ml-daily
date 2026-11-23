@@ -1,122 +1,203 @@
 [
-  {
-    "id": "cls-0001",
-    "topic": "classic",
-    "subtopic": "choosing a model for tabular data",
-    "format": "mcq",
-    "difficulty": 1,
-    "prompt": "A lender wants to predict loan default from 20 applicant features, a mix of numeric and categorical, across 50,000 past loans. The regulator requires a clear reason for every declined application. Which first model is most sensible?",
-    "options": [
-      "Logistic regression, since each coefficient shows how a feature moves the odds of default.",
-      "A deep neural network, since deep models reliably beat simpler ones on tabular data of this size.",
-      "A random forest of 1,000 deep trees, since averaging many trees makes each decision easy to trace.",
-      "A support vector machine with an RBF kernel, since its support vectors give a simple rule per feature."
-    ],
-    "answer": 0,
-    "explanation": "Logistic regression is a strong first model here because it is fast, works well on tabular data of this size, and is easy to explain. Each coefficient says how much a one-unit change in a feature moves the log-odds of default, so you can turn a prediction into reason codes such as high debt-to-income or short credit history. It also gives a baseline that any more complex model must beat.\n\nDeep networks do not reliably beat simpler models on tabular data, and they are hard to explain to a regulator. A forest of 1,000 deep trees is accurate but opaque, since a single prediction passes through thousands of splits, so averaging makes tracing harder, not easier. An RBF kernel SVM works in an implicit feature space, and its support vectors are training examples, not readable rules about features.",
-    "deeper": "A strong candidate mentions that gradient-boosted trees often win on accuracy for tabular data, and that teams sometimes use them with SHAP explanations. Whether a regulator accepts that is a business and legal question, so starting with an interpretable baseline and measuring the accuracy gap is the safer path.",
-    "tags": ["tabular", "interpretability"]
-  },
-  {
-    "id": "cls-0002",
-    "topic": "classic",
-    "subtopic": "why bagging works",
-    "format": "mcq",
-    "difficulty": 2,
-    "prompt": "A single deep decision tree for card fraud gets 99% training accuracy, and its validation score swings a lot when the random seed changes. A random forest of 500 trees, each just as deep, gives higher and steadier validation scores. What is the main reason?",
-    "options": [
-      "Averaging many decorrelated trees cuts variance, while bias stays close to that of one tree.",
-      "Each new tree is fit to the errors of the trees before it, which steadily drives the bias down.",
-      "Bootstrap sampling hands each tree more training rows than the original dataset contains.",
-      "Random feature subsets make each tree more accurate on its own than one tree using all features."
-    ],
-    "answer": 0,
-    "explanation": "A deep tree has low bias but high variance: small changes in the data give a very different tree, which is what the seed-to-seed swings show. Averaging B trees that each have variance σ² and pairwise correlation ρ gives variance ρσ² + (1 − ρ)σ²/B. The second term shrinks as you add trees. The first term only shrinks if the trees are less correlated, which is why random forests use bootstrap samples and a random subset of features at each split. Bias stays roughly where a single deep tree puts it.\n\nFitting each tree to the errors of the previous ones describes boosting, which mainly reduces bias. A bootstrap sample has the same number of rows as the original, drawn with replacement, so each tree sees only about 63% of the unique rows. Random feature subsets usually make each single tree slightly worse. The gain comes from the trees disagreeing in different places, so their errors cancel when averaged.",
-    "deeper": "Interviewers often ask why adding more trees to a random forest rarely causes overfitting, while adding more boosting rounds can. The answer follows from this: more bagged trees only lower the averaging term, while more boosting rounds keep fitting the training residuals. Tune max_features to control the correlation between trees.",
-    "tags": ["random-forest", "bagging", "variance"]
-  },
-  {
-    "id": "cls-0003",
-    "topic": "classic",
-    "subtopic": "kNN and feature scaling",
-    "format": "fill",
-    "difficulty": 1,
-    "prompt": "A k-nearest neighbours model for a food delivery app uses two features: distance to the restaurant in km (0 to 30) and order value in dollars (5 to 500). Before computing distances between orders, both features should go through ______ so that neither one dominates just because of its units.",
-    "answer": "feature scaling",
-    "accept": ["scaling", "standardization", "standardisation", "normalization", "normalisation", "min-max scaling", "min max normalization", "z-score", "z-score standardization", "z-score standardisation", "z-score normalization", "z-score scaling", "standard scaling", "rescaling", "feature normalization", "feature normalisation", "feature standardization", "feature standardisation"],
-    "explanation": "kNN finds neighbours by Euclidean distance, which adds up squared differences in each feature. A gap of 200 dollars in order value adds 40,000 to the squared distance, while the largest possible gap in km adds only 900. Without scaling, the model is effectively choosing neighbours by order value alone. Scaling puts both features on a similar range, for example by standardising each to mean 0 and standard deviation 1, or min-max scaling to 0 to 1.\n\nThe common mistake is to assume the model will learn to weight the features. kNN has no weights to learn. It uses the raw distances, so the units decide importance. Another slip is fitting the scaler on all the data. Fit it on the training rows only, then apply the same transform to validation and live data.",
-    "deeper": "The same issue hits k-means and SVMs with RBF kernels, which use distances, and PCA, which follows raw variance. Tree models do not care, because splits depend only on the order of values. A strong candidate also notes that outliers can wreck min-max scaling, so a robust scaler using the median and IQR may be safer.",
-    "tags": ["knn", "scaling"]
-  },
-  {
-    "id": "cls-0004",
-    "topic": "classic",
-    "subtopic": "Gini impurity",
-    "format": "numeric",
-    "difficulty": 2,
-    "prompt": "A decision tree node holds 100 subscribers: 40 churned and 60 stayed. A candidate split sends 40 subscribers left (30 churned, 10 stayed) and 60 subscribers right (10 churned, 50 stayed). What is the weighted Gini impurity of the two child nodes? Give it as a decimal to 2 places.",
-    "answer": 0.32,
-    "tolerance": 0.005,
-    "check": "def gini(counts):\n    n = sum(counts)\n    return 1 - sum((c / n) ** 2 for c in counts)\nleft = [30, 10]\nright = [10, 50]\nn = sum(left) + sum(right)\nresult = sum(left) / n * gini(left) + sum(right) / n * gini(right)",
-    "explanation": "Gini impurity is 1 − Σp², where p is the share of each class in the node.\n\nLeft child: 30 of 40 churned, so p = 0.75 and 0.25. Gini = 1 − (0.5625 + 0.0625) = 0.375.\n\nRight child: 10 of 60 churned, so p ≈ 0.167 and 0.833. Gini = 1 − (0.0278 + 0.6944) ≈ 0.278.\n\nWeight each child by its share of the rows: 0.4 × 0.375 + 0.6 × 0.278 = 0.150 + 0.167 ≈ 0.317, which rounds to 0.32.\n\nThe common mistake is a plain average of the two children, (0.375 + 0.278) / 2 ≈ 0.33. That gives the small left node as much say as the larger right node. The parent's impurity is 1 − (0.16 + 0.36) = 0.48, so this split lowers impurity by about 0.16. The tree picks whichever split gives the largest drop.",
-    "deeper": "Interviewers may ask how Gini compares with entropy. They usually pick very similar splits, and Gini is a little cheaper because it needs no logarithm. A sharper follow-up is why impurity-based feature importance can mislead: it favours features with many distinct values, so permutation importance is often a better check.",
-    "tags": ["decision-tree", "gini"]
-  },
-  {
-    "id": "cls-0005",
-    "topic": "classic",
-    "subtopic": "k-means limits",
-    "format": "mcq",
-    "difficulty": 2,
-    "prompt": "You run k-means with features standardised, k set to the true number of groups, and 20 random restarts keeping the best result. Which dataset is k-means most likely to cluster wrongly?",
-    "options": [
-      "Two concentric rings of points, a small ring sitting inside a larger ring",
-      "Three well-separated round blobs of similar size in a 20-dimensional space",
-      "Three well-separated round blobs, one holding twice as many points as each of the others",
-      "Three round blobs of equal spread whose outer edges touch each other slightly"
-    ],
-    "answer": 0,
-    "explanation": "k-means assigns each point to the nearest centroid, which carves space into straight-edged regions around each centre. That works when clusters are compact, roughly round and similar in spread. Two concentric rings share the same centre, so no pair of centroids can split them into inner and outer. k-means will cut both rings in half instead, and restarts cannot fix it because the problem is the shape, not the starting point.\n\nRound, well-separated blobs in 20 dimensions are still easy, since distance to the centre separates them cleanly. A blob with twice as many points is fine when the groups are well separated. Very unequal sizes or spreads mostly cause trouble when clusters are close together. Touching edges cause a few border points to land in the wrong cluster, but the three groups are still found. Only the rings make k-means fail as a whole.",
-    "deeper": "Good follow-ups are what to use instead and how to choose k. DBSCAN or spectral clustering handle rings and other odd shapes, and Gaussian mixtures handle stretched clusters of different spreads. For k, teams look at the elbow plot or silhouette score, but in practice the business use of the segments often decides it.",
-    "tags": ["k-means", "clustering"]
-  },
-  {
-    "id": "cls-0006",
-    "topic": "classic",
-    "subtopic": "unsupervised anomaly detection",
-    "format": "multi",
-    "difficulty": 2,
-    "prompt": "A payments team has millions of card transactions but no fraud labels yet. They want to flag unusual transactions for review. Which methods can do this without labels? Select all that apply.",
-    "options": [
-      "Isolation forest, flagging points that are split off in few steps",
-      "Local outlier factor, flagging points in much sparser areas than their neighbours",
-      "An autoencoder, flagging transactions with high reconstruction error",
-      "Logistic regression with class weights, trained to predict the fraud flag",
-      "SMOTE oversampling of the fraud class, followed by a random forest",
-      "A t-test comparing the amounts of fraud and genuine transactions"
-    ],
-    "answer": [0, 1, 2],
-    "explanation": "All three keys learn what normal looks like from the data alone and score how far each point is from it.\n\nAn isolation forest builds random trees that split on random features and values. Odd points sit far from the crowd, so they get isolated in only a few splits, and a short average path means a high anomaly score. Local outlier factor compares how dense the area around a point is with the density around its neighbours, which catches points that are unusual locally. An autoencoder learns to compress and rebuild transactions. Since most traffic is normal, it rebuilds normal patterns well and rare ones badly, so high reconstruction error flags them.\n\nThe other three all need a fraud label. Logistic regression has nothing to predict without one. SMOTE creates synthetic examples of a labelled minority class, so it cannot run when no rows are marked as fraud. A t-test compares two labelled groups and is a test, not a way to score single transactions.",
-    "deeper": "In production these scores feed an analyst queue, and the analysts' decisions become the first labels. A strong candidate explains the move from unsupervised scoring to a supervised model once enough labels exist, and warns that unusual is not the same as fraud. Big but legitimate purchases will also look odd.",
-    "tags": ["anomaly-detection", "fraud", "unsupervised"]
-  },
-  {
-    "id": "cls-0007",
-    "topic": "classic",
-    "subtopic": "churn model end to end",
-    "format": "open",
-    "difficulty": 3,
-    "prompt": "A video streaming service loses about 3% of subscribers each month. The retention team can call 2,000 subscribers a month and wants a model that tells them whom to call. Describe your label, baseline, model, features, data split and evaluation metric, and justify each.",
-    "answer": "Label: from a snapshot date, did the subscriber cancel in the next 30 days. That matches the monthly calling cycle. Baseline: a simple rule such as no viewing in the last 14 days, then logistic regression. Any model must beat these to justify itself. Model: gradient-boosted trees, which handle mixed tabular features and non-linear effects well. Features, all computed using only data before the snapshot: tenure, plan and price, days since last watch, viewing hours trend, failed payments, support tickets and devices used. Split by time: train on earlier snapshots, validate and test on later months, never mixing a subscriber's future into training. Metric: with 3% churn, accuracy is useless. I would use PR-AUC to compare models and precision and recall among the top 2,000 scored subscribers, since that is the list the team will actually call.",
-    "points": [
-      "Label defined from a snapshot with a fixed future window",
-      "A simple rule or logistic regression baseline",
-      "Features built only from data before the snapshot",
-      "Time-based split, not a random one",
-      "Metric tied to capacity, such as precision at the top 2,000, plus PR-AUC"
-    ],
-    "explanation": "The pieces have to fit the business setting. The 30-day label matches how often the team calls. The baseline matters because a rule like no recent viewing often captures most of the signal, and a complex model has to beat it by enough to be worth running. Gradient-boosted trees are the usual strong choice for tabular data like this.\n\nThe most common mistake is leakage through features or splits. A feature like cancellation page visits in the last week is fine only if it is measured before the snapshot. A random split puts the same subscriber's later months in training while testing on earlier ones, which inflates scores. The other frequent miss is the metric. With 3% churn, accuracy rewards predicting no one will churn, and a fixed calling list means what counts is how good the top 2,000 are, not performance at every threshold.",
-    "deeper": "A senior answer asks whether calling the predicted churners actually changes their behaviour. Some will leave anyway and some would have stayed without a call. Uplift modelling targets those whose decision a call can change, and a holdout group that receives no calls is how you measure whether the programme works at all.",
-    "tags": ["churn", "end-to-end"]
-  }
+ {
+  "id": "cls-0001",
+  "topic": "classic",
+  "subtopic": "choosing a model for tabular data",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A lender wants to predict loan default from 20 applicant features, a mix of numeric and categorical, across 50,000 past loans. The regulator requires a clear reason for every declined application. Which first model is most sensible?",
+  "options": [
+   "Logistic regression, since each coefficient shows how a feature moves the odds of default.",
+   "A deep neural network, since deep models reliably beat simpler ones on tabular data of this size.",
+   "A random forest of 1,000 deep trees, since averaging many trees makes each decision easy to trace.",
+   "A support vector machine with an RBF kernel, since its support vectors give a simple rule per feature."
+  ],
+  "answer": 0,
+  "explanation": "Logistic regression is a strong first model here because it is fast, works well on tabular data of this size, and is easy to explain. Each coefficient says how much a one-unit change in a feature moves the log-odds of default, so you can turn a prediction into reason codes such as high debt-to-income or short credit history. It also gives a baseline that any more complex model must beat.\n\nDeep networks do not reliably beat simpler models on tabular data, and they are hard to explain to a regulator. A forest of 1,000 deep trees is accurate but opaque, since a single prediction passes through thousands of splits, so averaging makes tracing harder, not easier. An RBF kernel SVM works in an implicit feature space, and its support vectors are training examples, not readable rules about features.",
+  "deeper": "A strong candidate mentions that gradient-boosted trees often win on accuracy for tabular data, and that teams sometimes use them with SHAP explanations. Whether a regulator accepts that is a business and legal question, so starting with an interpretable baseline and measuring the accuracy gap is the safer path.",
+  "tags": [
+   "tabular",
+   "interpretability"
+  ],
+  "concepts": [
+   "logistic-regression",
+   "gradient-boosting",
+   "baseline-model"
+  ]
+ },
+ {
+  "id": "cls-0002",
+  "topic": "classic",
+  "subtopic": "why bagging works",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A single deep decision tree for card fraud gets 99% training accuracy, and its validation score swings a lot when the random seed changes. A random forest of 500 trees, each just as deep, gives higher and steadier validation scores. What is the main reason?",
+  "options": [
+   "Averaging many decorrelated trees cuts variance, while bias stays close to that of one tree.",
+   "Each new tree is fit to the errors of the trees before it, which steadily drives the bias down.",
+   "Bootstrap sampling hands each tree more training rows than the original dataset contains.",
+   "Random feature subsets make each tree more accurate on its own than one tree using all features."
+  ],
+  "answer": 0,
+  "explanation": "A deep tree has low bias but high variance: small changes in the data give a very different tree, which is what the seed-to-seed swings show. Averaging B trees that each have variance σ² and pairwise correlation ρ gives variance ρσ² + (1 − ρ)σ²/B. The second term shrinks as you add trees. The first term only shrinks if the trees are less correlated, which is why random forests use bootstrap samples and a random subset of features at each split. Bias stays roughly where a single deep tree puts it.\n\nFitting each tree to the errors of the previous ones describes boosting, which mainly reduces bias. A bootstrap sample has the same number of rows as the original, drawn with replacement, so each tree sees only about 63% of the unique rows. Random feature subsets usually make each single tree slightly worse. The gain comes from the trees disagreeing in different places, so their errors cancel when averaged.",
+  "deeper": "Interviewers often ask why adding more trees to a random forest rarely causes overfitting, while adding more boosting rounds can. The answer follows from this: more bagged trees only lower the averaging term, while more boosting rounds keep fitting the training residuals. Tune max_features to control the correlation between trees.",
+  "tags": [
+   "random-forest",
+   "bagging",
+   "variance"
+  ],
+  "concepts": [
+   "bagging",
+   "random-forest",
+   "bias-variance-tradeoff"
+  ]
+ },
+ {
+  "id": "cls-0003",
+  "topic": "classic",
+  "subtopic": "kNN and feature scaling",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A k-nearest neighbours model for a food delivery app uses two features: distance to the restaurant in km (0 to 30) and order value in dollars (5 to 500). Before computing distances between orders, both features should go through ______ so that neither one dominates just because of its units.",
+  "answer": "feature scaling",
+  "accept": [
+   "scaling",
+   "standardization",
+   "standardisation",
+   "normalization",
+   "normalisation",
+   "min-max scaling",
+   "min max normalization",
+   "z-score",
+   "z-score standardization",
+   "z-score standardisation",
+   "z-score normalization",
+   "z-score scaling",
+   "standard scaling",
+   "rescaling",
+   "feature normalization",
+   "feature normalisation",
+   "feature standardization",
+   "feature standardisation"
+  ],
+  "explanation": "kNN finds neighbours by Euclidean distance, which adds up squared differences in each feature. A gap of 200 dollars in order value adds 40,000 to the squared distance, while the largest possible gap in km adds only 900. Without scaling, the model is effectively choosing neighbours by order value alone. Scaling puts both features on a similar range, for example by standardising each to mean 0 and standard deviation 1, or min-max scaling to 0 to 1.\n\nThe common mistake is to assume the model will learn to weight the features. kNN has no weights to learn. It uses the raw distances, so the units decide importance. Another slip is fitting the scaler on all the data. Fit it on the training rows only, then apply the same transform to validation and live data.",
+  "deeper": "The same issue hits k-means and SVMs with RBF kernels, which use distances, and PCA, which follows raw variance. Tree models do not care, because splits depend only on the order of values. A strong candidate also notes that outliers can wreck min-max scaling, so a robust scaler using the median and IQR may be safer.",
+  "tags": [
+   "knn",
+   "scaling"
+  ],
+  "concepts": [
+   "k-nearest-neighbors",
+   "feature-scaling"
+  ]
+ },
+ {
+  "id": "cls-0004",
+  "topic": "classic",
+  "subtopic": "Gini impurity",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A decision tree node holds 100 subscribers: 40 churned and 60 stayed. A candidate split sends 40 subscribers left (30 churned, 10 stayed) and 60 subscribers right (10 churned, 50 stayed). What is the weighted Gini impurity of the two child nodes? Give it as a decimal to 2 places.",
+  "answer": 0.32,
+  "tolerance": 0.005,
+  "check": "def gini(counts):\n    n = sum(counts)\n    return 1 - sum((c / n) ** 2 for c in counts)\nleft = [30, 10]\nright = [10, 50]\nn = sum(left) + sum(right)\nresult = sum(left) / n * gini(left) + sum(right) / n * gini(right)",
+  "explanation": "Gini impurity is 1 − Σp², where p is the share of each class in the node.\n\nLeft child: 30 of 40 churned, so p = 0.75 and 0.25. Gini = 1 − (0.5625 + 0.0625) = 0.375.\n\nRight child: 10 of 60 churned, so p ≈ 0.167 and 0.833. Gini = 1 − (0.0278 + 0.6944) ≈ 0.278.\n\nWeight each child by its share of the rows: 0.4 × 0.375 + 0.6 × 0.278 = 0.150 + 0.167 ≈ 0.317, which rounds to 0.32.\n\nThe common mistake is a plain average of the two children, (0.375 + 0.278) / 2 ≈ 0.33. That gives the small left node as much say as the larger right node. The parent's impurity is 1 − (0.16 + 0.36) = 0.48, so this split lowers impurity by about 0.16. The tree picks whichever split gives the largest drop.",
+  "deeper": "Interviewers may ask how Gini compares with entropy. They usually pick very similar splits, and Gini is a little cheaper because it needs no logarithm. A sharper follow-up is why impurity-based feature importance can mislead: it favours features with many distinct values, so permutation importance is often a better check.",
+  "tags": [
+   "decision-tree",
+   "gini"
+  ],
+  "concepts": [
+   "gini-impurity",
+   "decision-tree",
+   "information-gain"
+  ]
+ },
+ {
+  "id": "cls-0005",
+  "topic": "classic",
+  "subtopic": "k-means limits",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "You run k-means with features standardised, k set to the true number of groups, and 20 random restarts keeping the best result. Which dataset is k-means most likely to cluster wrongly?",
+  "options": [
+   "Two concentric rings of points, a small ring sitting inside a larger ring",
+   "Three well-separated round blobs of similar size in a 20-dimensional space",
+   "Three well-separated round blobs, one holding twice as many points as each of the others",
+   "Three round blobs of equal spread whose outer edges touch each other slightly"
+  ],
+  "answer": 0,
+  "explanation": "k-means assigns each point to the nearest centroid, which carves space into straight-edged regions around each centre. That works when clusters are compact, roughly round and similar in spread. Two concentric rings share the same centre, so no pair of centroids can split them into inner and outer. k-means will cut both rings in half instead, and restarts cannot fix it because the problem is the shape, not the starting point.\n\nRound, well-separated blobs in 20 dimensions are still easy, since distance to the centre separates them cleanly. A blob with twice as many points is fine when the groups are well separated. Very unequal sizes or spreads mostly cause trouble when clusters are close together. Touching edges cause a few border points to land in the wrong cluster, but the three groups are still found. Only the rings make k-means fail as a whole.",
+  "deeper": "Good follow-ups are what to use instead and how to choose k. DBSCAN or spectral clustering handle rings and other odd shapes, and Gaussian mixtures handle stretched clusters of different spreads. For k, teams look at the elbow plot or silhouette score, but in practice the business use of the segments often decides it.",
+  "tags": [
+   "k-means",
+   "clustering"
+  ],
+  "concepts": [
+   "k-means",
+   "dbscan",
+   "gaussian-mixture-model"
+  ]
+ },
+ {
+  "id": "cls-0006",
+  "topic": "classic",
+  "subtopic": "unsupervised anomaly detection",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A payments team has millions of card transactions but no fraud labels yet. They want to flag unusual transactions for review. Which methods can do this without labels? Select all that apply.",
+  "options": [
+   "Isolation forest, flagging points that are split off in few steps",
+   "Local outlier factor, flagging points in much sparser areas than their neighbours",
+   "An autoencoder, flagging transactions with high reconstruction error",
+   "Logistic regression with class weights, trained to predict the fraud flag",
+   "SMOTE oversampling of the fraud class, followed by a random forest",
+   "A t-test comparing the amounts of fraud and genuine transactions"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "All three keys learn what normal looks like from the data alone and score how far each point is from it.\n\nAn isolation forest builds random trees that split on random features and values. Odd points sit far from the crowd, so they get isolated in only a few splits, and a short average path means a high anomaly score. Local outlier factor compares how dense the area around a point is with the density around its neighbours, which catches points that are unusual locally. An autoencoder learns to compress and rebuild transactions. Since most traffic is normal, it rebuilds normal patterns well and rare ones badly, so high reconstruction error flags them.\n\nThe other three all need a fraud label. Logistic regression has nothing to predict without one. SMOTE creates synthetic examples of a labelled minority class, so it cannot run when no rows are marked as fraud. A t-test compares two labelled groups and is a test, not a way to score single transactions.",
+  "deeper": "In production these scores feed an analyst queue, and the analysts' decisions become the first labels. A strong candidate explains the move from unsupervised scoring to a supervised model once enough labels exist, and warns that unusual is not the same as fraud. Big but legitimate purchases will also look odd.",
+  "tags": [
+   "anomaly-detection",
+   "fraud",
+   "unsupervised"
+  ],
+  "concepts": [
+   "anomaly-detection",
+   "isolation-forest",
+   "k-means"
+  ]
+ },
+ {
+  "id": "cls-0007",
+  "topic": "classic",
+  "subtopic": "churn model end to end",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A video streaming service loses about 3% of subscribers each month. The retention team can call 2,000 subscribers a month and wants a model that tells them whom to call. Describe your label, baseline, model, features, data split and evaluation metric, and justify each.",
+  "answer": "Label: from a snapshot date, did the subscriber cancel in the next 30 days. That matches the monthly calling cycle. Baseline: a simple rule such as no viewing in the last 14 days, then logistic regression. Any model must beat these to justify itself. Model: gradient-boosted trees, which handle mixed tabular features and non-linear effects well. Features, all computed using only data before the snapshot: tenure, plan and price, days since last watch, viewing hours trend, failed payments, support tickets and devices used. Split by time: train on earlier snapshots, validate and test on later months, never mixing a subscriber's future into training. Metric: with 3% churn, accuracy is useless. I would use PR-AUC to compare models and precision and recall among the top 2,000 scored subscribers, since that is the list the team will actually call.",
+  "points": [
+   "Label defined from a snapshot with a fixed future window",
+   "A simple rule or logistic regression baseline",
+   "Features built only from data before the snapshot",
+   "Time-based split, not a random one",
+   "Metric tied to capacity, such as precision at the top 2,000, plus PR-AUC"
+  ],
+  "explanation": "The pieces have to fit the business setting. The 30-day label matches how often the team calls. The baseline matters because a rule like no recent viewing often captures most of the signal, and a complex model has to beat it by enough to be worth running. Gradient-boosted trees are the usual strong choice for tabular data like this.\n\nThe most common mistake is leakage through features or splits. A feature like cancellation page visits in the last week is fine only if it is measured before the snapshot. A random split puts the same subscriber's later months in training while testing on earlier ones, which inflates scores. The other frequent miss is the metric. With 3% churn, accuracy rewards predicting no one will churn, and a fixed calling list means what counts is how good the top 2,000 are, not performance at every threshold.",
+  "deeper": "A senior answer asks whether calling the predicted churners actually changes their behaviour. Some will leave anyway and some would have stayed without a call. Uplift modelling targets those whose decision a call can change, and a holdout group that receives no calls is how you measure whether the programme works at all.",
+  "tags": [
+   "churn",
+   "end-to-end"
+  ],
+  "concepts": [
+   "point-in-time-correctness",
+   "target-leakage",
+   "precision-at-k",
+   "class-imbalance"
+  ]
+ }
 ]

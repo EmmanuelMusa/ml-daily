@@ -1,112 +1,137 @@
 [
-  {
-    "id": "sysd-0001",
-    "topic": "design",
-    "subtopic": "two-stage recommender",
-    "format": "mcq",
-    "difficulty": 1,
-    "prompt": "A video app has 50 million videos. Its recommender first pulls a few hundred candidates per user with cheap methods, then scores only those with a large ranking model. What is the main reason for this two-stage split?",
-    "options": [
-      "Running the ranking model on every video for each request is far too slow, so retrieval cuts the pool first.",
-      "Ranking models cannot use user features, so a retrieval stage is needed to add personalisation before ranking.",
-      "The split removes the need for labels, because retrieval is unsupervised and ranking reuses the retrieval scores.",
-      "Two stages give more diverse results, because each stage is trained on a different random half of the history."
-    ],
-    "answer": 0,
-    "explanation": "It comes down to compute per request. Running a large ranking model over 50 million videos every time a user opens the app would take far too long and cost too much. Candidate generation uses cheap methods, such as nearest-neighbour search over embeddings, popular items or co-watch lists, to cut the pool to a few hundred. The expensive model then spends its budget only where it matters.\n\nRanking models use user features all the time. That is how they personalise, so the claim that they cannot is false. Neither stage removes the need for labels. Both are usually trained on logged clicks or watch time, and the ranker learns from its own labels rather than reusing retrieval scores. Diversity is a real goal, but it is usually handled by a re-ranking step or business rules, not by training stages on random halves of the data.",
-    "deeper": "A strong candidate adds that the stages are tuned for different goals. Retrieval is judged by recall: did the good items make it into the few hundred? Ranking is judged by precision at the top of the list. Many systems add a light third stage for re-ranking, business rules and diversity.",
-    "tags": [
-      "recsys",
-      "retrieval"
-    ]
-  },
-  {
-    "id": "sysd-0002",
-    "topic": "design",
-    "subtopic": "real-time fraud scoring",
-    "format": "mcq",
-    "difficulty": 3,
-    "prompt": "A card issuer must answer each authorisation within 100 ms, and the fraud model gets 30 ms of that at p99. Two of its best features are the card's transaction count in the last hour and its average amount over 90 days. Today both come from SQL queries on the transaction database that take about 200 ms each. Which design best fits the budget?",
-    "options": [
-      "Stream both aggregates into a feature store as payments arrive, look them up by card ID, and fall back to rules on timeout.",
-      "Run the two SQL queries in parallel on a read replica, so their time overlaps and the main database is not slowed down by them.",
-      "Cache each card's feature values for 24 hours after its first transaction of the day, and read them from memory after that point.",
-      "Approve each transaction at once and score it a few seconds later, then reverse the approval if the model flags it as likely fraud."
-    ],
-    "answer": 0,
-    "explanation": "The real problem is that the features are computed when the request arrives. At about 200 ms per query, no tuning gets that under 30 ms. The fix is to compute the aggregates ahead of time. A streaming job updates each card's counts and averages as transactions happen and writes them to a key-value feature store. At request time the model does one lookup by card ID, which takes a few milliseconds. The rules fallback keeps authorisations flowing if the store is slow or down.\n\nRunning the queries in parallel only overlaps them. The request still waits about 200 ms, far over budget. A 24-hour cache is fast but stale. A one-hour transaction count frozen since the morning misses exactly the sudden burst of card testing it is meant to catch. Approving first and scoring later lets the fraudster walk away with goods or a digital purchase before the check runs, so the reversal often comes too late.",
-    "deeper": "Interviewers often follow up on consistency. The streaming job and the training pipeline must compute the aggregates the same way, or you get training-serving skew. A strong answer also states the fallback policy: what the rules check, how often the fallback fires, and an alert if that rate climbs.",
-    "tags": [
-      "latency",
-      "feature-store",
-      "fraud"
-    ]
-  },
-  {
-    "id": "sysd-0003",
-    "topic": "design",
-    "subtopic": "capacity estimate",
-    "format": "numeric",
-    "difficulty": 2,
-    "prompt": "A news app has 20 million daily active users. Each user opens the feed 5 times a day on average, and each open sends 2 requests to the recommendation service. Peak-hour traffic is 3 times the daily average rate. Using 86,400 seconds in a day, what peak load in requests per second must the service handle? Give a whole number.",
-    "answer": 6944,
-    "tolerance": 0.5,
-    "check": "dau = 20_000_000\nopens_per_user = 5\nrequests_per_open = 2\npeak_factor = 3\naverage_rps = dau * opens_per_user * requests_per_open / 86_400\nresult = average_rps * peak_factor",
-    "explanation": "Work out the daily total, turn it into a per-second average, then scale up to the peak.\n\n- Requests per day: 20,000,000 × 5 × 2 = 200,000,000\n- Average rate: 200,000,000 / 86,400 ≈ 2,314.8 requests per second\n- Peak rate: 2,314.8 × 3 ≈ 6,944 requests per second\n\nThe most common mistake is to stop at the average, about 2,315. A service sized for the average falls over every evening, because traffic bunches into busy hours. Another slip is to forget the 2 requests per open, which gives about 3,472. In a live interview, rounding a day to 100,000 seconds is fine for speed and gives about 6,000, but this question fixes 86,400 so there is one exact answer.",
-    "deeper": "After the peak, interviewers ask what it means for hardware. If one replica of the ranking model handles 500 requests per second within the latency target, you need about 14 replicas at peak, plus 30 to 50% headroom for spikes and a failed node. Caching popular feeds can cut the load further.",
-    "tags": [
-      "capacity",
-      "qps"
-    ]
-  },
-  {
-    "id": "sysd-0004",
-    "topic": "design",
-    "subtopic": "content moderation system",
-    "format": "open",
-    "difficulty": 3,
-    "prompt": "Design an image moderation system for a social app that receives 10 million uploads a day. The policy bans nudity, graphic violence and hate symbols. Cover the main components, how decisions get made, and how you would measure and improve the system.",
-    "answer": "Start with a written policy and labelling guide, since the model can only be as clear as the rules. On upload, run cheap checks first: hash matching against known banned images, then a fast classifier for each policy category. Images with high scores are removed at once, images with low scores are published, and the uncertain middle goes to human reviewers, with the most severe categories first in the queue. Set thresholds per category from the cost of each kind of error and the size of the review team. Users can appeal, and appeals go to a second reviewer. Reviewer decisions and appeal outcomes become new training labels. Measure precision and recall per category on audited samples, the prevalence of violating images that users saw, review queue time and the appeal overturn rate. Watch for evasion such as cropped or edited images, and audit error rates across user groups.",
-    "points": [
-      "A clear policy and labelling guide as the foundation",
-      "A cascade: hash matching, fast classifiers, then humans for unclear cases",
-      "Thresholds per category, set by error costs and reviewer capacity",
-      "Human review for uncertain cases plus an appeals path",
-      "Review and appeal decisions feed back as training labels",
-      "Metrics: per-category precision and recall, prevalence, queue time, overturn rate"
-    ],
-    "explanation": "At 10 million uploads a day nobody can look at everything, and no model is accurate enough to act alone on every case. A cascade solves both problems. Cheap steps handle the clear cases at scale and people handle the hard ones. Hash matching catches re-uploads of known content almost for free. Thresholds turn scores into three outcomes: remove, publish or review.\n\nThe common mistake is to describe only the classifier. Interviewers want the system around it: who owns the policy, how much review capacity exists, how errors are found and how users can push back. Thresholds also differ by category. Missing a hate symbol and wrongly removing a beach photo carry very different costs, so one global cut-off is a weak design.\n\nThe feedback loop is what improves the system over time. But review labels only cover what the model sent to review, so you also need random audits of auto-approved images to measure what slipped through.",
-    "deeper": "Strong candidates bring numbers. If 2% of uploads land in the review band, that is 200,000 images a day, and at 1,000 reviews per reviewer per day you need about 200 reviewers. That figure often forces the thresholds to move. Good answers also mention reviewer wellbeing, since people will see graphic content all day.",
-    "tags": [
-      "moderation",
-      "human-review"
-    ]
-  },
-  {
-    "id": "sysd-0005",
-    "topic": "design",
-    "subtopic": "cold start",
-    "format": "multi",
-    "difficulty": 2,
-    "prompt": "A recipe app recommends dishes from user ratings using matrix factorisation. New users and newly added recipes both get poor recommendations. Which strategies help with this cold-start problem? Select all that apply.",
-    "options": [
-      "Ask new users to pick a few cuisines or diets at sign-up and seed their recommendations from those",
-      "Score new recipes from their ingredients, text and photo embeddings before any ratings exist",
-      "Show each new recipe to a small, controlled share of users so that early ratings for it arrive quickly",
-      "Look up each new user's factorisation embedding, which the model fits from their profile at sign-up time",
-      "Hide new recipes until they have 100 ratings, so the model only ever ranks items that are well measured",
-      "Raise the number of latent factors so the model has enough room to represent new users and new recipes"
-    ],
-    "answer": [
-      0,
-      1,
-      2
-    ],
-    "explanation": "Matrix factorisation learns an embedding for each user and each recipe from their ratings. With no ratings there is nothing to learn from, so cold start needs other signals or a way to gather data fast.\n\nOnboarding questions give a new user a starting profile from day one. Content features let the system score a recipe by what it is, using its ingredients, text and photo, instead of by who rated it. A small exploration budget shows new recipes to some users so real feedback arrives quickly, and it is how many production systems handle new items.\n\nThe idea of an embedding fitted from the profile at sign-up is false. Matrix factorisation fits the embedding to a user's ratings, not their profile, and at sign-up there are none, so it would be random or a default vector. More latent factors do not help either. They give the model more capacity to fit existing ratings, but a user or recipe with no ratings still has nothing to fit. Hiding recipes until they reach 100 ratings creates a trap. Hidden recipes cannot be rated, so many will never reach 100 and new content stays invisible.",
-    "deeper": "A strong answer separates user cold start from item cold start, since the fixes differ. It may also mention hybrid models that blend content features with collaborative signals, so a new item starts from a content-based embedding that moves toward a learned one as ratings arrive. Popular dishes by region are a simple, strong fallback.",
-    "tags": [
-      "recsys",
-      "cold-start"
-    ]
-  }
+ {
+  "id": "sysd-0001",
+  "topic": "design",
+  "subtopic": "two-stage recommender",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A video app has 50 million videos. Its recommender first pulls a few hundred candidates per user with cheap methods, then scores only those with a large ranking model. What is the main reason for this two-stage split?",
+  "options": [
+   "Running the ranking model on every video for each request is far too slow, so retrieval cuts the pool first.",
+   "Ranking models cannot use user features, so a retrieval stage is needed to add personalisation before ranking.",
+   "The split removes the need for labels, because retrieval is unsupervised and ranking reuses the retrieval scores.",
+   "Two stages give more diverse results, because each stage is trained on a different random half of the history."
+  ],
+  "answer": 0,
+  "explanation": "It comes down to compute per request. Running a large ranking model over 50 million videos every time a user opens the app would take far too long and cost too much. Candidate generation uses cheap methods, such as nearest-neighbour search over embeddings, popular items or co-watch lists, to cut the pool to a few hundred. The expensive model then spends its budget only where it matters.\n\nRanking models use user features all the time. That is how they personalise, so the claim that they cannot is false. Neither stage removes the need for labels. Both are usually trained on logged clicks or watch time, and the ranker learns from its own labels rather than reusing retrieval scores. Diversity is a real goal, but it is usually handled by a re-ranking step or business rules, not by training stages on random halves of the data.",
+  "deeper": "A strong candidate adds that the stages are tuned for different goals. Retrieval is judged by recall: did the good items make it into the few hundred? Ranking is judged by precision at the top of the list. Many systems add a light third stage for re-ranking, business rules and diversity.",
+  "tags": [
+   "recsys",
+   "retrieval"
+  ],
+  "concepts": [
+   "two-stage-recommender",
+   "approximate-nearest-neighbor",
+   "latency-budget"
+  ]
+ },
+ {
+  "id": "sysd-0002",
+  "topic": "design",
+  "subtopic": "real-time fraud scoring",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A card issuer must answer each authorisation within 100 ms, and the fraud model gets 30 ms of that at p99. Two of its best features are the card's transaction count in the last hour and its average amount over 90 days. Today both come from SQL queries on the transaction database that take about 200 ms each. Which design best fits the budget?",
+  "options": [
+   "Stream both aggregates into a feature store as payments arrive, look them up by card ID, and fall back to rules on timeout.",
+   "Run the two SQL queries in parallel on a read replica, so their time overlaps and the main database is not slowed down by them.",
+   "Cache each card's feature values for 24 hours after its first transaction of the day, and read them from memory after that point.",
+   "Approve each transaction at once and score it a few seconds later, then reverse the approval if the model flags it as likely fraud."
+  ],
+  "answer": 0,
+  "explanation": "The real problem is that the features are computed when the request arrives. At about 200 ms per query, no tuning gets that under 30 ms. The fix is to compute the aggregates ahead of time. A streaming job updates each card's counts and averages as transactions happen and writes them to a key-value feature store. At request time the model does one lookup by card ID, which takes a few milliseconds. The rules fallback keeps authorisations flowing if the store is slow or down.\n\nRunning the queries in parallel only overlaps them. The request still waits about 200 ms, far over budget. A 24-hour cache is fast but stale. A one-hour transaction count frozen since the morning misses exactly the sudden burst of card testing it is meant to catch. Approving first and scoring later lets the fraudster walk away with goods or a digital purchase before the check runs, so the reversal often comes too late.",
+  "deeper": "Interviewers often follow up on consistency. The streaming job and the training pipeline must compute the aggregates the same way, or you get training-serving skew. A strong answer also states the fallback policy: what the rules check, how often the fallback fires, and an alert if that rate climbs.",
+  "tags": [
+   "latency",
+   "feature-store",
+   "fraud"
+  ],
+  "concepts": [
+   "feature-store",
+   "latency-budget",
+   "training-serving-skew",
+   "graceful-degradation"
+  ]
+ },
+ {
+  "id": "sysd-0003",
+  "topic": "design",
+  "subtopic": "capacity estimate",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A news app has 20 million daily active users. Each user opens the feed 5 times a day on average, and each open sends 2 requests to the recommendation service. Peak-hour traffic is 3 times the daily average rate. Using 86,400 seconds in a day, what peak load in requests per second must the service handle? Give a whole number.",
+  "answer": 6944,
+  "tolerance": 0.5,
+  "check": "dau = 20_000_000\nopens_per_user = 5\nrequests_per_open = 2\npeak_factor = 3\naverage_rps = dau * opens_per_user * requests_per_open / 86_400\nresult = average_rps * peak_factor",
+  "explanation": "Work out the daily total, turn it into a per-second average, then scale up to the peak.\n\n- Requests per day: 20,000,000 × 5 × 2 = 200,000,000\n- Average rate: 200,000,000 / 86,400 ≈ 2,314.8 requests per second\n- Peak rate: 2,314.8 × 3 ≈ 6,944 requests per second\n\nThe most common mistake is to stop at the average, about 2,315. A service sized for the average falls over every evening, because traffic bunches into busy hours. Another slip is to forget the 2 requests per open, which gives about 3,472. In a live interview, rounding a day to 100,000 seconds is fine for speed and gives about 6,000, but this question fixes 86,400 so there is one exact answer.",
+  "deeper": "After the peak, interviewers ask what it means for hardware. If one replica of the ranking model handles 500 requests per second within the latency target, you need about 14 replicas at peak, plus 30 to 50% headroom for spikes and a failed node. Caching popular feeds can cut the load further.",
+  "tags": [
+   "capacity",
+   "qps"
+  ],
+  "concepts": [
+   "capacity-estimation"
+  ]
+ },
+ {
+  "id": "sysd-0004",
+  "topic": "design",
+  "subtopic": "content moderation system",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "Design an image moderation system for a social app that receives 10 million uploads a day. The policy bans nudity, graphic violence and hate symbols. Cover the main components, how decisions get made, and how you would measure and improve the system.",
+  "answer": "Start with a written policy and labelling guide, since the model can only be as clear as the rules. On upload, run cheap checks first: hash matching against known banned images, then a fast classifier for each policy category. Images with high scores are removed at once, images with low scores are published, and the uncertain middle goes to human reviewers, with the most severe categories first in the queue. Set thresholds per category from the cost of each kind of error and the size of the review team. Users can appeal, and appeals go to a second reviewer. Reviewer decisions and appeal outcomes become new training labels. Measure precision and recall per category on audited samples, the prevalence of violating images that users saw, review queue time and the appeal overturn rate. Watch for evasion such as cropped or edited images, and audit error rates across user groups.",
+  "points": [
+   "A clear policy and labelling guide as the foundation",
+   "A cascade: hash matching, fast classifiers, then humans for unclear cases",
+   "Thresholds per category, set by error costs and reviewer capacity",
+   "Human review for uncertain cases plus an appeals path",
+   "Review and appeal decisions feed back as training labels",
+   "Metrics: per-category precision and recall, prevalence, queue time, overturn rate"
+  ],
+  "explanation": "At 10 million uploads a day nobody can look at everything, and no model is accurate enough to act alone on every case. A cascade solves both problems. Cheap steps handle the clear cases at scale and people handle the hard ones. Hash matching catches re-uploads of known content almost for free. Thresholds turn scores into three outcomes: remove, publish or review.\n\nThe common mistake is to describe only the classifier. Interviewers want the system around it: who owns the policy, how much review capacity exists, how errors are found and how users can push back. Thresholds also differ by category. Missing a hate symbol and wrongly removing a beach photo carry very different costs, so one global cut-off is a weak design.\n\nThe feedback loop is what improves the system over time. But review labels only cover what the model sent to review, so you also need random audits of auto-approved images to measure what slipped through.",
+  "deeper": "Strong candidates bring numbers. If 2% of uploads land in the review band, that is 200,000 images a day, and at 1,000 reviews per reviewer per day you need about 200 reviewers. That figure often forces the thresholds to move. Good answers also mention reviewer wellbeing, since people will see graphic content all day.",
+  "tags": [
+   "moderation",
+   "human-review"
+  ],
+  "concepts": [
+   "human-in-the-loop",
+   "model-cascade",
+   "active-learning"
+  ]
+ },
+ {
+  "id": "sysd-0005",
+  "topic": "design",
+  "subtopic": "cold start",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A recipe app recommends dishes from user ratings using matrix factorisation. New users and newly added recipes both get poor recommendations. Which strategies help with this cold-start problem? Select all that apply.",
+  "options": [
+   "Ask new users to pick a few cuisines or diets at sign-up and seed their recommendations from those",
+   "Score new recipes from their ingredients, text and photo embeddings before any ratings exist",
+   "Show each new recipe to a small, controlled share of users so that early ratings for it arrive quickly",
+   "Look up each new user's factorisation embedding, which the model fits from their profile at sign-up time",
+   "Hide new recipes until they have 100 ratings, so the model only ever ranks items that are well measured",
+   "Raise the number of latent factors so the model has enough room to represent new users and new recipes"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "Matrix factorisation learns an embedding for each user and each recipe from their ratings. With no ratings there is nothing to learn from, so cold start needs other signals or a way to gather data fast.\n\nOnboarding questions give a new user a starting profile from day one. Content features let the system score a recipe by what it is, using its ingredients, text and photo, instead of by who rated it. A small exploration budget shows new recipes to some users so real feedback arrives quickly, and it is how many production systems handle new items.\n\nThe idea of an embedding fitted from the profile at sign-up is false. Matrix factorisation fits the embedding to a user's ratings, not their profile, and at sign-up there are none, so it would be random or a default vector. More latent factors do not help either. They give the model more capacity to fit existing ratings, but a user or recipe with no ratings still has nothing to fit. Hiding recipes until they reach 100 ratings creates a trap. Hidden recipes cannot be rated, so many will never reach 100 and new content stays invisible.",
+  "deeper": "A strong answer separates user cold start from item cold start, since the fixes differ. It may also mention hybrid models that blend content features with collaborative signals, so a new item starts from a content-based embedding that moves toward a learned one as ratings arrive. Popular dishes by region are a simple, strong fallback.",
+  "tags": [
+   "recsys",
+   "cold-start"
+  ],
+  "concepts": [
+   "cold-start",
+   "content-based-filtering",
+   "matrix-factorization",
+   "collaborative-filtering"
+  ]
+ }
 ]

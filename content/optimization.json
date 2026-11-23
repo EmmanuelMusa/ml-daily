@@ -1,152 +1,182 @@
 [
-  {
-    "id": "opt-0001",
-    "topic": "optimization",
-    "subtopic": "model weight memory",
-    "format": "numeric",
-    "difficulty": 1,
-    "prompt": "You want to run a 7-billion-parameter model on a laptop GPU after quantizing its weights to 4 bits each. How much memory do the weights alone need? Ignore any extra storage for quantization scales. Give the answer in GB, where 1 GB = 10⁹ bytes, to 1 decimal place.",
-    "answer": 3.5,
-    "tolerance": 0.05,
-    "check": "params = 7e9\nbits_per_weight = 4\nresult = params * bits_per_weight / 8 / 1e9",
-    "explanation": "Memory for weights is the number of parameters times the bytes per parameter. A byte has 8 bits, so 4 bits is 0.5 bytes. That gives 7 × 10⁹ × 0.5 = 3.5 × 10⁹ bytes, which is 3.5 GB.\n\nThe most common mistake is to treat 4 bits as 4 bytes, which gives 28 GB, the size of the model in fp32. A quick table helps: fp32 uses 4 bytes per parameter (28 GB here), fp16 and bf16 use 2 bytes (14 GB), int8 uses 1 byte (7 GB) and 4-bit uses half a byte (3.5 GB). In practice, 4-bit formats also store a scale for each small group of weights, so the real file is a little larger than 3.5 GB, which is why the prompt says to ignore it.",
-    "deeper": "Weights are only part of the memory story at inference time. A strong candidate adds the KV cache, which grows with context length and batch size, plus activations and framework overhead. A model whose weights barely fit will often run out of memory once real traffic with long prompts arrives.",
-    "tags": [
-      "memory",
-      "quantization"
-    ]
-  },
-  {
-    "id": "opt-0002",
-    "topic": "optimization",
-    "subtopic": "KV cache size",
-    "format": "numeric",
-    "difficulty": 3,
-    "prompt": "A chat model has 32 layers and 32 query heads per layer, but it uses grouped-query attention with 8 key-value heads per layer. Each head has dimension 128. The KV cache stores keys and values in fp16 (2 bytes per number). How much memory does the KV cache need for a batch of 16 sequences, each 4,096 tokens long? Give the answer in GB, where 1 GB = 10⁹ bytes, to 1 decimal place.",
-    "answer": 8.6,
-    "tolerance": 0.05,
-    "check": "layers = 32\nkv_heads = 8\nhead_dim = 128\nseq_len = 4096\nbatch = 16\nbytes_per_num = 2\nkv = 2\nresult = kv * layers * kv_heads * head_dim * seq_len * batch * bytes_per_num / 1e9",
-    "explanation": "For every token, every layer stores one key vector and one value vector for each key-value head. So the size is 2 (key and value) × layers × KV heads × head dimension × tokens × batch × bytes per number.\n\n- Per token per layer: 2 × 8 × 128 = 2,048 numbers\n- Per token across 32 layers: 2,048 × 32 = 65,536 numbers, or 131,072 bytes\n- Tokens in the batch: 4,096 × 16 = 65,536\n- Total: 131,072 × 65,536 = 8,589,934,592 bytes, about 8.6 GB\n\nThe most common mistake is to use the 32 query heads, which gives four times as much, about 34.4 GB. With grouped-query attention, several query heads share one key-value head, and only the shared key-value heads are cached. Another mistake is to forget the factor of 2 for keys and values, which gives about 4.3 GB. An answer of 8.0 means the bytes were divided by 2³⁰ instead of 10⁹.",
-    "deeper": "This calculation drives serving capacity. At long contexts the KV cache can outgrow the weights themselves, which limits how many requests fit on a GPU at once. Strong candidates mention the levers: grouped-query or multi-query attention, a quantized KV cache, paged cache allocation to cut fragmentation, and capping context length.",
-    "tags": [
-      "kv-cache",
-      "memory",
-      "serving"
-    ]
-  },
-  {
-    "id": "opt-0003",
-    "topic": "optimization",
-    "subtopic": "quantization tradeoffs",
-    "format": "mcq",
-    "difficulty": 2,
-    "prompt": "A mobile app runs an image classifier on the phone. Post-training quantization to int8 cost a small, acceptable drop in accuracy. Pushing the same method to 4-bit weights causes a large drop. You still have the training code and data. Which of these steps is most likely to win back most of the lost accuracy?",
-    "options": [
-      "Use quantization-aware training, which simulates the 4-bit rounding in the forward pass while training, so the weights adapt to it and much of the accuracy returns.",
-      "Switch to dynamic quantization, which computes activation scales on the fly for each input image, so every image gets scales that fit it and the 4-bit error goes away.",
-      "Rerun post-training quantization with a much larger calibration set of training images, so the value ranges are estimated better and the 4-bit rounding error mostly disappears.",
-      "Also quantize the activations to 4 bits, since the large drop comes from mixing 4-bit weights with higher-precision activations inside the same layers of the network."
-    ],
-    "answer": 0,
-    "explanation": "Post-training quantization rounds the weights of a model that was trained in full precision and never had to cope with rounding. At int8 the rounding steps are small, so the damage is small. At 4 bits there are only 16 levels, and the errors add up across layers. Quantization-aware training inserts simulated quantization into the forward pass and keeps training, passing gradients straight through the rounding, so the network adjusts its weights to work well at low precision. It costs extra training time but usually recovers much of the gap.\n\nDynamic quantization only computes activation scales on the fly for each input. The weights are still rounded to the same 16 levels, so their error stays. A bigger calibration set gives slightly better value ranges, but calibration only sets ranges. It cannot restore the information lost when trained weights are rounded to 16 levels, which is why int8 was fine and 4 bits was not. Quantizing activations to 4 bits adds more rounding error, which makes accuracy worse, not better. Keeping the most sensitive layers at higher precision is another sound fix, but it is not among the options.",
-    "deeper": "In interviews, mention the cheaper options to try before full quantization-aware training: stronger post-training methods that minimize each layer's output error, keeping sensitive layers such as the first and last at higher precision, and per-channel scales. Always measure accuracy on slices, since quantization damage is often uneven across classes.",
-    "tags": [
-      "quantization",
-      "edge"
-    ]
-  },
-  {
-    "id": "opt-0004",
-    "topic": "optimization",
-    "subtopic": "knowledge distillation",
-    "format": "fill",
-    "difficulty": 1,
-    "prompt": "To serve a search-query intent classifier on cheaper hardware, you train a small model to match the softened output probabilities of a large, accurate model, along with the true labels. This technique is called ______.",
-    "answer": "knowledge distillation",
-    "accept": [
-      "distillation",
-      "model distillation",
-      "kd",
-      "teacher-student training",
-      "teacher-student learning"
-    ],
-    "explanation": "In knowledge distillation, a large teacher model's outputs become extra training targets for a small student. The teacher's probabilities are softened with a temperature above 1, so the student sees more than the top answer. For a query labelled laptops, the teacher might say 0.70 laptops, 0.25 laptop accessories and 0.05 phones, which tells the student that laptops and accessories are close. These soft targets carry far more information per example than a hard label, so a small student often gets much closer to the teacher than it would by training on labels alone.\n\nThe common mistake is to answer pruning or quantization. Those compress the same model by removing weights or lowering their precision. Distillation trains a separate, smaller model. Another near miss is fine-tuning, which adapts a model to new data but does not involve learning from a second model's outputs.",
-    "deeper": "In LLM work, distillation often means generating outputs from a large model and fine-tuning a small one on them. A strong candidate notes the limits: the student rarely beats the teacher, it inherits the teacher's errors, and the terms of use of some models restrict using their outputs to train others.",
-    "tags": [
-      "distillation",
-      "compression"
-    ]
-  },
-  {
-    "id": "opt-0005",
-    "topic": "optimization",
-    "subtopic": "batching, throughput and latency",
-    "format": "mcq",
-    "difficulty": 3,
-    "prompt": "A GPU server runs a ranking model, and one request served alone takes about 8 ms. The team turns on dynamic batching with a maximum batch size of 32 and a maximum queue wait of 10 ms. At peak traffic the server now handles several times more requests per second. Overnight, when only a few requests arrive each second, median latency rises to about 18 ms. What best explains the overnight rise?",
-    "options": [
-      "At low traffic a batch rarely fills, so most requests wait the full 10 ms in the queue before their 8 ms forward pass runs.",
-      "Each forward pass slows in proportion to batch size, so a batch of 32 takes about 32 times as long as one request alone.",
-      "Splitting a batch's outputs back into separate responses adds overhead, and this cost is largest when the server is lightly loaded.",
-      "Batched GPU kernels need a full batch to run efficiently, so partial batches fall back to a slow path that is ten times slower."
-    ],
-    "answer": 0,
-    "explanation": "Dynamic batching holds incoming requests until either the batch is full or the oldest request has waited the maximum time. At peak traffic, 32 requests arrive within a few milliseconds, so batches fill fast and the GPU serves many requests in one pass. That is where the throughput gain comes from. Overnight, with only a few requests per second, the batch almost never fills, so nearly every request waits the full 10 ms and then takes its 8 ms forward pass, about 18 ms in total.\n\nThe option about proportional slowdown is wrong because GPUs process batch items in parallel, so a batch of 32 takes far less than 32 times as long. It also cannot explain the overnight case, where batches hold only one or two requests. Splitting outputs is a cheap memory copy, not a 10 ms cost. Partial batches run through the same kernels, just with less parallel work, so there is no tenfold slow path.",
-    "deeper": "A strong candidate tunes the wait time against the latency budget, or uses a policy that skips the wait when traffic is light. For LLMs, continuous batching adds and removes sequences at every decoding step, so short requests do not wait for long ones to finish. Always report p95 and p99 latency alongside throughput.",
-    "tags": [
-      "batching",
-      "latency",
-      "serving"
-    ]
-  },
-  {
-    "id": "opt-0006",
-    "topic": "optimization",
-    "subtopic": "training memory savers",
-    "format": "multi",
-    "difficulty": 2,
-    "prompt": "Fine-tuning a vision model on one GPU at a batch size of 64 fails with an out-of-memory error. Which of these changes reduce peak GPU memory during training? Select all that apply.",
-    "options": [
-      "Mixed-precision training, which keeps most activations in 16-bit rather than 32-bit floats",
-      "Gradient checkpointing, which keeps only some activations in the forward pass and recomputes the rest during backward",
-      "Gradient accumulation, which runs several small micro-batches and sums their gradients before one optimizer step",
-      "Switching the optimizer from SGD with momentum to Adam, since Adam usually converges in fewer steps",
-      "Adding dropout after every layer, since it sets a share of the activations to zero during training",
-      "Raising the learning rate so the model reaches the target loss in fewer total training steps"
-    ],
-    "answer": [
-      0,
-      1,
-      2
-    ],
-    "explanation": "Peak training memory is mostly weights, gradients, optimizer state and the activations saved for the backward pass. Mixed precision stores most activations in 16 bits, roughly halving them. Gradient checkpointing saves activations at only some layers and recomputes the rest during the backward pass, trading about one extra forward pass of compute for a large cut in activation memory. Gradient accumulation splits a batch into micro-batches, so only one micro-batch's activations are in memory at a time while the effective batch size stays the same.\n\nSwitching to Adam adds memory, because Adam keeps two running averages per parameter where SGD with momentum keeps one. Dropout frees nothing. The zeroed activations still occupy the same tensor, and the dropout mask is stored as well. Raising the learning rate may shorten training, but the number of steps does not change how much memory any single step needs.",
-    "deeper": "A common follow-up is why mixed precision does not halve weight memory: many setups keep an fp32 master copy of the weights plus fp32 optimizer state. For very large models, strong candidates mention sharding optimizer state, gradients and weights across GPUs, and offloading some of it to CPU memory.",
-    "tags": [
-      "memory",
-      "training"
-    ]
-  },
-  {
-    "id": "opt-0007",
-    "topic": "optimization",
-    "subtopic": "bringing down LLM latency",
-    "format": "open",
-    "difficulty": 3,
-    "prompt": "A customer-chat endpoint runs a self-hosted 13B model. Its p95 latency is 9 seconds against a 3-second target, and users say it feels slow. Walk through how you would find the cause and bring p95 down.",
-    "answer": "I would start by splitting latency into queue time, time to first token and time per output token, and compare p95 requests with typical ones. If queueing dominates at peaks, I would add capacity, autoscale, or use continuous batching so the GPU serves more requests at once. If time to first token is high, prompts are probably long, so I would trim the system prompt and retrieved context and turn on prefix caching for shared prompt parts. If decoding dominates, I would cap or shorten outputs, quantize the model to 8 or 4 bits, try a smaller or distilled model, and add speculative decoding with a small draft model. Streaming tokens makes the wait feel shorter but does not cut total time. After each change I would re-measure p95 and check quality on an eval set.",
-    "points": [
-      "Break latency into queue time, time to first token and time per output token",
-      "Fix queueing with more capacity, autoscaling or continuous batching",
-      "Shorten prompts and outputs, and cache shared prompt prefixes",
-      "Speed up decoding with quantization, a smaller or distilled model, or speculative decoding",
-      "Stream for perceived speed, then re-measure p95 and check quality after each change"
-    ],
-    "explanation": "Latency in LLM serving comes from different places, and each has a different fix, so measuring first is the key step. Time to first token is mostly prefill, which grows with prompt length. Decoding produces one token at a time and is limited by memory bandwidth, so total decode time grows with the number of tokens generated. Queue time grows when traffic outpaces capacity, and p95 is often driven by queueing at peaks or by a few requests with very long prompts or outputs.\n\nThe common mistake is to jump to a favourite fix, such as quantization, without knowing where the time goes. If most of the 9 seconds is spent queueing at peak hours, more replicas or better batching target the cause directly. Another mistake is counting streaming as a latency fix. It improves how fast the reply feels, but the last token arrives no sooner. Every speed change also needs a quality check, since smaller or quantized models can answer worse.",
-    "deeper": "Strong candidates also set per-request limits, such as a maximum output length and a timeout with a fallback reply, and they track latency by prompt-length bucket. Speculative decoding helps most when the draft model's guesses are often accepted, so its gain depends on the traffic and should be measured, not assumed.",
-    "tags": [
-      "latency",
-      "serving",
-      "llm"
-    ]
-  }
+ {
+  "id": "opt-0001",
+  "topic": "optimization",
+  "subtopic": "model weight memory",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "You want to run a 7-billion-parameter model on a laptop GPU after quantizing its weights to 4 bits each. How much memory do the weights alone need? Ignore any extra storage for quantization scales. Give the answer in GB, where 1 GB = 10⁹ bytes, to 1 decimal place.",
+  "answer": 3.5,
+  "tolerance": 0.05,
+  "check": "params = 7e9\nbits_per_weight = 4\nresult = params * bits_per_weight / 8 / 1e9",
+  "explanation": "Memory for weights is the number of parameters times the bytes per parameter. A byte has 8 bits, so 4 bits is 0.5 bytes. That gives 7 × 10⁹ × 0.5 = 3.5 × 10⁹ bytes, which is 3.5 GB.\n\nThe most common mistake is to treat 4 bits as 4 bytes, which gives 28 GB, the size of the model in fp32. A quick table helps: fp32 uses 4 bytes per parameter (28 GB here), fp16 and bf16 use 2 bytes (14 GB), int8 uses 1 byte (7 GB) and 4-bit uses half a byte (3.5 GB). In practice, 4-bit formats also store a scale for each small group of weights, so the real file is a little larger than 3.5 GB, which is why the prompt says to ignore it.",
+  "deeper": "Weights are only part of the memory story at inference time. A strong candidate adds the KV cache, which grows with context length and batch size, plus activations and framework overhead. A model whose weights barely fit will often run out of memory once real traffic with long prompts arrives.",
+  "tags": [
+   "memory",
+   "quantization"
+  ],
+  "concepts": [
+   "quantization"
+  ]
+ },
+ {
+  "id": "opt-0002",
+  "topic": "optimization",
+  "subtopic": "KV cache size",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "A chat model has 32 layers and 32 query heads per layer, but it uses grouped-query attention with 8 key-value heads per layer. Each head has dimension 128. The KV cache stores keys and values in fp16 (2 bytes per number). How much memory does the KV cache need for a batch of 16 sequences, each 4,096 tokens long? Give the answer in GB, where 1 GB = 10⁹ bytes, to 1 decimal place.",
+  "answer": 8.6,
+  "tolerance": 0.05,
+  "check": "layers = 32\nkv_heads = 8\nhead_dim = 128\nseq_len = 4096\nbatch = 16\nbytes_per_num = 2\nkv = 2\nresult = kv * layers * kv_heads * head_dim * seq_len * batch * bytes_per_num / 1e9",
+  "explanation": "For every token, every layer stores one key vector and one value vector for each key-value head. So the size is 2 (key and value) × layers × KV heads × head dimension × tokens × batch × bytes per number.\n\n- Per token per layer: 2 × 8 × 128 = 2,048 numbers\n- Per token across 32 layers: 2,048 × 32 = 65,536 numbers, or 131,072 bytes\n- Tokens in the batch: 4,096 × 16 = 65,536\n- Total: 131,072 × 65,536 = 8,589,934,592 bytes, about 8.6 GB\n\nThe most common mistake is to use the 32 query heads, which gives four times as much, about 34.4 GB. With grouped-query attention, several query heads share one key-value head, and only the shared key-value heads are cached. Another mistake is to forget the factor of 2 for keys and values, which gives about 4.3 GB. An answer of 8.0 means the bytes were divided by 2³⁰ instead of 10⁹.",
+  "deeper": "This calculation drives serving capacity. At long contexts the KV cache can outgrow the weights themselves, which limits how many requests fit on a GPU at once. Strong candidates mention the levers: grouped-query or multi-query attention, a quantized KV cache, paged cache allocation to cut fragmentation, and capping context length.",
+  "tags": [
+   "kv-cache",
+   "memory",
+   "serving"
+  ],
+  "concepts": [
+   "kv-cache",
+   "grouped-query-attention"
+  ]
+ },
+ {
+  "id": "opt-0003",
+  "topic": "optimization",
+  "subtopic": "quantization tradeoffs",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A mobile app runs an image classifier on the phone. Post-training quantization to int8 cost a small, acceptable drop in accuracy. Pushing the same method to 4-bit weights causes a large drop. You still have the training code and data. Which of these steps is most likely to win back most of the lost accuracy?",
+  "options": [
+   "Use quantization-aware training, which simulates the 4-bit rounding in the forward pass while training, so the weights adapt to it and much of the accuracy returns.",
+   "Switch to dynamic quantization, which computes activation scales on the fly for each input image, so every image gets scales that fit it and the 4-bit error goes away.",
+   "Rerun post-training quantization with a much larger calibration set of training images, so the value ranges are estimated better and the 4-bit rounding error mostly disappears.",
+   "Also quantize the activations to 4 bits, since the large drop comes from mixing 4-bit weights with higher-precision activations inside the same layers of the network."
+  ],
+  "answer": 0,
+  "explanation": "Post-training quantization rounds the weights of a model that was trained in full precision and never had to cope with rounding. At int8 the rounding steps are small, so the damage is small. At 4 bits there are only 16 levels, and the errors add up across layers. Quantization-aware training inserts simulated quantization into the forward pass and keeps training, passing gradients straight through the rounding, so the network adjusts its weights to work well at low precision. It costs extra training time but usually recovers much of the gap.\n\nDynamic quantization only computes activation scales on the fly for each input. The weights are still rounded to the same 16 levels, so their error stays. A bigger calibration set gives slightly better value ranges, but calibration only sets ranges. It cannot restore the information lost when trained weights are rounded to 16 levels, which is why int8 was fine and 4 bits was not. Quantizing activations to 4 bits adds more rounding error, which makes accuracy worse, not better. Keeping the most sensitive layers at higher precision is another sound fix, but it is not among the options.",
+  "deeper": "In interviews, mention the cheaper options to try before full quantization-aware training: stronger post-training methods that minimize each layer's output error, keeping sensitive layers such as the first and last at higher precision, and per-channel scales. Always measure accuracy on slices, since quantization damage is often uneven across classes.",
+  "tags": [
+   "quantization",
+   "edge"
+  ],
+  "concepts": [
+   "quantization"
+  ]
+ },
+ {
+  "id": "opt-0004",
+  "topic": "optimization",
+  "subtopic": "knowledge distillation",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "To serve a search-query intent classifier on cheaper hardware, you train a small model to match the softened output probabilities of a large, accurate model, along with the true labels. This technique is called ______.",
+  "answer": "knowledge distillation",
+  "accept": [
+   "distillation",
+   "model distillation",
+   "kd",
+   "teacher-student training",
+   "teacher-student learning"
+  ],
+  "explanation": "In knowledge distillation, a large teacher model's outputs become extra training targets for a small student. The teacher's probabilities are softened with a temperature above 1, so the student sees more than the top answer. For a query labelled laptops, the teacher might say 0.70 laptops, 0.25 laptop accessories and 0.05 phones, which tells the student that laptops and accessories are close. These soft targets carry far more information per example than a hard label, so a small student often gets much closer to the teacher than it would by training on labels alone.\n\nThe common mistake is to answer pruning or quantization. Those compress the same model by removing weights or lowering their precision. Distillation trains a separate, smaller model. Another near miss is fine-tuning, which adapts a model to new data but does not involve learning from a second model's outputs.",
+  "deeper": "In LLM work, distillation often means generating outputs from a large model and fine-tuning a small one on them. A strong candidate notes the limits: the student rarely beats the teacher, it inherits the teacher's errors, and the terms of use of some models restrict using their outputs to train others.",
+  "tags": [
+   "distillation",
+   "compression"
+  ],
+  "concepts": [
+   "knowledge-distillation",
+   "pruning"
+  ]
+ },
+ {
+  "id": "opt-0005",
+  "topic": "optimization",
+  "subtopic": "batching, throughput and latency",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A GPU server runs a ranking model, and one request served alone takes about 8 ms. The team turns on dynamic batching with a maximum batch size of 32 and a maximum queue wait of 10 ms. At peak traffic the server now handles several times more requests per second. Overnight, when only a few requests arrive each second, median latency rises to about 18 ms. What best explains the overnight rise?",
+  "options": [
+   "At low traffic a batch rarely fills, so most requests wait the full 10 ms in the queue before their 8 ms forward pass runs.",
+   "Each forward pass slows in proportion to batch size, so a batch of 32 takes about 32 times as long as one request alone.",
+   "Splitting a batch's outputs back into separate responses adds overhead, and this cost is largest when the server is lightly loaded.",
+   "Batched GPU kernels need a full batch to run efficiently, so partial batches fall back to a slow path that is ten times slower."
+  ],
+  "answer": 0,
+  "explanation": "Dynamic batching holds incoming requests until either the batch is full or the oldest request has waited the maximum time. At peak traffic, 32 requests arrive within a few milliseconds, so batches fill fast and the GPU serves many requests in one pass. That is where the throughput gain comes from. Overnight, with only a few requests per second, the batch almost never fills, so nearly every request waits the full 10 ms and then takes its 8 ms forward pass, about 18 ms in total.\n\nThe option about proportional slowdown is wrong because GPUs process batch items in parallel, so a batch of 32 takes far less than 32 times as long. It also cannot explain the overnight case, where batches hold only one or two requests. Splitting outputs is a cheap memory copy, not a 10 ms cost. Partial batches run through the same kernels, just with less parallel work, so there is no tenfold slow path.",
+  "deeper": "A strong candidate tunes the wait time against the latency budget, or uses a policy that skips the wait when traffic is light. For LLMs, continuous batching adds and removes sequences at every decoding step, so short requests do not wait for long ones to finish. Always report p95 and p99 latency alongside throughput.",
+  "tags": [
+   "batching",
+   "latency",
+   "serving"
+  ],
+  "concepts": [
+   "throughput-vs-latency",
+   "continuous-batching"
+  ]
+ },
+ {
+  "id": "opt-0006",
+  "topic": "optimization",
+  "subtopic": "training memory savers",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "Fine-tuning a vision model on one GPU at a batch size of 64 fails with an out-of-memory error. Which of these changes reduce peak GPU memory during training? Select all that apply.",
+  "options": [
+   "Mixed-precision training, which keeps most activations in 16-bit rather than 32-bit floats",
+   "Gradient checkpointing, which keeps only some activations in the forward pass and recomputes the rest during backward",
+   "Gradient accumulation, which runs several small micro-batches and sums their gradients before one optimizer step",
+   "Switching the optimizer from SGD with momentum to Adam, since Adam usually converges in fewer steps",
+   "Adding dropout after every layer, since it sets a share of the activations to zero during training",
+   "Raising the learning rate so the model reaches the target loss in fewer total training steps"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "Peak training memory is mostly weights, gradients, optimizer state and the activations saved for the backward pass. Mixed precision stores most activations in 16 bits, roughly halving them. Gradient checkpointing saves activations at only some layers and recomputes the rest during the backward pass, trading about one extra forward pass of compute for a large cut in activation memory. Gradient accumulation splits a batch into micro-batches, so only one micro-batch's activations are in memory at a time while the effective batch size stays the same.\n\nSwitching to Adam adds memory, because Adam keeps two running averages per parameter where SGD with momentum keeps one. Dropout frees nothing. The zeroed activations still occupy the same tensor, and the dropout mask is stored as well. Raising the learning rate may shorten training, but the number of steps does not change how much memory any single step needs.",
+  "deeper": "A common follow-up is why mixed precision does not halve weight memory: many setups keep an fp32 master copy of the weights plus fp32 optimizer state. For very large models, strong candidates mention sharding optimizer state, gradients and weights across GPUs, and offloading some of it to CPU memory.",
+  "tags": [
+   "memory",
+   "training"
+  ],
+  "concepts": [
+   "gradient-checkpointing",
+   "gradient-accumulation",
+   "mixed-precision-training",
+   "batch-size"
+  ]
+ },
+ {
+  "id": "opt-0007",
+  "topic": "optimization",
+  "subtopic": "bringing down LLM latency",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A customer-chat endpoint runs a self-hosted 13B model. Its p95 latency is 9 seconds against a 3-second target, and users say it feels slow. Walk through how you would find the cause and bring p95 down.",
+  "answer": "I would start by splitting latency into queue time, time to first token and time per output token, and compare p95 requests with typical ones. If queueing dominates at peaks, I would add capacity, autoscale, or use continuous batching so the GPU serves more requests at once. If time to first token is high, prompts are probably long, so I would trim the system prompt and retrieved context and turn on prefix caching for shared prompt parts. If decoding dominates, I would cap or shorten outputs, quantize the model to 8 or 4 bits, try a smaller or distilled model, and add speculative decoding with a small draft model. Streaming tokens makes the wait feel shorter but does not cut total time. After each change I would re-measure p95 and check quality on an eval set.",
+  "points": [
+   "Break latency into queue time, time to first token and time per output token",
+   "Fix queueing with more capacity, autoscaling or continuous batching",
+   "Shorten prompts and outputs, and cache shared prompt prefixes",
+   "Speed up decoding with quantization, a smaller or distilled model, or speculative decoding",
+   "Stream for perceived speed, then re-measure p95 and check quality after each change"
+  ],
+  "explanation": "Latency in LLM serving comes from different places, and each has a different fix, so measuring first is the key step. Time to first token is mostly prefill, which grows with prompt length. Decoding produces one token at a time and is limited by memory bandwidth, so total decode time grows with the number of tokens generated. Queue time grows when traffic outpaces capacity, and p95 is often driven by queueing at peaks or by a few requests with very long prompts or outputs.\n\nThe common mistake is to jump to a favourite fix, such as quantization, without knowing where the time goes. If most of the 9 seconds is spent queueing at peak hours, more replicas or better batching target the cause directly. Another mistake is counting streaming as a latency fix. It improves how fast the reply feels, but the last token arrives no sooner. Every speed change also needs a quality check, since smaller or quantized models can answer worse.",
+  "deeper": "Strong candidates also set per-request limits, such as a maximum output length and a timeout with a fallback reply, and they track latency by prompt-length bucket. Speculative decoding helps most when the draft model's guesses are often accepted, so its gain depends on the traffic and should be measured, not assumed.",
+  "tags": [
+   "latency",
+   "serving",
+   "llm"
+  ],
+  "concepts": [
+   "time-to-first-token",
+   "memory-bound-decoding",
+   "speculative-decoding",
+   "kv-cache"
+  ]
+ }
 ]

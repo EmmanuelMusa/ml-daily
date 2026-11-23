@@ -1,123 +1,193 @@
 [
-  {
-    "id": "fnd-0001",
-    "topic": "foundations",
-    "subtopic": "bias and variance from learning curves",
-    "format": "mcq",
-    "difficulty": 1,
-    "prompt": "A gradient-boosted model predicts which parcels will arrive late. On the full training set its training error is 3% and its validation error is 17%. Experienced dispatchers make about 4% errors on the same task. What does this pattern show?",
-    "options": [
-      "High variance: it fits the training data closely but fails to generalize, so it is overfitting.",
-      "High bias: the model is too simple to capture the real pattern in the data, so it is underfitting.",
-      "A good fit: the training error is already below the human level, so the model has learned the task.",
-      "High bias and high variance together, because validation error sits far above the human level."
-    ],
-    "answer": 0,
-    "explanation": "Read the two gaps separately. The gap between training error and the human-level error tells you about bias. Here training error (3%) is at or below what dispatchers achieve (4%), so the model is flexible enough and bias is low. The gap between training and validation error tells you about variance. Here it is 14 points, which is large. Low bias plus a big train to validation gap means the model has memorised the training data and is overfitting.\n\nThe high bias reading would need training error itself to be high, well above 4%. Calling it a good fit ignores the validation number, which is the one that predicts real performance. The option claiming both problems at once mixes up the two gaps. Validation error is far above human level only because of the variance gap, since training error shows no bias problem.",
-    "deeper": "A strong answer names the next steps for high variance: more data, stronger regularization, shallower trees or fewer boosting rounds, and early stopping. An interviewer may then ask what you would do if training error were 15% instead. That flips the diagnosis to bias, and the fix becomes a richer model or better features.",
-    "tags": ["overfitting", "learning-curves"]
-  },
-  {
-    "id": "fnd-0002",
-    "topic": "foundations",
-    "subtopic": "L1 vs L2 regularization",
-    "format": "mcq",
-    "difficulty": 2,
-    "prompt": "An ad click model uses logistic regression on 50,000 sparse one-hot features. You suspect only a few hundred features really matter, and you want a smaller model that is cheaper to serve and easier to inspect. Which regularization fits best, and why?",
-    "options": [
-      "L1, because its penalty can push many weights to exactly zero and leave a sparse model.",
-      "L2, because its squared penalty pushes small weights to exactly zero faster than L1 does.",
-      "L2, because it keeps only one feature from each group of correlated features and drops the rest.",
-      "L1, because it shrinks every weight by the same fraction, so the ranking of features is kept."
-    ],
-    "answer": 0,
-    "explanation": "L1 adds λ × Σ|w| to the loss. Its pull on each weight has the same size, λ, no matter how small the weight already is. So a weight that does not earn its keep gets pushed all the way to zero and stays there. You end up with a sparse model where most of the 50,000 weights are exactly zero, which is what you want for cheap serving and inspection.\n\nL2 adds λ × Σw². Its pull is 2λw, which gets weaker as the weight shrinks, so weights get small but almost never reach exactly zero. That rules out the option claiming L2 zeros weights faster. Keeping one feature from a correlated group is closer to how L1 behaves. L2 spreads weight across correlated features instead. Shrinking every weight by the same fraction describes L2 in a simple case, while L1 subtracts a fixed amount and clips at zero.",
-    "deeper": "Interviewers often follow up with correlated features. L1 tends to pick one of a correlated group almost at random, which makes the chosen features unstable across retrains. Elastic net mixes L1 and L2 to get sparsity while keeping correlated groups together, and it is a common default in click and fraud models with huge sparse inputs.",
-    "tags": ["regularization", "sparsity"]
-  },
-  {
-    "id": "fnd-0003",
-    "topic": "foundations",
-    "subtopic": "validation for time series",
-    "format": "mcq",
-    "difficulty": 2,
-    "prompt": "A grocery chain forecasts daily sales per store from three years of history. Features include sales lags and 7-day rolling averages. Shuffled 5-fold cross-validation gave an error of 6%, but the first month in production showed 14%. Which change to the validation setup best fixes the misleading estimate?",
-    "options": [
-      "Use forward-chaining splits that train on earlier dates and validate on the dates right after.",
-      "Use stratified 5-fold so that each fold holds the same mix of high-sales and low-sales days.",
-      "Move to 10 folds so each validation fold is smaller and the error estimate becomes less noisy.",
-      "Keep the shuffled folds but fit feature scaling on each training fold only, never on validation rows."
-    ],
-    "answer": 0,
-    "explanation": "Shuffling puts days from after a validation day into the training set. With lag and rolling features, neighbouring days share almost the same information, so the model is really filling in gaps between days it has already seen. That is much easier than forecasting the future, which is what production asks for. Forward-chaining splits (sometimes called rolling-origin or time series split) train only on the past and test on the period right after, so the validation task matches the real one.\n\nStratifying by sales level still shuffles across time, so the leak stays. More folds changes how noisy the estimate is, not the fact that each fold peeks at the future. Fitting the scaler on the training fold only fixes a real but much smaller leak. It does nothing about the model training on days that come after the days it is tested on.",
-    "deeper": "A strong candidate adds a gap between train and validation windows when features look back several days, so rolling averages near the boundary cannot see validation rows. They also make the validation horizon match production, for example a 14-day forecast window if the business plans two weeks ahead.",
-    "tags": ["time-series", "leakage", "cross-validation"]
-  },
-  {
-    "id": "fnd-0004",
-    "topic": "foundations",
-    "subtopic": "naming the error of too-simple models",
-    "format": "fill",
-    "difficulty": 1,
-    "prompt": "A straight-line model predicts house prices from floor area alone. Prices really curve upward for large homes, so training and validation error are both high and close together. The bias-variance decomposition splits expected error into three named terms. The term for error that comes from a model being too simple to capture the true pattern is called ______.",
-    "answer": "bias",
-    "accept": ["bias error", "high bias", "squared bias", "bias squared", "bias²"],
-    "explanation": "Bias is the error from wrong assumptions built into the model. A straight line cannot bend, so however much data you give it, it will keep missing the curve for large homes. That is why training error stays high: the model is wrong even on data it has seen. Validation error is close to training error because the model is too simple to memorise anything.\n\nThe common mix-up is with variance. Variance is the error from a model being too sensitive to the particular training set, which shows up as low training error and much higher validation error. Some people also answer underfitting. Underfitting is the name of the situation, not one of the three terms. The decomposition is bias squared plus variance plus irreducible noise, and bias is the term that causes underfitting. Adding a squared term or a tree-based model would cut bias here, while more data alone would not help much.",
-    "deeper": "In interviews, tie the term to a fix. High bias calls for more capacity or better features, not more rows. A useful check is whether training error is far from a reasonable target, such as human-level error or the error of a stronger reference model.",
-    "tags": ["bias", "underfitting"]
-  },
-  {
-    "id": "fnd-0005",
-    "topic": "foundations",
-    "subtopic": "k-fold cross-validation arithmetic",
-    "format": "numeric",
-    "difficulty": 1,
-    "prompt": "A churn team runs a grid search over 4 learning rates, 3 tree depths and 2 subsample values, scoring every combination with 5-fold cross-validation. After the search, they refit the best combination once on all the data. How many models are trained in total, counting that final refit? Give a whole number.",
-    "answer": 121,
-    "tolerance": 0.5,
-    "check": "combos = 4 * 3 * 2\nfolds = 5\nrefit = 1\nresult = combos * folds + refit",
-    "explanation": "First count the combinations: 4 × 3 × 2 = 24. Each combination is trained once per fold, so cross-validation alone needs 24 × 5 = 120 fits. The final refit on all the data adds 1, giving 121.\n\nThe usual mistakes are stopping at 24, which forgets that each combination is trained once per fold, or stopping at 120, which forgets the refit. Another slip is adding the grid sizes (4 + 3 + 2 = 9) instead of multiplying them. A grid tries every combination, so the sizes multiply. That is why grids grow so fast: adding a fourth setting with 5 values would take the search to 600 fits before the refit.",
-    "deeper": "This arithmetic is why teams move to random search or Bayesian optimisation once the grid grows. A strong candidate also notes that scikit-learn's GridSearchCV does the final refit by default, and that wall-clock time depends on how many fits run in parallel, not just the total count.",
-    "tags": ["cross-validation", "tuning"]
-  },
-  {
-    "id": "fnd-0006",
-    "topic": "foundations",
-    "subtopic": "reducing overfitting",
-    "format": "multi",
-    "difficulty": 2,
-    "prompt": "A convolutional network spots defects in photos of circuit boards. It reaches 98% training accuracy but only 81% validation accuracy, and validation loss starts rising after epoch 12. Which actions are likely to reduce the overfitting? Select all that apply.",
-    "options": [
-      "Collect more labelled board photos",
-      "Increase the weight decay (L2 penalty)",
-      "Stop training at the epoch with the lowest validation loss",
-      "Add more convolutional layers to the network",
-      "Train for more epochs until training loss reaches zero",
-      "Remove the dropout layers so every unit is always used"
-    ],
-    "answer": [0, 1, 2],
-    "explanation": "Overfitting means the model has learned details of the training photos that do not carry over to new ones. The fixes either give it more varied data or limit how closely it can fit.\n\nMore labelled photos make it harder to memorise individual examples, so the model has to learn patterns that hold across boards. Stronger weight decay penalises large weights and pushes the network toward simpler functions. Early stopping keeps the weights from the point where validation loss was lowest, before the model started fitting noise, which is exactly what the rising loss after epoch 12 signals.\n\nAdding layers increases capacity, which usually makes overfitting worse. Training until training loss hits zero is the memorising this question is about. Removing dropout takes away a regularizer, since dropout forces the network not to rely on any single unit. All three wrong options push in the direction of more fitting, not less.",
-    "deeper": "In practice, data augmentation such as flips, small rotations and lighting changes is often the cheapest win for image models, because it adds variety without new labels. An interviewer may ask how to tell when more data will help: plot a learning curve and see whether validation error is still falling as the training set grows.",
-    "tags": ["overfitting", "regularization"]
-  },
-  {
-    "id": "fnd-0007",
-    "topic": "foundations",
-    "subtopic": "validation looked good, production did not",
-    "format": "open",
-    "difficulty": 3,
-    "prompt": "A loan default model scored 0.91 ROC-AUC on a held-out validation set. One month after launch, measured on real applications, its ROC-AUC is 0.68. List the most likely causes and how you would check each one.",
-    "answer": "First I would look for leakage. A feature such as number of collection calls or account status may only be filled in after a default, so it is present in historical rows but not at decision time. I would list each feature with the time it becomes known. Second, the split. If one customer appears in both train and validation, or rows were shuffled across time, validation was too easy. I would re-score on a strict out-of-time split. Third, overuse of the validation set. Many rounds of tuning against it inflate its score, so I would check a fresh holdout. Fourth, shift. A new marketing channel or a policy change may bring different applicants, which I would see by comparing feature distributions. Fifth, train-serving skew, where the live pipeline computes features differently. Last, after one month most loans have not had time to default, so the production labels may be immature.",
-    "points": [
-      "Leakage from features only known after the outcome",
-      "Wrong split, such as random rows or the same customer in both sets",
-      "Validation set overused during tuning",
-      "Distribution shift in the applicant population",
-      "Train-serving skew in feature computation",
-      "Immature labels one month after launch"
-    ],
-    "explanation": "A drop from 0.91 to 0.68 is too large to be noise, so something made the validation number unrealistic or the live setting different. Leakage is the first suspect because it inflates validation in exactly this way. The test is simple: for every feature, ask whether it would exist at the moment the loan is decided. A random split is the next suspect, because it lets the model see the same people, or the future, during training.\n\nThe most common mistake is to jump straight to drift and retrain on newer data. If the cause is leakage or skew, retraining reproduces the same bug. Another miss is the label itself. Default takes months to happen, so after one month the live labels mostly show early defaults, which behave differently from the full set. Comparing like with like, using the same label window in both places, is part of a fair diagnosis.",
-    "deeper": "A strong candidate proposes a replay test: score last quarter's applications through the live feature pipeline and compare with the offline features row by row. Mismatches point to skew, and a gap that remains on matched features points to leakage or shift. Interviewers like candidates who check cheap explanations before retraining anything.",
-    "tags": ["leakage", "drift", "production"]
-  }
+ {
+  "id": "fnd-0001",
+  "topic": "foundations",
+  "subtopic": "bias and variance from learning curves",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A gradient-boosted model predicts which parcels will arrive late. On the full training set its training error is 3% and its validation error is 17%. Experienced dispatchers make about 4% errors on the same task. What does this pattern show?",
+  "options": [
+   "High variance: it fits the training data closely but fails to generalize, so it is overfitting.",
+   "High bias: the model is too simple to capture the real pattern in the data, so it is underfitting.",
+   "A good fit: the training error is already below the human level, so the model has learned the task.",
+   "High bias and high variance together, because validation error sits far above the human level."
+  ],
+  "answer": 0,
+  "explanation": "Read the two gaps separately. The gap between training error and the human-level error tells you about bias. Here training error (3%) is at or below what dispatchers achieve (4%), so the model is flexible enough and bias is low. The gap between training and validation error tells you about variance. Here it is 14 points, which is large. Low bias plus a big train to validation gap means the model has memorised the training data and is overfitting.\n\nThe high bias reading would need training error itself to be high, well above 4%. Calling it a good fit ignores the validation number, which is the one that predicts real performance. The option claiming both problems at once mixes up the two gaps. Validation error is far above human level only because of the variance gap, since training error shows no bias problem.",
+  "deeper": "A strong answer names the next steps for high variance: more data, stronger regularization, shallower trees or fewer boosting rounds, and early stopping. An interviewer may then ask what you would do if training error were 15% instead. That flips the diagnosis to bias, and the fix becomes a richer model or better features.",
+  "tags": [
+   "overfitting",
+   "learning-curves"
+  ],
+  "concepts": [
+   "overfitting",
+   "bias-variance-tradeoff",
+   "learning-curve",
+   "generalization"
+  ]
+ },
+ {
+  "id": "fnd-0002",
+  "topic": "foundations",
+  "subtopic": "L1 vs L2 regularization",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "An ad click model uses logistic regression on 50,000 sparse one-hot features. You suspect only a few hundred features really matter, and you want a smaller model that is cheaper to serve and easier to inspect. Which regularization fits best, and why?",
+  "options": [
+   "L1, because its penalty can push many weights to exactly zero and leave a sparse model.",
+   "L2, because its squared penalty pushes small weights to exactly zero faster than L1 does.",
+   "L2, because it keeps only one feature from each group of correlated features and drops the rest.",
+   "L1, because it shrinks every weight by the same fraction, so the ranking of features is kept."
+  ],
+  "answer": 0,
+  "explanation": "L1 adds λ × Σ|w| to the loss. Its pull on each weight has the same size, λ, no matter how small the weight already is. So a weight that does not earn its keep gets pushed all the way to zero and stays there. You end up with a sparse model where most of the 50,000 weights are exactly zero, which is what you want for cheap serving and inspection.\n\nL2 adds λ × Σw². Its pull is 2λw, which gets weaker as the weight shrinks, so weights get small but almost never reach exactly zero. That rules out the option claiming L2 zeros weights faster. Keeping one feature from a correlated group is closer to how L1 behaves. L2 spreads weight across correlated features instead. Shrinking every weight by the same fraction describes L2 in a simple case, while L1 subtracts a fixed amount and clips at zero.",
+  "deeper": "Interviewers often follow up with correlated features. L1 tends to pick one of a correlated group almost at random, which makes the chosen features unstable across retrains. Elastic net mixes L1 and L2 to get sparsity while keeping correlated groups together, and it is a common default in click and fraud models with huge sparse inputs.",
+  "tags": [
+   "regularization",
+   "sparsity"
+  ],
+  "concepts": [
+   "l1-regularization",
+   "l2-regularization",
+   "regularization"
+  ]
+ },
+ {
+  "id": "fnd-0003",
+  "topic": "foundations",
+  "subtopic": "validation for time series",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A grocery chain forecasts daily sales per store from three years of history. Features include sales lags and 7-day rolling averages. Shuffled 5-fold cross-validation gave an error of 6%, but the first month in production showed 14%. Which change to the validation setup best fixes the misleading estimate?",
+  "options": [
+   "Use forward-chaining splits that train on earlier dates and validate on the dates right after.",
+   "Use stratified 5-fold so that each fold holds the same mix of high-sales and low-sales days.",
+   "Move to 10 folds so each validation fold is smaller and the error estimate becomes less noisy.",
+   "Keep the shuffled folds but fit feature scaling on each training fold only, never on validation rows."
+  ],
+  "answer": 0,
+  "explanation": "Shuffling puts days from after a validation day into the training set. With lag and rolling features, neighbouring days share almost the same information, so the model is really filling in gaps between days it has already seen. That is much easier than forecasting the future, which is what production asks for. Forward-chaining splits (sometimes called rolling-origin or time series split) train only on the past and test on the period right after, so the validation task matches the real one.\n\nStratifying by sales level still shuffles across time, so the leak stays. More folds changes how noisy the estimate is, not the fact that each fold peeks at the future. Fitting the scaler on the training fold only fixes a real but much smaller leak. It does nothing about the model training on days that come after the days it is tested on.",
+  "deeper": "A strong candidate adds a gap between train and validation windows when features look back several days, so rolling averages near the boundary cannot see validation rows. They also make the validation horizon match production, for example a 14-day forecast window if the business plans two weeks ahead.",
+  "tags": [
+   "time-series",
+   "leakage",
+   "cross-validation"
+  ],
+  "concepts": [
+   "time-series-split",
+   "cross-validation",
+   "data-leakage"
+  ]
+ },
+ {
+  "id": "fnd-0004",
+  "topic": "foundations",
+  "subtopic": "naming the error of too-simple models",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A straight-line model predicts house prices from floor area alone. Prices really curve upward for large homes, so training and validation error are both high and close together. The bias-variance decomposition splits expected error into three named terms. The term for error that comes from a model being too simple to capture the true pattern is called ______.",
+  "answer": "bias",
+  "accept": [
+   "bias error",
+   "high bias",
+   "squared bias",
+   "bias squared",
+   "bias²"
+  ],
+  "explanation": "Bias is the error from wrong assumptions built into the model. A straight line cannot bend, so however much data you give it, it will keep missing the curve for large homes. That is why training error stays high: the model is wrong even on data it has seen. Validation error is close to training error because the model is too simple to memorise anything.\n\nThe common mix-up is with variance. Variance is the error from a model being too sensitive to the particular training set, which shows up as low training error and much higher validation error. Some people also answer underfitting. Underfitting is the name of the situation, not one of the three terms. The decomposition is bias squared plus variance plus irreducible noise, and bias is the term that causes underfitting. Adding a squared term or a tree-based model would cut bias here, while more data alone would not help much.",
+  "deeper": "In interviews, tie the term to a fix. High bias calls for more capacity or better features, not more rows. A useful check is whether training error is far from a reasonable target, such as human-level error or the error of a stronger reference model.",
+  "tags": [
+   "bias",
+   "underfitting"
+  ],
+  "concepts": [
+   "underfitting",
+   "bias-variance-tradeoff",
+   "learning-curve"
+  ]
+ },
+ {
+  "id": "fnd-0005",
+  "topic": "foundations",
+  "subtopic": "k-fold cross-validation arithmetic",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A churn team runs a grid search over 4 learning rates, 3 tree depths and 2 subsample values, scoring every combination with 5-fold cross-validation. After the search, they refit the best combination once on all the data. How many models are trained in total, counting that final refit? Give a whole number.",
+  "answer": 121,
+  "tolerance": 0.5,
+  "check": "combos = 4 * 3 * 2\nfolds = 5\nrefit = 1\nresult = combos * folds + refit",
+  "explanation": "First count the combinations: 4 × 3 × 2 = 24. Each combination is trained once per fold, so cross-validation alone needs 24 × 5 = 120 fits. The final refit on all the data adds 1, giving 121.\n\nThe usual mistakes are stopping at 24, which forgets that each combination is trained once per fold, or stopping at 120, which forgets the refit. Another slip is adding the grid sizes (4 + 3 + 2 = 9) instead of multiplying them. A grid tries every combination, so the sizes multiply. That is why grids grow so fast: adding a fourth setting with 5 values would take the search to 600 fits before the refit.",
+  "deeper": "This arithmetic is why teams move to random search or Bayesian optimisation once the grid grows. A strong candidate also notes that scikit-learn's GridSearchCV does the final refit by default, and that wall-clock time depends on how many fits run in parallel, not just the total count.",
+  "tags": [
+   "cross-validation",
+   "tuning"
+  ],
+  "concepts": [
+   "cross-validation",
+   "hyperparameter-tuning",
+   "train-validation-test-split"
+  ]
+ },
+ {
+  "id": "fnd-0006",
+  "topic": "foundations",
+  "subtopic": "reducing overfitting",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A convolutional network spots defects in photos of circuit boards. It reaches 98% training accuracy but only 81% validation accuracy, and validation loss starts rising after epoch 12. Which actions are likely to reduce the overfitting? Select all that apply.",
+  "options": [
+   "Collect more labelled board photos",
+   "Increase the weight decay (L2 penalty)",
+   "Stop training at the epoch with the lowest validation loss",
+   "Add more convolutional layers to the network",
+   "Train for more epochs until training loss reaches zero",
+   "Remove the dropout layers so every unit is always used"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "Overfitting means the model has learned details of the training photos that do not carry over to new ones. The fixes either give it more varied data or limit how closely it can fit.\n\nMore labelled photos make it harder to memorise individual examples, so the model has to learn patterns that hold across boards. Stronger weight decay penalises large weights and pushes the network toward simpler functions. Early stopping keeps the weights from the point where validation loss was lowest, before the model started fitting noise, which is exactly what the rising loss after epoch 12 signals.\n\nAdding layers increases capacity, which usually makes overfitting worse. Training until training loss hits zero is the memorising this question is about. Removing dropout takes away a regularizer, since dropout forces the network not to rely on any single unit. All three wrong options push in the direction of more fitting, not less.",
+  "deeper": "In practice, data augmentation such as flips, small rotations and lighting changes is often the cheapest win for image models, because it adds variety without new labels. An interviewer may ask how to tell when more data will help: plot a learning curve and see whether validation error is still falling as the training set grows.",
+  "tags": [
+   "overfitting",
+   "regularization"
+  ],
+  "concepts": [
+   "overfitting",
+   "regularization",
+   "data-augmentation",
+   "dropout"
+  ]
+ },
+ {
+  "id": "fnd-0007",
+  "topic": "foundations",
+  "subtopic": "validation looked good, production did not",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A loan default model scored 0.91 ROC-AUC on a held-out validation set. One month after launch, measured on real applications, its ROC-AUC is 0.68. List the most likely causes and how you would check each one.",
+  "answer": "First I would look for leakage. A feature such as number of collection calls or account status may only be filled in after a default, so it is present in historical rows but not at decision time. I would list each feature with the time it becomes known. Second, the split. If one customer appears in both train and validation, or rows were shuffled across time, validation was too easy. I would re-score on a strict out-of-time split. Third, overuse of the validation set. Many rounds of tuning against it inflate its score, so I would check a fresh holdout. Fourth, shift. A new marketing channel or a policy change may bring different applicants, which I would see by comparing feature distributions. Fifth, train-serving skew, where the live pipeline computes features differently. Last, after one month most loans have not had time to default, so the production labels may be immature.",
+  "points": [
+   "Leakage from features only known after the outcome",
+   "Wrong split, such as random rows or the same customer in both sets",
+   "Validation set overused during tuning",
+   "Distribution shift in the applicant population",
+   "Train-serving skew in feature computation",
+   "Immature labels one month after launch"
+  ],
+  "explanation": "A drop from 0.91 to 0.68 is too large to be noise, so something made the validation number unrealistic or the live setting different. Leakage is the first suspect because it inflates validation in exactly this way. The test is simple: for every feature, ask whether it would exist at the moment the loan is decided. A random split is the next suspect, because it lets the model see the same people, or the future, during training.\n\nThe most common mistake is to jump straight to drift and retrain on newer data. If the cause is leakage or skew, retraining reproduces the same bug. Another miss is the label itself. Default takes months to happen, so after one month the live labels mostly show early defaults, which behave differently from the full set. Comparing like with like, using the same label window in both places, is part of a fair diagnosis.",
+  "deeper": "A strong candidate proposes a replay test: score last quarter's applications through the live feature pipeline and compare with the offline features row by row. Mismatches point to skew, and a gap that remains on matched features points to leakage or shift. Interviewers like candidates who check cheap explanations before retraining anything.",
+  "tags": [
+   "leakage",
+   "drift",
+   "production"
+  ],
+  "concepts": [
+   "target-leakage",
+   "distribution-shift",
+   "train-validation-test-split"
+  ]
+ }
 ]

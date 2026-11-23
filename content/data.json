@@ -1,135 +1,166 @@
 [
-  {
-    "id": "data-0001",
-    "topic": "data",
-    "subtopic": "spotting target leakage",
-    "format": "mcq",
-    "difficulty": 2,
-    "prompt": "A hospital builds a model that predicts, at the moment a patient is discharged, whether they will be readmitted within 30 days. The training table was pulled from records six months later. Which feature should be removed because it would not be available when the model makes its prediction?",
-    "options": [
-      "Home-care program enrolment, which nurses decide during the week after discharge",
-      "Emergency room visits the patient made in the 12 months before this admission",
-      "Length of the current stay in days, from admission up to the discharge decision",
-      "Kidney function results from blood tests reported on the last morning of the stay"
-    ],
-    "answer": 0,
-    "explanation": "The test for leakage is simple: at the exact moment of prediction, does this value exist yet? Home-care enrolment is decided in the week after discharge, so at discharge time it is unknown. Because the training table was built months later, the column is filled in for every row, and the model can learn from it. It is also likely to be tied to the outcome, since nurses may enrol patients who look unwell at the first follow-up. The model would score well offline and then fail in use, where the field is always blank.\n\nThe other three are safe. Past emergency visits happened before this admission. The length of stay is known once the discharge decision is made. Blood results reported on the last morning of the stay are on record before the patient leaves. Each can look suspicious because it is close to the outcome in time, but closeness is not the test. Availability at prediction time is.",
-    "deeper": "A good habit is to store a timestamp for when each feature value became known, then build training rows with a point-in-time join. In interviews, say you would also be suspicious of any single feature with very high importance, since leaked features often stand out that way.",
-    "tags": [
-      "leakage",
-      "healthcare"
-    ]
-  },
-  {
-    "id": "data-0002",
-    "topic": "data",
-    "subtopic": "handling class imbalance",
-    "format": "multi",
-    "difficulty": 1,
-    "prompt": "A subscription app trains a churn model on data where 3% of users churn. Which of these are sound ways to handle the imbalance? Select all that apply.",
-    "options": [
-      "Use class weights so that mistakes on churners cost more in the training loss",
-      "Oversample churners in the training set only, after the train and test split",
-      "Pick the decision threshold from the precision-recall curve instead of using 0.5",
-      "Oversample churners before the split, so the test set is balanced as well",
-      "Compare models on accuracy, since balancing the classes makes it a fair metric"
-    ],
-    "answer": [
-      0,
-      1,
-      2
-    ],
-    "explanation": "Class weights make each churner count more in the loss, so the model cannot ignore them to reduce total error. Oversampling the training set after the split has a similar effect by showing the model more churners. A tuned threshold matters because with 3% positives many churners get scores well below 0.5. Choosing the cut from the precision-recall curve lets you pick the trade-off you actually want.\n\nOversampling before the split is a real mistake. Copies of the same churner can land in both training and test, so the model is graded on rows it has already seen. The test set also stops looking like real traffic, where 3% churn, so every metric you read from it is off. Accuracy stays a poor guide no matter how you train. It is measured on the real test distribution, where predicting \"no churn\" for everyone still scores 97%.",
-    "deeper": "Interviewers like hearing that class weights and resampling often act much like a shift in the scores, so a well-chosen threshold on an unweighted model can get much of the same gain. Also mention that oversampling or reweighting distorts predicted probabilities, so recalibrate if the scores are used as real churn chances.",
-    "tags": [
-      "imbalance",
-      "churn",
-      "resampling"
-    ]
-  },
-  {
-    "id": "data-0003",
-    "topic": "data",
-    "subtopic": "high-cardinality categorical features",
-    "format": "mcq",
-    "difficulty": 3,
-    "prompt": "An ad click model uses gradient boosted trees. One feature, `merchant_id`, has 400,000 values. Many appear only a few times, and new merchants show up every day. Before splitting off a validation set, an engineer replaced each ID with that merchant's mean click rate over the full labelled dataset. Validation AUC jumped from 0.71 to 0.93, but the online gain was small. What is the best fix?",
-    "options": [
-      "Compute each row's encoding out-of-fold or from earlier days only, smoothed toward the global click rate",
-      "Keep the full-data encoding but smooth it toward the global click rate, which removes the leak for rare merchants",
-      "Switch to one-hot encoding, which cannot leak the label and lets the trees learn a separate effect per merchant",
-      "Drop `merchant_id` entirely, since any encoding of an ID with this many values will leak the label into training"
-    ],
-    "answer": 0,
-    "explanation": "The jump to 0.93 is a leak, not a real gain. Each row's own click label went into its merchant's mean. For a merchant seen three times, the encoding nearly spells out the answer. The validation rows were encoded with the same full-data means, so they leak too. The fix is to make sure a row's label never feeds its own encoding: compute it out-of-fold, or from data before the row's timestamp, and smooth rare merchants toward the global rate. Unseen merchants then get the global rate as a sensible default.\n\nSmoothing alone helps but does not remove the leak. The row's own label is still inside its merchant's mean, just with less weight. One-hot encoding does not leak, but 400,000 sparse columns are costly, trees split poorly on them, rare merchants have almost no data, and new merchants get nothing at all. Dropping the feature is too drastic. Out-of-fold target encoding and feature hashing both keep merchant signal without leaking.",
-    "deeper": "Many libraries now do out-of-fold target encoding for you, and CatBoost uses an ordered version for this exact reason. In an interview, also mention hashing to a fixed number of buckets, or learned embeddings, as options when categories churn daily.",
-    "tags": [
-      "encoding",
-      "leakage",
-      "ads"
-    ]
-  },
-  {
-    "id": "data-0004",
-    "topic": "data",
-    "subtopic": "preprocessing before the split",
-    "format": "fill",
-    "difficulty": 1,
-    "prompt": "A team fits a scaler and a mean imputer on the whole dataset, then splits it into train and test sets. The test score comes out a little too optimistic, because statistics from the test rows shaped the training features. This problem is called data ______.",
-    "answer": "leakage",
-    "accept": [
-      "data leakage",
-      "leak",
-      "leaking",
-      "leakage from preprocessing",
-      "preprocessing leakage",
-      "train test leakage"
-    ],
-    "explanation": "Leakage means information the model should not have at training time gets into training. Here the scaler's mean and standard deviation, and the imputer's fill values, were computed using the test rows. So the training features already carry a little knowledge of the test set, and the test score no longer measures performance on truly unseen data.\n\nThe common wrong answer is overfitting. Overfitting is when a model learns noise in its own training data. It shows up as a gap between training and test scores. Leakage is different: it makes the test score itself untrustworthy, often with no visible gap. The fix is to split first, then fit every preprocessing step on the training rows only. In scikit-learn, putting the scaler and imputer inside a `Pipeline` means cross-validation refits them on each training fold automatically.",
-    "deeper": "With a simple scaler on a large dataset, the effect is often small. It gets serious with steps that look at the target, such as target encoding or feature selection on the full data. Interviewers often ask you to name such a step and explain how a pipeline prevents it.",
-    "tags": [
-      "leakage",
-      "preprocessing"
-    ]
-  },
-  {
-    "id": "data-0005",
-    "topic": "data",
-    "subtopic": "pandas missing values",
-    "format": "numeric",
-    "difficulty": 2,
-    "prompt": "Using pandas 3.x, what value does `out` hold after this code runs? Give it as a decimal to 2 places.\n\n```python\nimport numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    \"store\": [\"a\", \"a\", \"b\", \"b\", \"b\"],\n    \"sales\": [10.0, np.nan, 30.0, np.nan, 60.0],\n})\ndf[\"sales\"] = df[\"sales\"].fillna(df[\"sales\"].mean())\nout = df.groupby(\"store\")[\"sales\"].mean()[\"b\"]\n```",
-    "answer": 41.11,
-    "tolerance": 0.005,
-    "check": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    \"store\": [\"a\", \"a\", \"b\", \"b\", \"b\"],\n    \"sales\": [10.0, np.nan, 30.0, np.nan, 60.0],\n})\ndf[\"sales\"] = df[\"sales\"].fillna(df[\"sales\"].mean())\nout = df.groupby(\"store\")[\"sales\"].mean()[\"b\"]\nresult = float(out)",
-    "explanation": "Work through it in two steps.\n\nStep 1: `df[\"sales\"].mean()` skips NaN by default. It averages 10, 30 and 60, which is 100 / 3 ≈ 33.33. Both missing values become 33.33.\n\nStep 2: store b now holds 30, 33.33 and 60. Their mean is 123.33 / 3 ≈ 41.11.\n\nThe most common mistake is to think the mean treats NaN as zero, giving 100 / 5 = 20 as the fill value and (30 + 20 + 60) / 3 ≈ 36.67 for store b. Another is to skip the fill in your head and average store b's real values only, (30 + 60) / 2 = 45. Note that the fill uses the global mean, not each store's own mean. Filling by store would need `groupby(\"store\")[\"sales\"].transform(\"mean\")` instead.",
-    "deeper": "Filling with a mean pulls group averages toward the global average and shrinks variance, which can hide real differences between stores. In an interview, mention adding a was-missing flag column and computing fill values from training data only, so the fill does not leak test information.",
-    "tags": [
-      "pandas",
-      "missing-values"
-    ]
-  },
-  {
-    "id": "data-0006",
-    "topic": "data",
-    "subtopic": "label quality",
-    "format": "open",
-    "difficulty": 3,
-    "prompt": "A support bot routes tickets into 40 intent classes. The labels came from an outsourced team of 12 annotators. The model has stopped improving, and an expert audit of 500 random tickets disagrees with the training label on 15% of them. Design a labeling process that fixes this, and say how you would handle the noisy labels you already have.",
-    "answer": "First I would rewrite the guidelines with a clear definition, examples and tricky edge cases for each intent, merging classes the experts themselves confuse. I would run a pilot where several annotators label the same tickets and measure agreement with Cohen's or Fleiss' kappa per class. Low-agreement classes point to unclear guidelines, not lazy annotators. In production, I would mix expert-labelled gold tickets into each batch to score annotators, send a share of tickets to two annotators, and have an expert adjudicate disagreements and feed the decisions back into the guidelines. For the existing data, I would find likely errors with cross-validated predictions that confidently disagree with the label, relabel those first, and drop or down-weight what stays doubtful. Finally I would keep an expert-labelled test set so I can tell if quality actually improved.",
-    "points": [
-      "Clear per-class guidelines with examples and edge cases, possibly merging confusable intents",
-      "Measure inter-annotator agreement on overlapping items, by class",
-      "Gold questions with known answers to monitor each annotator",
-      "Expert adjudication of disagreements that feeds back into the guidelines",
-      "Find suspect existing labels with out-of-fold model disagreement and relabel them",
-      "Keep a clean expert-labelled test set to measure real progress"
-    ],
-    "explanation": "A 15% error rate across 40 classes usually means the task is unclear, not that annotators are careless. So the process starts with guidelines and a measure of agreement. Agreement by class shows which intents are badly defined. Gold items catch individual annotators who drift. Adjudication turns each disagreement into a guideline fix, so quality improves over time instead of staying flat.\n\nFor existing labels, the efficient move is to let the model point at likely errors. Train with cross-validation, then flag tickets where the out-of-fold prediction confidently disagrees with the given label. This is the idea behind confident learning. Experts relabel those first, which costs far less than relabelling everything.\n\nThe common mistake is to jump straight to a bigger model or more data. With noisy labels, more data of the same quality raises the ceiling very little. Another mistake is to measure progress on a test set labelled by the same noisy process, which can hide real gains or invent fake ones.",
-    "deeper": "Interviewers often ask how you would budget this. A good answer prices the work: double-labelling every ticket doubles the cost, so you overlap only a share, focus experts on low-agreement classes, and track kappa and gold accuracy on a dashboard each week.",
-    "tags": [
-      "labeling",
-      "data-quality"
-    ]
-  }
+ {
+  "id": "data-0001",
+  "topic": "data",
+  "subtopic": "spotting target leakage",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A hospital builds a model that predicts, at the moment a patient is discharged, whether they will be readmitted within 30 days. The training table was pulled from records six months later. Which feature should be removed because it would not be available when the model makes its prediction?",
+  "options": [
+   "Home-care program enrolment, which nurses decide during the week after discharge",
+   "Emergency room visits the patient made in the 12 months before this admission",
+   "Length of the current stay in days, from admission up to the discharge decision",
+   "Kidney function results from blood tests reported on the last morning of the stay"
+  ],
+  "answer": 0,
+  "explanation": "The test for leakage is simple: at the exact moment of prediction, does this value exist yet? Home-care enrolment is decided in the week after discharge, so at discharge time it is unknown. Because the training table was built months later, the column is filled in for every row, and the model can learn from it. It is also likely to be tied to the outcome, since nurses may enrol patients who look unwell at the first follow-up. The model would score well offline and then fail in use, where the field is always blank.\n\nThe other three are safe. Past emergency visits happened before this admission. The length of stay is known once the discharge decision is made. Blood results reported on the last morning of the stay are on record before the patient leaves. Each can look suspicious because it is close to the outcome in time, but closeness is not the test. Availability at prediction time is.",
+  "deeper": "A good habit is to store a timestamp for when each feature value became known, then build training rows with a point-in-time join. In interviews, say you would also be suspicious of any single feature with very high importance, since leaked features often stand out that way.",
+  "tags": [
+   "leakage",
+   "healthcare"
+  ],
+  "concepts": [
+   "target-leakage",
+   "point-in-time-correctness",
+   "data-leakage"
+  ]
+ },
+ {
+  "id": "data-0002",
+  "topic": "data",
+  "subtopic": "handling class imbalance",
+  "format": "multi",
+  "difficulty": 1,
+  "prompt": "A subscription app trains a churn model on data where 3% of users churn. Which of these are sound ways to handle the imbalance? Select all that apply.",
+  "options": [
+   "Use class weights so that mistakes on churners cost more in the training loss",
+   "Oversample churners in the training set only, after the train and test split",
+   "Pick the decision threshold from the precision-recall curve instead of using 0.5",
+   "Oversample churners before the split, so the test set is balanced as well",
+   "Compare models on accuracy, since balancing the classes makes it a fair metric"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "Class weights make each churner count more in the loss, so the model cannot ignore them to reduce total error. Oversampling the training set after the split has a similar effect by showing the model more churners. A tuned threshold matters because with 3% positives many churners get scores well below 0.5. Choosing the cut from the precision-recall curve lets you pick the trade-off you actually want.\n\nOversampling before the split is a real mistake. Copies of the same churner can land in both training and test, so the model is graded on rows it has already seen. The test set also stops looking like real traffic, where 3% churn, so every metric you read from it is off. Accuracy stays a poor guide no matter how you train. It is measured on the real test distribution, where predicting \"no churn\" for everyone still scores 97%.",
+  "deeper": "Interviewers like hearing that class weights and resampling often act much like a shift in the scores, so a well-chosen threshold on an unweighted model can get much of the same gain. Also mention that oversampling or reweighting distorts predicted probabilities, so recalibrate if the scores are used as real churn chances.",
+  "tags": [
+   "imbalance",
+   "churn",
+   "resampling"
+  ],
+  "concepts": [
+   "class-imbalance",
+   "class-weights",
+   "resampling",
+   "decision-threshold"
+  ]
+ },
+ {
+  "id": "data-0003",
+  "topic": "data",
+  "subtopic": "high-cardinality categorical features",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "An ad click model uses gradient boosted trees. One feature, `merchant_id`, has 400,000 values. Many appear only a few times, and new merchants show up every day. Before splitting off a validation set, an engineer replaced each ID with that merchant's mean click rate over the full labelled dataset. Validation AUC jumped from 0.71 to 0.93, but the online gain was small. What is the best fix?",
+  "options": [
+   "Compute each row's encoding out-of-fold or from earlier days only, smoothed toward the global click rate",
+   "Keep the full-data encoding but smooth it toward the global click rate, which removes the leak for rare merchants",
+   "Switch to one-hot encoding, which cannot leak the label and lets the trees learn a separate effect per merchant",
+   "Drop `merchant_id` entirely, since any encoding of an ID with this many values will leak the label into training"
+  ],
+  "answer": 0,
+  "explanation": "The jump to 0.93 is a leak, not a real gain. Each row's own click label went into its merchant's mean. For a merchant seen three times, the encoding nearly spells out the answer. The validation rows were encoded with the same full-data means, so they leak too. The fix is to make sure a row's label never feeds its own encoding: compute it out-of-fold, or from data before the row's timestamp, and smooth rare merchants toward the global rate. Unseen merchants then get the global rate as a sensible default.\n\nSmoothing alone helps but does not remove the leak. The row's own label is still inside its merchant's mean, just with less weight. One-hot encoding does not leak, but 400,000 sparse columns are costly, trees split poorly on them, rare merchants have almost no data, and new merchants get nothing at all. Dropping the feature is too drastic. Out-of-fold target encoding and feature hashing both keep merchant signal without leaking.",
+  "deeper": "Many libraries now do out-of-fold target encoding for you, and CatBoost uses an ordered version for this exact reason. In an interview, also mention hashing to a fixed number of buckets, or learned embeddings, as options when categories churn daily.",
+  "tags": [
+   "encoding",
+   "leakage",
+   "ads"
+  ],
+  "concepts": [
+   "target-encoding",
+   "feature-hashing",
+   "one-hot-encoding",
+   "target-leakage"
+  ]
+ },
+ {
+  "id": "data-0004",
+  "topic": "data",
+  "subtopic": "preprocessing before the split",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A team fits a scaler and a mean imputer on the whole dataset, then splits it into train and test sets. The test score comes out a little too optimistic, because statistics from the test rows shaped the training features. This problem is called data ______.",
+  "answer": "leakage",
+  "accept": [
+   "data leakage",
+   "leak",
+   "leaking",
+   "leakage from preprocessing",
+   "preprocessing leakage",
+   "train test leakage"
+  ],
+  "explanation": "Leakage means information the model should not have at training time gets into training. Here the scaler's mean and standard deviation, and the imputer's fill values, were computed using the test rows. So the training features already carry a little knowledge of the test set, and the test score no longer measures performance on truly unseen data.\n\nThe common wrong answer is overfitting. Overfitting is when a model learns noise in its own training data. It shows up as a gap between training and test scores. Leakage is different: it makes the test score itself untrustworthy, often with no visible gap. The fix is to split first, then fit every preprocessing step on the training rows only. In scikit-learn, putting the scaler and imputer inside a `Pipeline` means cross-validation refits them on each training fold automatically.",
+  "deeper": "With a simple scaler on a large dataset, the effect is often small. It gets serious with steps that look at the target, such as target encoding or feature selection on the full data. Interviewers often ask you to name such a step and explain how a pipeline prevents it.",
+  "tags": [
+   "leakage",
+   "preprocessing"
+  ],
+  "concepts": [
+   "preprocessing-leakage",
+   "data-leakage",
+   "sklearn-pipeline"
+  ]
+ },
+ {
+  "id": "data-0005",
+  "topic": "data",
+  "subtopic": "pandas missing values",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "Using pandas 3.x, what value does `out` hold after this code runs? Give it as a decimal to 2 places.\n\n```python\nimport numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    \"store\": [\"a\", \"a\", \"b\", \"b\", \"b\"],\n    \"sales\": [10.0, np.nan, 30.0, np.nan, 60.0],\n})\ndf[\"sales\"] = df[\"sales\"].fillna(df[\"sales\"].mean())\nout = df.groupby(\"store\")[\"sales\"].mean()[\"b\"]\n```",
+  "answer": 41.11,
+  "tolerance": 0.005,
+  "check": "import numpy as np\nimport pandas as pd\n\ndf = pd.DataFrame({\n    \"store\": [\"a\", \"a\", \"b\", \"b\", \"b\"],\n    \"sales\": [10.0, np.nan, 30.0, np.nan, 60.0],\n})\ndf[\"sales\"] = df[\"sales\"].fillna(df[\"sales\"].mean())\nout = df.groupby(\"store\")[\"sales\"].mean()[\"b\"]\nresult = float(out)",
+  "explanation": "Work through it in two steps.\n\nStep 1: `df[\"sales\"].mean()` skips NaN by default. It averages 10, 30 and 60, which is 100 / 3 ≈ 33.33. Both missing values become 33.33.\n\nStep 2: store b now holds 30, 33.33 and 60. Their mean is 123.33 / 3 ≈ 41.11.\n\nThe most common mistake is to think the mean treats NaN as zero, giving 100 / 5 = 20 as the fill value and (30 + 20 + 60) / 3 ≈ 36.67 for store b. Another is to skip the fill in your head and average store b's real values only, (30 + 60) / 2 = 45. Note that the fill uses the global mean, not each store's own mean. Filling by store would need `groupby(\"store\")[\"sales\"].transform(\"mean\")` instead.",
+  "deeper": "Filling with a mean pulls group averages toward the global average and shrinks variance, which can hide real differences between stores. In an interview, mention adding a was-missing flag column and computing fill values from training data only, so the fill does not leak test information.",
+  "tags": [
+   "pandas",
+   "missing-values"
+  ],
+  "concepts": [
+   "imputation",
+   "missing-data-mechanisms"
+  ]
+ },
+ {
+  "id": "data-0006",
+  "topic": "data",
+  "subtopic": "label quality",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A support bot routes tickets into 40 intent classes. The labels came from an outsourced team of 12 annotators. The model has stopped improving, and an expert audit of 500 random tickets disagrees with the training label on 15% of them. Design a labeling process that fixes this, and say how you would handle the noisy labels you already have.",
+  "answer": "First I would rewrite the guidelines with a clear definition, examples and tricky edge cases for each intent, merging classes the experts themselves confuse. I would run a pilot where several annotators label the same tickets and measure agreement with Cohen's or Fleiss' kappa per class. Low-agreement classes point to unclear guidelines, not lazy annotators. In production, I would mix expert-labelled gold tickets into each batch to score annotators, send a share of tickets to two annotators, and have an expert adjudicate disagreements and feed the decisions back into the guidelines. For the existing data, I would find likely errors with cross-validated predictions that confidently disagree with the label, relabel those first, and drop or down-weight what stays doubtful. Finally I would keep an expert-labelled test set so I can tell if quality actually improved.",
+  "points": [
+   "Clear per-class guidelines with examples and edge cases, possibly merging confusable intents",
+   "Measure inter-annotator agreement on overlapping items, by class",
+   "Gold questions with known answers to monitor each annotator",
+   "Expert adjudication of disagreements that feeds back into the guidelines",
+   "Find suspect existing labels with out-of-fold model disagreement and relabel them",
+   "Keep a clean expert-labelled test set to measure real progress"
+  ],
+  "explanation": "A 15% error rate across 40 classes usually means the task is unclear, not that annotators are careless. So the process starts with guidelines and a measure of agreement. Agreement by class shows which intents are badly defined. Gold items catch individual annotators who drift. Adjudication turns each disagreement into a guideline fix, so quality improves over time instead of staying flat.\n\nFor existing labels, the efficient move is to let the model point at likely errors. Train with cross-validation, then flag tickets where the out-of-fold prediction confidently disagrees with the given label. This is the idea behind confident learning. Experts relabel those first, which costs far less than relabelling everything.\n\nThe common mistake is to jump straight to a bigger model or more data. With noisy labels, more data of the same quality raises the ceiling very little. Another mistake is to measure progress on a test set labelled by the same noisy process, which can hide real gains or invent fake ones.",
+  "deeper": "Interviewers often ask how you would budget this. A good answer prices the work: double-labelling every ticket doubles the cost, so you overlap only a share, focus experts on low-agreement classes, and track kappa and gold accuracy on a dashboard each week.",
+  "tags": [
+   "labeling",
+   "data-quality"
+  ],
+  "concepts": [
+   "label-noise",
+   "inter-annotator-agreement",
+   "active-learning"
+  ]
+ }
 ]
