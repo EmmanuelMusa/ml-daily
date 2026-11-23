@@ -2,9 +2,11 @@
 import { renderMarkup, escapeHtml } from './markup.js';
 import { grade, hasResponse, optionOrder } from './grade.js';
 import { dayKey, ensureToday, dealMore, nextNew, recordResult, overrideResult, stats, emptyProgress } from './schedule.js';
-import { loadProgress, saveProgress, exportCode, importCode, pruneUnknown } from './store.js';
-import { ICONS } from './icons.js?v=3';
+import { loadProgress, saveProgress, pruneUnknown } from './store.js';
+import { ICONS } from './icons.js?v=4';
 import { isMidAnswer } from './session.js';
+import { makeLookup } from './saved.js';
+import { conceptChipsHtml, renderConcept, renderConcepts, renderProgress, renderSettings } from './pages.js?v=4';
 
 const main = document.getElementById('main');
 const dayLabel = document.getElementById('day-label');
@@ -29,6 +31,37 @@ const S = {
   view: 'today',
   ui: freshUi(),
   fx: null, // one-shot motion cue for the next render: answer, override, reveal, enter, page
+  glossary: null, // { list, byId, lookup, usage } once loaded
+  cameFromQuestion: false, // a concept card opened from the answer screen
+  conceptQuery: '',
+};
+
+// Shared context for the views in pages.js.
+const ctx = {
+  S,
+  main,
+  ICONS,
+  icon: (name) => icon(name),
+  today: () => today(),
+  save: () => save(),
+  applyTheme: (t) => applyTheme(t),
+  replaceProgress(p) {
+    S.progress = p;
+    S.ui = freshUi();
+    applyTheme(S.progress.settings.theme === 'dark' ? 'dark' : 'light');
+    rollover();
+    save();
+    setDayLabel();
+  },
+  resetProgress() {
+    const theme = S.progress.settings.theme;
+    S.progress = emptyProgress();
+    S.progress.settings.theme = theme;
+    S.ui = freshUi();
+    rollover();
+    save();
+    setDayLabel();
+  },
 };
 
 function freshUi() {
@@ -193,6 +226,7 @@ function feedbackHtml(q) {
     ${override}
     <div class="explain">${renderMarkup(q.explanation)}</div>
     <div class="deeper"><h3>Going deeper</h3>${renderMarkup(q.deeper)}</div>
+    ${conceptChipsHtml(ctx, q)}
   </section>`;
 }
 
@@ -368,151 +402,56 @@ function renderSummary() {
   });
 }
 
-// ------------------------------------------------------------------ progress
-
-function renderProgress() {
-  const st = stats(S.progress, S.bank, today());
-  setDayLabel();
-  const counts = {};
-  for (const q of S.bank.questions) counts[q.topic] = (counts[q.topic] ?? 0) + 1;
-  const topics = S.bank.topics.filter((t) => counts[t.key]).map((t, n) => {
-    const r = st.byTopic[t.key];
-    const pct = r?.answered ? Math.round((100 * r.right) / r.answered) : 0;
-    const text = r?.answered ? `${r.right} of ${r.answered} right` : 'Not started';
-    return `<li class="${r?.answered ? '' : 'idle'}" style="--i:${n}"><div class="row"><span>${escapeHtml(t.title)}</span><span>${text}</span></div>
-      <div class="bar" role="img" aria-label="${escapeHtml(t.title)}: ${text}"><i style="width:${pct}%"></i></div></li>`;
-  });
-  const fig = (label, value) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
-  takeFx();
-  main.innerHTML = `<section class="page">
-    <h2 tabindex="-1">Progress</h2>
-    <p class="lede">${S.bank.questions.length} questions in the bank.</p>
-    <dl class="figures">
-      ${fig('Day', st.day)}
-      ${fig('Streak', `${st.streak} day${st.streak === 1 ? '' : 's'}`)}
-      ${fig('Answered', st.answered)}
-      ${fig('Accuracy', st.answered ? `${Math.round(st.accuracy * 100)}%` : 'None yet')}
-      ${fig('Learned', st.learned)}
-      ${fig('Due tomorrow', st.dueTomorrow)}
-    </dl>
-    <h3>By topic</h3>
-    <ul class="topics">${topics.join('')}</ul>
-  </section>`;
-}
-
-// ------------------------------------------------------------------ settings
+// ------------------------------------------------------------------ theme
 
 function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   document.querySelector('meta[name="theme-color"]').setAttribute('content', theme === 'dark' ? '#0f1729' : '#ffffff');
 }
 
-function renderSettings(msg = null) {
-  const theme = S.progress.settings.theme === 'dark' ? 'dark' : 'light';
-  takeFx();
-  main.innerHTML = `<section class="page">
-    <h2 tabindex="-1">Settings</h2>
-    <div class="group">
-      <h3>Theme</h3>
-      <div class="switch" role="group" aria-label="Theme">
-        <button type="button" data-theme-choice="light" aria-pressed="${theme === 'light'}">Light</button>
-        <button type="button" data-theme-choice="dark" aria-pressed="${theme === 'dark'}">Dark</button>
-      </div>
-    </div>
-    <div class="group">
-      <h3>Move progress to another device</h3>
-      <p>Copy your progress code here, then paste it into Load a progress code on the other device.</p>
-      <div class="actions"><button type="button" class="btn quiet" data-act="export">Show my progress code</button></div>
-      <div id="export-area"></div>
-    </div>
-    <div class="group">
-      <h3>Load a progress code</h3>
-      <p>This replaces the progress saved on this device.</p>
-      <div class="field"><label for="import-code">Progress code</label>
-        <textarea id="import-code" class="code-box" spellcheck="false" autocomplete="off"></textarea></div>
-      <div class="actions"><button type="button" class="btn quiet" data-act="import">Load this code</button></div>
-      ${msg?.where === 'import' ? `<p class="msg ${msg.good ? 'good' : 'bad'}" role="status">${escapeHtml(msg.text)}</p>` : ''}
-    </div>
-    <div class="group">
-      <h3>Start over</h3>
-      <p>Clears your history, reviews and streak on this device.</p>
-      <div class="actions"><button type="button" class="btn quiet danger" data-act="reset">Clear my progress</button></div>
-      ${msg?.where === 'reset' ? `<p class="msg good" role="status">${escapeHtml(msg.text)}</p>` : ''}
-    </div>
-  </section>`;
-
-  main.querySelectorAll('[data-theme-choice]').forEach((b) => b.addEventListener('click', () => {
-    S.progress.settings.theme = b.dataset.themeChoice;
-    applyTheme(S.progress.settings.theme);
-    save();
-    renderSettings();
-    main.querySelector(`[data-theme-choice="${b.dataset.themeChoice}"]`).focus();
-  }));
-  main.querySelector('[data-act="export"]').addEventListener('click', () => {
-    const area = main.querySelector('#export-area');
-    area.innerHTML = `<textarea class="code-box" readonly aria-label="Your progress code" style="margin-top:12px">${escapeHtml(exportCode(S.progress))}</textarea>
-      <div class="actions"><button type="button" class="btn quiet" data-act="copy">Copy code</button></div>
-      <p class="msg good" id="copy-msg" role="status"></p>`;
-    const box = area.querySelector('textarea');
-    box.select();
-    area.querySelector('[data-act="copy"]').addEventListener('click', async () => {
-      const msgEl = area.querySelector('#copy-msg');
-      try {
-        await navigator.clipboard.writeText(box.value);
-        msgEl.textContent = 'Copied.';
-      } catch {
-        box.select();
-        msgEl.textContent = 'Select the code and copy it.';
-      }
-    });
-  });
-  main.querySelector('[data-act="import"]').addEventListener('click', () => {
-    const code = main.querySelector('#import-code').value;
-    let incoming;
-    try {
-      incoming = importCode(code);
-    } catch (e) {
-      renderSettings({ where: 'import', good: false, text: e.message });
-      return;
-    }
-    if (!window.confirm('Replace the progress on this device with this code?')) return;
-    S.progress = pruneUnknown(incoming, S.ids);
-    S.ui = freshUi();
-    applyTheme(S.progress.settings.theme === 'dark' ? 'dark' : 'light');
-    rollover();
-    save();
-    setDayLabel();
-    renderSettings({ where: 'import', good: true, text: 'Progress loaded.' });
-  });
-  main.querySelector('[data-act="reset"]').addEventListener('click', () => {
-    if (!window.confirm('Clear all progress on this device? This cannot be undone.')) return;
-    const theme = S.progress.settings.theme;
-    S.progress = emptyProgress();
-    S.progress.settings.theme = theme;
-    S.ui = freshUi();
-    rollover();
-    save();
-    setDayLabel();
-    renderSettings({ where: 'reset', text: 'Progress cleared.' });
-  });
-}
-
 // ------------------------------------------------------------------ routing
 
+const VIEWS = ['today', 'concepts', 'progress', 'settings'];
+
+function parseHash() {
+  const raw = (location.hash || '#today').slice(1);
+  if (raw.startsWith('concept/')) {
+    let id = raw.slice('concept/'.length);
+    try { id = decodeURIComponent(id); } catch { /* keep raw */ }
+    return { view: 'concept', id };
+  }
+  return { view: VIEWS.includes(raw) ? raw : null };
+}
+
 function route() {
-  const view = (location.hash || '#today').slice(1);
-  S.view = ['today', 'progress', 'settings'].includes(view) ? view : 'today';
+  const { view, id } = parseHash();
+  if (!view) return; // a hash such as #main from the skip link, not a view
+  const tab = view === 'concept' ? 'concepts' : view;
+  S.view = view;
   document.querySelectorAll('.tabs a').forEach((a) => {
-    if (a.dataset.view === S.view) a.setAttribute('aria-current', 'page');
+    if (a.dataset.view === tab) a.setAttribute('aria-current', 'page');
     else a.removeAttribute('aria-current');
   });
-  if (S.view === 'progress') renderProgress();
-  else if (S.view === 'settings') renderSettings();
+  setDayLabel();
+  if (view !== 'today') takeFx();
+  if (view === 'concept') renderConcept(ctx, id);
+  else if (view === 'concepts') renderConcepts(ctx);
+  else if (view === 'progress') renderProgress(ctx);
+  else if (view === 'settings') renderSettings(ctx);
   else renderToday();
+}
+
+function buildGlossary(data) {
+  const list = data.concepts ?? [];
+  const usage = new Map();
+  for (const q of S.bank.questions) for (const c of q.concepts ?? []) usage.set(c, (usage.get(c) ?? 0) + 1);
+  return { list, byId: new Map(list.map((c) => [c.id, c])), lookup: makeLookup(list), usage };
 }
 
 async function boot() {
   document.querySelectorAll('.ico[data-icon]').forEach((el) => { el.innerHTML = ICONS[el.dataset.icon]; });
+  const glossaryPromise = fetch('data/glossary.json', { cache: 'no-cache' })
+    .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   try {
     const res = await fetch('data/bank.json', { cache: 'no-cache' });
     if (!res.ok) throw new Error(String(res.status));
@@ -524,6 +463,8 @@ async function boot() {
   S.byId = new Map(S.bank.questions.map((q) => [q.id, q]));
   S.ids = S.bank.questions.map((q) => q.id);
   S.titles = Object.fromEntries(S.bank.topics.map((t) => [t.key, t.title]));
+  const glossary = await glossaryPromise;
+  if (glossary) S.glossary = buildGlossary(glossary);
   const loaded = loadProgress();
   S.progress = pruneUnknown(loaded.progress, S.ids);
   S.persistent = loaded.persistent;
@@ -531,9 +472,16 @@ async function boot() {
   rollover();
   save();
   window.addEventListener('hashchange', () => {
+    const next = parseHash();
+    if (next.view === 'concept') {
+      // Opened from the answer screen, or moving between related concepts from there.
+      S.cameFromQuestion = (S.view === 'today' && S.ui.checked) || (S.view === 'concept' && S.cameFromQuestion);
+    } else if (next.view) {
+      S.cameFromQuestion = false;
+    }
     S.fx = 'page';
     route();
-    main.querySelector('h2, #prompt')?.focus();
+    if (parseHash().view) main.querySelector('h2, #prompt')?.focus();
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && rollover() && S.view === 'today') renderToday();

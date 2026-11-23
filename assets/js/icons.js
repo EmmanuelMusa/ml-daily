@@ -10,4 +10,10 @@ export const ICONS = {
   check: svg('<path pathLength="1" d="m5 12.5 4.5 4.5L19 7.5"/>'),
   cross: svg('<path pathLength="1" d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>'),
   minus: svg('<path pathLength="1" d="M6 12h12"/>'),
+  concepts: svg('<path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v15H6.5A2.5 2.5 0 0 0 4 20.5z"/><path d="M4 20.5A2.5 2.5 0 0 0 6.5 23H20v-5"/><path d="M8.5 7.5h7M8.5 11h5"/>'),
+  back: svg('<path d="M15 5l-7 7 7 7"/>'),
+  bookmark: svg('<path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/>'),
+  bookmarkFilled: '<svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3.5h11v17l-5.5-4-5.5 4z"/></svg>',
+  search: svg('<circle cx="11" cy="11" r="6.5"/><path d="M20 20l-4.2-4.2"/>'),
+  diagram: svg('<rect x="3.5" y="4.5" width="17" height="15" rx="2"/><path d="M7 15.5l3.5-4 3 3 3.5-5"/>'),
 };

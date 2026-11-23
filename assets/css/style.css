@@ -104,7 +104,7 @@ a { color: inherit; }
   bottom: 0;
   z-index: 5;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   background: var(--paper);
   border-top: 1px solid var(--line);
   height: calc(var(--tabbar) + env(safe-area-inset-bottom));
@@ -750,3 +750,32 @@ pre code { background: none; border: 0; padding: 0; font-size: 0.86rem; }
 @keyframes ml-grow {
   from { transform: scaleX(0); }
 }
+
+/* ---------- concept diagrams: palette classes used by content/glossary/diagrams ---------- */
+
+.diagram { margin: 0 0 18px; padding: 14px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); }
+.diagram svg { display: block; width: 100%; height: auto; max-height: 300px; fill: none; stroke: var(--ink); stroke-width: 1.5; font-family: var(--sans); font-size: 12px; }
+.diagram text, .diagram tspan { fill: var(--ink); stroke: none; }
+.diagram .f-ink { fill: var(--ink); }
+.diagram .f-muted { fill: var(--muted); }
+.diagram .f-line { fill: var(--line); }
+.diagram .f-sheet { fill: var(--sheet); }
+.diagram .f-paper { fill: var(--paper); }
+.diagram .f-right { fill: var(--right-soft); }
+.diagram .f-wrong { fill: var(--wrong-soft); }
+.diagram .f-none { fill: none; }
+.diagram .s-ink { stroke: var(--ink); }
+.diagram .s-muted { stroke: var(--muted); }
+.diagram .s-line { stroke: var(--line-strong); }
+.diagram .s-sheet { stroke: var(--sheet); }
+.diagram .s-paper { stroke: var(--paper); }
+.diagram .s-right { stroke: var(--right); }
+.diagram .s-wrong { stroke: var(--wrong); }
+.diagram .s-none { stroke: none; }
+.diagram .s-thin { stroke-width: 1; }
+.diagram .s-thick { stroke-width: 2.5; }
+.diagram .s-dash { stroke-dasharray: 4 3; }
+.diagram .t-small { font-size: 10px; }
+.diagram .t-label { font-size: 13px; font-weight: 600; }
+.diagram .t-bold { font-weight: 700; }
+.diagram .t-muted { fill: var(--muted); }
