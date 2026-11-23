@@ -678,5 +678,479 @@
    "llm-as-judge",
    "golden-dataset"
   ]
+ },
+ {
+  "id": "int-0027",
+  "topic": "integration",
+  "subtopic": "validating a judge before trusting it",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A team building a contract-summary tool wants an LLM judge to score each summary for accuracy and completeness, so they can compare prompt versions without paying lawyers to read every output. Which steps help show whether the judge can be trusted? Select all that apply.",
+  "options": [
+   "Have lawyers label a few hundred summaries, then measure how often the judge's verdicts agree with theirs.",
+   "Test for bias, for example whether the judge favours longer summaries or whichever of two summaries is shown first.",
+   "Re-measure agreement with lawyer labels whenever the judge model or the judge prompt changes, not only once at launch.",
+   "Use the same model that writes the summaries as the judge, since it best understands what it meant to say.",
+   "Run the judge twice on each summary at temperature 0, and treat identical scores as proof that it is accurate."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "An LLM judge is a measuring instrument, so you validate it the way you would validate any instrument: compare it with a trusted reference and look for systematic errors. Lawyer labels on a sample give that reference. Agreement with the lawyers, measured as raw agreement and ideally also with a chance-corrected statistic such as Cohen's kappa, tells you how far to trust the judge's scores. Bias checks matter because judges have known habits. They often prefer longer answers and, when shown two answers, the one in a particular position. Comparing short and long summaries of equal quality, and swapping the order of pairs, exposes these. The check must be repeated when the judge model or its prompt changes, because a new judge is a new instrument.\n\nUsing the writer model as its own judge is risky, not helpful. Models tend to rate their own style of output highly, which is called self-preference bias, and the judge would share the writer's blind spots. Identical scores across two runs show the judge is consistent, not that it is right. A judge can be perfectly repeatable and wrong in the same way every time.",
+  "deeper": "Interviewers like the follow-up \"what agreement is good enough?\" A strong answer compares the judge with how often two lawyers agree with each other on the same items. If lawyers agree with each other 85% of the time, a judge at 80% may be fine, and one at 60% is not.",
+  "tags": [
+   "llm-judge",
+   "evaluation"
+  ],
+  "concepts": [
+   "llm-as-judge",
+   "golden-dataset",
+   "inter-annotator-agreement"
+  ]
+ },
+ {
+  "id": "int-0028",
+  "topic": "integration",
+  "subtopic": "claims backed by context",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "An insurance claims assistant answers adjusters' questions from retrieved policy clauses. A reviewer checks each answer sentence by sentence and asks one thing: is every claim supported by the retrieved clauses, whether or not it happens to be true in the world? This property of an answer is called ______.",
+  "answer": "groundedness",
+  "accept": [
+   "faithfulness",
+   "grounded",
+   "grounding",
+   "faithful",
+   "factual consistency",
+   "context faithfulness",
+   "answer faithfulness"
+  ],
+  "explanation": "Groundedness, also called faithfulness, asks whether each statement in the answer can be traced to the retrieved text. It is checked against the context the model was given, not against the outside world. That is what makes it useful for a RAG system. If an answer contains a claim the clauses do not support, the model added it from memory or made it up, and an adjuster cannot verify it from the sources.\n\nThe common mistake is to answer \"accuracy\" or \"correctness\". Those compare the answer with the truth or with a reference answer, and the two ideas can come apart. If the retriever returns an outdated clause, an answer can be fully grounded and still wrong. If the model answers from general knowledge, it can be correct and still ungrounded, which is a problem in a regulated setting where every answer must be traceable. \"Relevance\" is also different. It asks whether the answer addresses the question, not whether its claims are supported.",
+  "deeper": "Groundedness is often scored by splitting the answer into separate claims and asking an LLM judge, or a trained entailment model, whether each claim follows from the context. The share of supported claims becomes the score. A strong candidate pairs it with retrieval recall, since grounded answers built on the wrong passages still fail users.",
+  "tags": [
+   "rag",
+   "evaluation"
+  ],
+  "concepts": [
+   "groundedness",
+   "hallucination"
+  ]
+ },
+ {
+  "id": "int-0029",
+  "topic": "integration",
+  "subtopic": "regression evals on every change",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A travel-booking assistant's team tweaks its prompt most weeks. Last month a small wording change, meant to make replies friendlier, quietly broke answers about refund rules for cancelled flights. Nobody noticed for ten days. What practice would most reliably catch this kind of break before release?",
+  "options": [
+   "Keep a versioned set of real questions with expected answers, including past failures, and run it on every prompt or model change.",
+   "Have the engineer who made the change try a handful of typical questions in a playground before the change is merged into main.",
+   "Watch the daily thumbs-down rate after each release, and roll the prompt back whenever it rises above its usual range.",
+   "Limit prompt changes to once a quarter, so each release is larger and gets a longer manual review before it ships."
+  ],
+  "answer": 0,
+  "explanation": "A golden set is a fixed, versioned collection of inputs with expected answers or grading rules. Running it on every change turns \"did anything break?\" into a number you can compare with the last version. Prompts are not modular code. A change aimed at tone can shift behaviour in an unrelated area, such as refund rules, so you need coverage across the whole product, not just the part you meant to change. A good set holds common requests, tricky edge cases, out-of-scope questions, safety cases and every bug found in the past, so a fixed failure cannot quietly return. Versioning it keeps scores comparable over time.\n\nA few playground questions test what the engineer was thinking about, which is exactly what did not break here. The thumbs-down rate is a lagging signal. Refund questions are a small slice of traffic, so a drop there barely moves the overall rate, which is how the break went unseen for ten days. Releasing less often adds no coverage. A bigger change with a longer manual read still depends on someone happening to test the broken area.",
+  "deeper": "Interviewers may ask how big the set should be. A few hundred well-chosen cases, grouped by category, usually beat thousands of random ones, because a per-category score shows exactly where a change hurt. Teams add each production incident as a new case and fail the release when any category drops beyond an agreed margin.",
+  "tags": [
+   "regression",
+   "evaluation"
+  ],
+  "concepts": [
+   "golden-dataset"
+  ]
+ },
+ {
+  "id": "int-0030",
+  "topic": "integration",
+  "subtopic": "pairwise vs absolute scoring",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A team is choosing between two versions of a recipe assistant. An LLM judge scores each reply from 1 to 10. Version A averages 7.4 and version B averages 7.6, but when the judge's instructions are lightly reworded the gap flips. A colleague proposes showing the judge both versions' replies to the same request and asking which is better. Why is this pairwise setup usually more reliable for this decision?",
+  "options": [
+   "Picking the better of two replies to one request is an easier, steadier judgement than scoring a lone reply from 1 to 10.",
+   "Seeing both replies side by side cancels position bias, because each reply is read in the same context as the other one.",
+   "Pairwise verdicts track human preferences closely, so once the judge is pairwise it no longer needs a check against human ratings.",
+   "Judging two replies against each other removes the length bias that inflates absolute scores, since both face the same rubric."
+  ],
+  "answer": 0,
+  "explanation": "An absolute score asks the judge to map one reply onto a scale with no fixed meaning. What counts as a 7 shifts with the wording of the instructions, and scores tend to bunch in a narrow band, here around 7 to 8, so a 0.2 gap is smaller than the noise. The flipping result shows exactly that. A pairwise question is easier: given two replies to the same request, which is better? Anything that pushes both replies up or down, such as a harsher prompt, cancels out, because both are judged under the same conditions. People behave the same way, which is why preference data for model training is usually collected as comparisons. The result is a win rate, such as B preferred on 62% of requests.\n\nPairwise judging does not cancel position bias. It creates it, since judges often favour the reply shown first or second. The fix is to run each pair in both orders and count a win only when the verdicts agree. Length bias does not go away either. A judge that likes longer replies will still pick the longer one of a pair, so you compare replies of matched length to test for it. And because these biases remain, pairwise verdicts still need checking against a sample of human preferences before the team trusts the win rate.",
+  "deeper": "Pairwise grows costly as the number of versions grows, since every pair must be compared. With many candidates, teams compare each against a fixed baseline, or fit a rating model such as Elo or Bradley-Terry to a sample of pairs. A strong candidate also reports ties and a confidence interval on the win rate.",
+  "tags": [
+   "llm-judge",
+   "pairwise"
+  ],
+  "concepts": [
+   "llm-as-judge"
+  ]
+ },
+ {
+  "id": "int-0031",
+  "topic": "integration",
+  "subtopic": "how prompt caching works",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A legal research assistant builds every request the same way. First comes a line with the current date and time to the second. Then comes a 5,000-token block of fixed instructions and worked examples. The user's question goes last. Prompt caching is turned on, yet the logs show almost no cache hits. What is the most likely cause?",
+  "options": [
+   "The timestamp at the very start changes on every request, so no two prompts share a leading run of tokens to reuse.",
+   "The question at the end differs on every request, and a prompt cache only hits when the whole prompt is identical.",
+   "The fixed block is too long to cache, because a prompt cache can only hold short prefixes of a few hundred tokens at most.",
+   "Prompt caching only stores the generated output tokens, so the 5,000 input tokens are processed fresh every time."
+  ],
+  "answer": 0,
+  "explanation": "A prompt cache stores the model's internal state for a leading run of tokens, so a later request that starts with exactly the same tokens can skip recomputing them. The match has to start at the first token, because the state for each token depends on every token before it. Here the very first line is a timestamp that changes every second. After that one difference, nothing that follows can be reused, even though the 5,000-token block is identical. Moving the timestamp below the fixed block, or rounding it to the day, would let almost every request hit the cache.\n\nThe option about the question at the end describes exact-match response caching, a different tool. A prefix cache is built for prompts that share a start and differ at the end, which is the normal case. Caches do not reject long prefixes. Many setups have a minimum length below which caching does not apply, and longer shared prefixes give larger savings. Prompt caching works on the input side. It saves the work of reading the prompt, not the work of generating output, which always depends on the new question.",
+  "deeper": "The general rule is to order a prompt from most stable to least stable: system instructions, tool definitions and examples first, then per-user context, then the current question. Watch for hidden changes in the prefix too, such as a request ID, a tool list in random order or reshuffled examples, which silently break caching.",
+  "tags": [
+   "caching",
+   "latency"
+  ],
+  "concepts": [
+   "prompt-caching",
+   "kv-cache"
+  ]
+ },
+ {
+  "id": "int-0032",
+  "topic": "integration",
+  "subtopic": "savings from prompt caching",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "A coding assistant handles 2,000,000 requests a month. Each request sends 10,000 input tokens, and 80% of those tokens are a fixed prefix of instructions and tool definitions. The rest change on every request. With prompt caching, the prefix is read from cache on 75% of requests. Suppose uncached input tokens cost $3.00 per million and cached input tokens cost $0.30 per million. Ignore output tokens and any cost of writing to the cache. How much does caching save per month, in dollars, as a whole number?",
+  "answer": 32400,
+  "tolerance": 0.5,
+  "check": "requests = 2_000_000\ninput_tokens = 10_000\nprefix_share = 0.80\nhit_rate = 0.75\nuncached = 3.00 / 1_000_000\ncached = 0.30 / 1_000_000\nprefix_tokens = requests * input_tokens * prefix_share\nhit_tokens = prefix_tokens * hit_rate\nresult = hit_tokens * (uncached - cached)",
+  "explanation": "Only tokens that are both in the prefix and served from cache get the lower price. Find that count first, then multiply by the price gap.\n\n- Input tokens per month: 2,000,000 × 10,000 = 20,000 million.\n- Prefix tokens: 80% of that is 16,000 million.\n- Prefix tokens served from cache: 75% of 16,000 million is 12,000 million.\n- Saving per million cached tokens: $3.00 - $0.30 = $2.70.\n- Monthly saving: 12,000 × $2.70 = $32,400.\n\nThe most common mistake is to apply one of the two percentages and forget the other. Applying the hit rate to all input tokens gives 15,000 million × $2.70 = $40,500, but the changing part of each request can never be cached. Applying the prefix share and assuming every request hits gives 16,000 × $2.70 = $43,200. Another slip is to report the new bill instead of the saving. The input bill without caching is $60,000, and with caching it is $3,600 for cached tokens plus $24,000 for the rest, which is $27,600. The difference is the same $32,400.",
+  "deeper": "In real systems, writing to the cache can cost more than a normal input token, and cached entries expire after a period without use. So the hit rate depends on traffic shape. A strong candidate asks how many distinct prefixes exist and how often each one is reused before quoting any savings.",
+  "tags": [
+   "caching",
+   "cost"
+  ],
+  "concepts": [
+   "prompt-caching"
+  ]
+ },
+ {
+  "id": "int-0033",
+  "topic": "integration",
+  "subtopic": "risks of semantic caching",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A bank's support bot adds a semantic cache. It embeds each new question, and if a stored question scores above 0.90 cosine similarity, it returns that stored answer without calling the model. In the first week, a customer asking how to close a savings account got the steps for closing a checking account. Another customer's cached reply mentioned a different customer's recent card payment. Which change best fixes both problems while keeping most of the cache's savings?",
+  "options": [
+   "Tune the threshold on labelled pairs of similar questions to keep wrong hits rare, and never cache answers about one customer.",
+   "Lower the threshold to 0.80, so the cache covers more phrasings of each question and the model is called less often.",
+   "Switch to exact matching on the raw question text, which removes both problems and still keeps nearly all of the savings.",
+   "Keep the 0.90 threshold and give each cached answer a longer expiry, so answers stay valid for more of the questions they match."
+  ],
+  "answer": 0,
+  "explanation": "A semantic cache trades some accuracy for savings. Two questions can be close in embedding space and still need different answers. Savings and checking differ by one word, so their embeddings are very close, yet the closing steps differ. The threshold should come from data: collect pairs of real questions, label whether one answer fits both, and pick the cut-off where wrong hits are rare enough for the use case. A score such as 0.90 has no fixed meaning across embedding models, so a borrowed number is a guess. The second failure is worse. An answer holding one customer's data must never reach another, so personal or account-specific questions should skip the shared cache entirely.\n\nLowering the threshold to 0.80 widens matching and makes the savings and checking mix-up more common. Exact matching gives up most of the savings, because people rarely phrase a question exactly the same way twice. It also does nothing about personal data, since two customers can type the same words, such as \"what was my last payment?\" A longer expiry targets a different risk, stale answers, and here it would keep wrong answers around longer.",
+  "deeper": "Staleness is the third risk. When a fee or policy changes, cached answers keep the old version until they expire, so teams set a time to live and clear entries linked to a document when it is updated. Track the hit rate along with a reviewed sample of hits, since a high hit rate can hide wrong answers.",
+  "tags": [
+   "caching",
+   "privacy"
+  ],
+  "concepts": [
+   "semantic-caching",
+   "cosine-similarity",
+   "pii-handling"
+  ]
+ },
+ {
+  "id": "int-0034",
+  "topic": "integration",
+  "subtopic": "blended cost with routing",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A support bot uses a router. 70% of requests go to a small model, and the other 30% go straight to a large model. Of the requests the small model answers, 10% fail an automatic quality check and are re-sent to the large model, so those requests pay for both calls. Suppose a small-model call costs $0.002 and a large-model call costs $0.03. What is the model cost per 1,000 requests, in dollars, to 2 decimal places?",
+  "answer": 12.5,
+  "tolerance": 0.005,
+  "check": "n = 1000\nsmall_share = 0.70\nescalate = 0.10\nsmall_cost = 0.002\nlarge_cost = 0.03\nsmall_calls = n * small_share\nlarge_calls = n * (1 - small_share) + small_calls * escalate\nresult = small_calls * small_cost + large_calls * large_cost",
+  "explanation": "Count the calls to each model, then price them.\n\n- Small-model calls: 70% of 1,000 = 700. Cost: 700 × $0.002 = $1.40.\n- Large-model calls sent directly: 30% of 1,000 = 300.\n- Large-model calls from escalation: 10% of 700 = 70.\n- Large-model calls in total: 300 + 70 = 370. Cost: 370 × $0.03 = $11.10.\n- Total: $1.40 + $11.10 = $12.50 per 1,000 requests.\n\nSending every request to the large model would cost $30.00, so routing cuts the bill by more than half. The common mistake is to ignore the escalated requests and answer $10.40. Escalation looks small at 7% of traffic, but each escalated request adds a large call that costs 15 times a small one. Another slip is to drop the small-model cost for escalated requests and answer $12.36. Those 70 requests were already answered by the small model before the check failed, so they pay for both calls.",
+  "deeper": "The escalation rate is the number to watch. If the small model fails the check 40% of the time, the saving shrinks fast, and those users wait for two calls. Interviewers may ask what makes a good check, such as schema validation, a confidence score or a cheap classifier trained on past failures.",
+  "tags": [
+   "routing",
+   "cost"
+  ],
+  "concepts": [
+   "model-routing",
+   "model-cascade"
+  ]
+ },
+ {
+  "id": "int-0035",
+  "topic": "integration",
+  "subtopic": "showing tokens as they arrive",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A writing assistant takes about 12 seconds to produce a 600-token draft, and users complained that the page looked frozen. The team changes the integration so each token is sent to the browser as soon as the model generates it. The first words now appear in under a second, though the full draft still takes 12 seconds. This technique is called ______.",
+  "answer": "streaming",
+  "accept": [
+   "token streaming",
+   "response streaming",
+   "streaming responses",
+   "streamed responses",
+   "stream",
+   "streaming output"
+  ],
+  "explanation": "Streaming sends the reply in pieces as the model produces it, instead of waiting for the whole response and sending it at once. An LLM generates text one token at a time, so the first tokens exist long before the last ones. Streaming passes them on immediately, usually over a long-lived HTTP connection. The total generation time is unchanged, but the time to first token drops from 12 seconds to under one, and users can start reading while the rest arrives. Most people read slower than a model generates, so the wait often disappears from their point of view.\n\nA common wrong answer is \"caching\". Caching avoids repeat work and can cut real latency, but it does not change how a single fresh answer is delivered. Another is \"batching\", which groups many requests to raise server throughput and can make each user wait slightly longer. Some answer with a decoding speed-up, but the prompt says the full draft still takes 12 seconds, so generation itself did not get faster.",
+  "deeper": "Streaming complicates other parts of the system. Output checks and JSON parsing must handle partial text, and a moderation filter may need to hold back text it has not yet checked. Interviewers may ask how you would stream while still blocking unsafe content, for example by checking each sentence before it is released.",
+  "tags": [
+   "latency",
+   "streaming"
+  ],
+  "concepts": [
+   "streaming-responses",
+   "time-to-first-token"
+  ]
+ },
+ {
+  "id": "int-0036",
+  "topic": "integration",
+  "subtopic": "handling rate limits",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A nightly job sends 50,000 product descriptions to a hosted LLM API for translation. About 2% of calls fail with HTTP 429 (too many requests) or 503 (service unavailable). The code retries each failure immediately in a tight loop, and the failure rate climbs as the run goes on. What is the best fix?",
+  "options": [
+   "Retry with exponential backoff plus random jitter, cap the number of attempts, and put a timeout on every call.",
+   "Retry at once but add more parallel workers, so the job finishes before the provider's limit window resets.",
+   "Drop each failed call and log it, since retrying after a 429 error only adds more load and makes the limit even worse.",
+   "Wait a fixed 5 seconds before every retry, so all of the workers pause and retry together on one schedule."
+  ],
+  "answer": 0,
+  "explanation": "Errors such as 429 and 503 are usually temporary. The provider is saying \"too much right now\", not \"this request is bad\". Retrying in a tight loop adds load at the worst moment, which is why the failure rate climbs. Exponential backoff waits longer after each failure, for example 1, 2, 4, then 8 seconds, so pressure on the provider falls quickly. Random jitter spreads the retries out, so workers that failed at the same moment do not all retry at the same moment again. A cap on attempts stops one bad item from looping forever, and a timeout stops a hung call from blocking a worker.\n\nAdding workers sends even more requests into a limit that is already exceeded, so more calls fail. Dropping failures loses about 1,000 translations a night for no reason, since a retry after a pause usually succeeds. The harm comes from retrying too fast, not from retrying at all. A fixed wait is better than none, but workers that failed together retry together, which recreates the same spike every 5 seconds.",
+  "deeper": "For a user-facing feature, add a fallback after a set number of failures, such as a second provider or a smaller model, so the user gets an answer instead of an error. Interviewers may also ask about honouring a retry-after hint from the server, and about a circuit breaker that pauses calls while the error rate stays high.",
+  "tags": [
+   "reliability",
+   "rate-limits"
+  ],
+  "concepts": [
+   "rate-limits-and-backoff",
+   "graceful-degradation"
+  ]
+ },
+ {
+  "id": "int-0037",
+  "topic": "integration",
+  "subtopic": "hosted API or self-hosted model",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A hospital group wants to add discharge-note summaries to its records system. It expects about 4,000 notes a day, each a few thousand tokens long, and a summary may take up to an hour to appear. One option is a hosted LLM API. The other is running an open-weight model on its own GPUs. How would you decide between them?",
+  "answer": "I would compare the two on data control, quality, cost at this volume, latency and operating burden. Data control comes first because these notes hold patient health data. For the API I would check whether the contract covers health data, whether the provider keeps or trains on inputs, and where data is processed. If those terms are not acceptable, self-hosting may be the only option. Next I would test both on a labelled set of real notes, since a smaller open model may summarize less well. On cost, 4,000 notes a day is modest. Pay-per-token pricing is likely cheaper than GPUs that sit mostly idle, unless volume grows or other workloads share the hardware. Latency barely matters because a one-hour window allows batch processing. Finally, self-hosting needs people to run serving, scaling, security patches, monitoring and model upgrades, and that staff cost belongs in the comparison.",
+  "points": [
+   "Data control first: health data, retention, training use, processing location",
+   "Compare quality on a labelled set of real notes",
+   "Cost at 4,000 a day: per-token pricing versus mostly idle GPUs",
+   "Latency matters little with a one-hour batch window",
+   "Self-hosting adds staff and operating burden: serving, patches, upgrades, on-call"
+  ],
+  "explanation": "The decision is a set of tradeoffs, and the volume, the data and the latency needs in the prompt each push in a direction. The most common mistake is to decide on one factor alone. Some candidates say \"self-host, because health data must never leave the building\" without checking whether a hosted API can offer acceptable contract terms, processing location and no retention. Others say \"use the API, because it is cheaper\" without asking whether the terms allow health data at all, which can rule the API out before cost matters.\n\nA second mistake is to compare GPU rental with the API bill and stop there. A self-hosted model needs engineers to keep it running, patched and monitored, and at modest volume that cost often exceeds the hardware. The picture changes with scale. At 4,000 notes a day a GPU sits idle much of the time, but at many times that volume, or when several workloads share the hardware, self-hosting can win. A good answer says what would change the decision.",
+  "deeper": "A strong candidate proposes a cheap experiment: run 200 real notes through both options, have clinicians score the summaries, and estimate monthly cost for each from measured token counts and GPU throughput. They might also put the model behind a common interface so the hospital can switch later without rewriting the feature.",
+  "tags": [
+   "deployment",
+   "cost"
+  ],
+  "concepts": [
+   "capacity-estimation",
+   "pii-handling"
+  ]
+ },
+ {
+  "id": "int-0038",
+  "topic": "integration",
+  "subtopic": "PII sent to an external API",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A recruiting platform wants a third-party LLM API to summarize CVs for hiring managers. The CVs include names, phone numbers, home addresses and sometimes dates of birth. None of these are needed for a summary of skills and experience. What should the team do before sending CVs to the API?",
+  "options": [
+   "Remove or replace the personal details first, and check how long the provider keeps inputs and whether it trains on them.",
+   "Encrypt each CV before it is sent, so the provider only stores ciphertext while the model still reads the content.",
+   "Send the CVs unchanged, since HTTPS already stops the provider from seeing, logging or keeping any of the content it receives.",
+   "Add an instruction to the prompt telling the model to forget the personal details once the summary has been written."
+  ],
+  "answer": 0,
+  "explanation": "Data minimization is the core privacy principle here. If the summary does not need a phone number or home address, those details should not leave your system. Redaction removes them, and pseudonymization swaps them for placeholders such as [CANDIDATE_1] that your own code can map back afterwards. Even then, a CV is still personal data, so you need to know the provider's terms: how long inputs and outputs are kept, whether they are used for training, who can access them and where they are processed.\n\nEncryption does not work for this purpose. A model cannot read ciphertext, so whatever the provider decrypts to run the model is plain text on its side. HTTPS protects data while it travels over the network, but the provider receives the full content at the other end and may log or keep it. A prompt instruction to forget is meaningless. The model has no memory of the request to erase, and any retention happens in the provider's logs and storage, which a prompt cannot control.",
+  "deeper": "Interviewers like to hear that a redactor is itself a model or rule set that can miss things, such as a phone number written with spaces or a name inside an email address. A strong answer adds tests for the redactor, a log of what was removed, and a review of the provider's terms before launch.",
+  "tags": [
+   "privacy",
+   "pii"
+  ],
+  "concepts": [
+   "pii-handling",
+   "guardrails"
+  ]
+ },
+ {
+  "id": "int-0039",
+  "topic": "integration",
+  "subtopic": "explaining a RAG bot end to end",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A product manager at an airline asks you to explain, in plain terms, how the new baggage-policy chatbot answers a customer's question, and where each step can go wrong. Give the explanation you would offer.",
+  "answer": "Before any customer asks anything, we take the airline's baggage policy pages and cut them into short passages, each covering one rule. Each passage is turned into a list of numbers that captures its meaning and stored in a searchable index. When a customer asks a question, we turn it into numbers the same way and fetch the few passages whose meaning is closest. We hand those passages and the question to the language model, with an instruction to answer only from them and to cite them. Each step can fail. A page may be missing, outdated or badly extracted, for example a fee table that comes out jumbled. A rule can be split across two passages. The search can miss the right passage when the customer says \"carry-on\" and the policy says \"cabin bag\". And the model can ignore the passages, add details from its own memory, or answer when it should say it does not know.",
+  "points": [
+   "Offline: policy pages split into passages, embedded and stored in an index",
+   "At question time: embed the question and fetch the closest passages",
+   "The model answers from those passages and cites them",
+   "Content failures: missing, outdated or badly parsed pages",
+   "Retrieval failures: rules split across passages, wording mismatch",
+   "Generation failures: ignoring the passages, inventing details, not declining"
+  ],
+  "explanation": "The skill here is splitting the system into stages a non-specialist can follow, then tying each failure to a stage. That matters because fixes differ by stage. A wrong answer caused by an outdated page is fixed in the content pipeline, while one caused by the model ignoring a good passage is fixed in the prompt or the model choice.\n\nThe most common mistake is to describe the chatbot as \"the AI reads all our policies and answers\". That hides retrieval, which is where many real failures happen, and gives the manager no way to reason about errors. A second mistake is to bury the explanation in jargon such as embeddings, vector databases and top-k without saying what they do. The plain version, passages turned into numbers that capture meaning so similar text can be found, is accurate enough and easy to repeat. A third is to cover only the happy path. A manager mostly needs to know where it breaks and what the team can measure at each step.",
+  "deeper": "A strong follow-up is to walk the manager through one real failure, such as a wrong pet-fee answer caused by a jumbled table, and show which stage caused it. Stakeholders trust a system more when they can see the team knows where its errors come from and how each one is measured.",
+  "tags": [
+   "rag",
+   "communication"
+  ],
+  "concepts": [
+   "retrieval-augmented-generation",
+   "chunking",
+   "embedding"
+  ]
+ },
+ {
+  "id": "int-0040",
+  "topic": "integration",
+  "subtopic": "Q&A over a large document archive",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "An engineering firm has about one million PDFs from 20 years of projects: specifications with large tables, contracts, reports and scanned site notes. A few thousand files are added or revised each week. Engineers want to ask plain-language questions and get answers that cite the exact document and page. Design the system.",
+  "answer": "Start with ingestion: a layout-aware parser for digital PDFs, OCR for scans, and table extraction that keeps headers with every row, flagging low-confidence pages. Chunk along document structure, such as sections and table blocks, and store metadata with each chunk: document ID, page, project, revision and date. Index each chunk twice, as an embedding in a vector database with approximate nearest neighbour search and in a BM25 keyword index, because engineers search for part numbers and clause codes that embeddings blur. At query time, run hybrid retrieval with metadata filters, rerank the top candidates with a cross-encoder, and have the model answer only from those chunks, citing document and page, with a check that each cited page exists and contains the quoted text. For freshness, run incremental ingestion that re-indexes changed files and removes superseded revisions. On cost, embedding a million documents is a one-off batch job, and the model sees only a few chunks per question. Enforce access permissions at retrieval, and track retrieval and citation quality on a test set.",
+  "points": [
+   "Layout-aware parsing, OCR for scans, tables kept with their headers",
+   "Structure-based chunks with metadata: document, page, revision, date",
+   "Hybrid retrieval (vectors plus BM25) with filters and a reranker",
+   "Answers cite document and page, and the citations are checked",
+   "Incremental re-indexing that removes superseded revisions",
+   "Cost control, access permissions and a retrieval test set"
+  ],
+  "explanation": "Much of the difficulty in this design sits before retrieval. A naive pipeline extracts raw text from every PDF and splits it into fixed-size chunks. Tables then become streams of numbers with no column names, scanned pages come out empty, and a value such as \"rated load 40 kN\" loses the row and column that gave it meaning. Parsing and structure-aware chunking set the ceiling for everything downstream.\n\nThe most common mistake is to rely on vector search alone. Engineering questions are full of exact identifiers, such as part numbers and standard codes, which dense embeddings often treat as near-misses. A keyword index catches these, and combining the two with a reranker covers both phrasing and exact terms. A second mistake is ignoring revisions. With weekly updates, an index that never removes old versions will cite a superseded spec, which can be worse than no answer. Third, citations must be checked, not just requested, since a model can cite a page that does not support the claim. Finally, access control belongs inside retrieval, because some contracts are restricted.",
+  "deeper": "Interviewers often probe scale. A strong candidate estimates the index: a million documents at perhaps 50 chunks each is 50 million chunks, which calls for approximate search and possibly compressed vectors. They also keep the parsed text, so a future re-embedding run does not need to parse the PDFs again.",
+  "tags": [
+   "rag",
+   "system-design"
+  ],
+  "concepts": [
+   "retrieval-augmented-generation",
+   "chunking",
+   "hybrid-search",
+   "vector-database"
+  ]
+ },
+ {
+  "id": "int-0041",
+  "topic": "integration",
+  "subtopic": "rolling out a prompt or model change",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "Your team wants to move an email-drafting feature, used by 40,000 sales reps, to a newer and cheaper model with a reworked prompt. Plan the rollout so that a quality drop is caught before most reps see it, and so the change can be undone quickly.",
+  "answer": "Treat the model and prompt as one versioned release behind a config flag. Offline, run the golden set of real drafting requests through the old and new versions and compare them with a pairwise LLM judge that has been checked against human ratings, plus checks for format, tone rules, latency and cost. Fix any category that regresses before going further. Next, run shadow traffic: send a copy of live requests to the new version without showing its drafts, and compare errors, latency and judge scores on real inputs. Then start a canary with 1 to 5% of reps chosen at random, and compare online signals with a control group on the old version: how often drafts are sent with few edits, regenerate clicks, complaints, latency and cost. Set pass and rollback thresholds before the canary starts. Ramp up in steps while the metrics hold. Rollback is a flag change back to the pinned old version, which stays deployed until the new one has run cleanly for a while.",
+  "points": [
+   "Version the prompt and model together behind a flag",
+   "Offline golden set with a validated pairwise judge",
+   "Shadow traffic on live inputs without showing results",
+   "Small random canary compared with a control group",
+   "Online metrics: edits, regenerations, complaints, latency, cost",
+   "Thresholds set in advance and instant rollback to the pinned old version"
+  ],
+  "explanation": "Each stage catches a different kind of problem at a different cost. Offline evals are cheap and fast but use a fixed set of inputs, so they miss what real traffic contains. Shadow traffic adds real inputs with no user risk, but shows nothing about how reps react. A canary measures real behaviour, such as whether reps send drafts or rewrite them, on a small share of users, so a problem reaches few people.\n\nThe most common mistake is to jump from a good offline score straight to full traffic. Golden sets rarely cover everything, and a cheaper model can fail on long threads or unusual languages that the set underrepresents. Another mistake is to decide the success bar after seeing the canary numbers, which makes it easy to explain away a drop. A third is a slow rollback that needs a new deploy, so the old version should stay live and switchable by config. Finally, the online comparison needs a control group on the old version at the same time, because day-to-day swings in email volume can hide or fake a change.",
+  "deeper": "Interviewers may ask how long the canary should run. A strong answer ties it to sample size, meaning enough drafts to detect the smallest drop in send rate that matters, and to at least a full weekly cycle, since sales activity on a Monday differs from a Friday.",
+  "tags": [
+   "rollout",
+   "evaluation"
+  ],
+  "concepts": [
+   "golden-dataset",
+   "canary-release",
+   "shadow-deployment",
+   "llm-as-judge"
+  ]
+ },
+ {
+  "id": "int-0042",
+  "topic": "integration",
+  "subtopic": "encoding query and document apart",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "A job-matching site has 2 million job postings. A transformer encodes each posting into a vector once, offline, and stores it. When a candidate searches, the same kind of model encodes only the candidate's profile, and the site finds the nearest posting vectors. Because the query and each document are encoded separately and only meet as vectors at the end, this retrieval model is called a ______.",
+  "answer": "bi-encoder",
+  "accept": [
+   "biencoder",
+   "bi encoder model",
+   "dual encoder",
+   "dual encoder model",
+   "two tower",
+   "two tower model",
+   "two tower encoder",
+   "two tower network"
+  ],
+  "explanation": "A bi-encoder runs the query and the document through the encoder separately and compares the two vectors with a similarity score such as cosine. The key benefit is that document vectors do not depend on the query, so all 2 million postings can be encoded ahead of time. At search time the system encodes one profile and runs a fast nearest-neighbour search, which takes milliseconds.\n\nThe common wrong answer is \"cross-encoder\", which is the opposite design. A cross-encoder takes the query and one document together as a single input, so attention can link every word in one to every word in the other. That gives more accurate relevance scores, but nothing can be computed ahead of time, and scoring 2 million postings would need 2 million model passes per search. This is why the two are often combined: the bi-encoder fetches a shortlist, and a cross-encoder reranks it. \"Embedding model\" describes what a bi-encoder produces, not the design the question asks about, which is encoding the two sides separately.",
+  "deeper": "Interviewers often ask how to make a bi-encoder more accurate without losing its speed. Good answers include fine-tuning it on your own query and match pairs, adding hard negatives that look relevant but are not, and putting a cross-encoder reranker on the top 50 to 100 results.",
+  "tags": [
+   "retrieval",
+   "embeddings"
+  ],
+  "concepts": [
+   "two-tower-model",
+   "cross-encoder-reranking",
+   "embedding"
+  ]
+ },
+ {
+  "id": "int-0043",
+  "topic": "integration",
+  "subtopic": "a bot that cites outdated policy",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A retailer's support bot uses RAG over its help-centre pages. It tells customers they have 30 days to return items, but the return window was cut to 14 days in March, and the new policy page went live that same day. Which of these could cause the bot's answer? Select all that apply.",
+  "options": [
+   "The index has not been refreshed since before the change, so it holds only the old policy text and not the new page.",
+   "The old policy page was never deleted from the vector store, so both versions are indexed and the old one can be retrieved.",
+   "Retrieval has no filter or boost on effective date, so it has no reason to prefer the newer page when both match well.",
+   "The embedding model was trained before March, so it cannot represent text about a policy written after that date.",
+   "The index uses approximate nearest neighbour search, which favours vectors that were inserted earlier, such as the old page."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "A RAG bot can only be as current as what retrieval hands it, and three different gaps can each put the 30-day rule in front of the model. If the index has not been refreshed since the change, the new page was never embedded, so the old text is all retrieval can find. If the pipeline adds new pages but never removes replaced ones, both versions sit in the index. They describe the same topic in nearly the same words, so they score almost equally, and the old one can easily rank above the new one. Without a filter that keeps only current documents, or a boost for newer effective dates, nothing tips that tie toward the correct page.\n\nThe embedding model's training date does not matter here. It turns any text into a vector based on its words, and a sentence about a 14-day window is ordinary language it handles fine. What matters is whether that text was ever embedded. Approximate nearest neighbour search trades a little accuracy for speed, but it has no preference for older vectors. Insertion order does not make a vector more similar to the query.",
+  "deeper": "The durable fix is a pipeline, not a one-off re-index. Each document carries an ID, a version and an effective date, an update replaces the old chunks for that ID, and retrieval filters to current versions. A strong candidate also adds a test case for each policy change, so the regression suite catches the bot quoting an old rule.",
+  "tags": [
+   "rag",
+   "freshness"
+  ],
+  "concepts": [
+   "vector-database",
+   "approximate-nearest-neighbor",
+   "retrieval-augmented-generation"
+  ]
+ },
+ {
+  "id": "int-0044",
+  "topic": "integration",
+  "subtopic": "classic keyword ranking",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A legal search engine ranks documents by keyword match. A query term earns more credit the more often it appears in a document, but that credit rises toward a ceiling, so the tenth mention adds very little. Rare terms count more than common ones, and a tunable setting controls how much long documents are penalized for simply containing more words. This classic ranking function is called ______.",
+  "answer": "BM25",
+  "accept": [
+   "okapi bm25",
+   "okapi",
+   "bm 25",
+   "best match 25",
+   "best matching 25"
+  ],
+  "explanation": "BM25 scores a document by adding up a contribution for each query term, and each contribution has three parts. An inverse document frequency weight makes rare terms such as \"indemnification\" count more than common ones such as \"agreement\". A term frequency part grows with repeats but saturates, controlled by a parameter usually called k1, so a document cannot win by repeating one word fifty times. A length part, controlled by a parameter usually called b, compares the document's length with the average, so a long contract does not win just by containing more words.\n\nThe common wrong answer is TF-IDF. It shares the idea of rewarding frequent terms and weighting rare ones, but in its usual forms term frequency keeps growing without a ceiling, even when it is log-scaled, and there is no tunable length setting in the score. BM25 can be seen as a refined, better-behaved TF-IDF. Answering \"cosine similarity\" is also wrong. That compares two vectors and is not a keyword ranking function on its own.",
+  "deeper": "BM25 is still a strong baseline and a standard part of hybrid search. It excels at exact terms that embeddings blur, such as case numbers, statute codes and product IDs, and it needs no training. A strong candidate adds that it misses synonyms, which is why it is paired with dense retrieval.",
+  "tags": [
+   "retrieval",
+   "keyword-search"
+  ],
+  "concepts": [
+   "bm25"
+  ]
  }
 ]
