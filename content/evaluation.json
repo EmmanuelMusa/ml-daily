@@ -620,5 +620,478 @@
    "ndcg",
    "precision-at-k"
   ]
+ },
+ {
+  "id": "eval-0026",
+  "topic": "evaluation",
+  "subtopic": "reading a reliability diagram",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A hospital team checks the calibration of a readmission model. They sort 20,000 test patients into 10 equal-width bins by predicted probability and plot a reliability diagram: mean predicted probability on the x-axis and the observed readmission rate on the y-axis. They also report expected calibration error (ECE). Which statements are correct? Select all that apply.",
+  "options": [
+   "A bin plotted below the diagonal is one where the model predicted more readmissions than actually happened.",
+   "ECE weights each bin's gap by its share of patients, so a large gap in a nearly empty bin adds very little.",
+   "A model that gives every patient the overall readmission rate can have ECE near 0 while ranking no one usefully.",
+   "A bin plotted above the diagonal is one where the model's scores are too high and should be pulled down.",
+   "ECE comes out the same whatever number of bins you choose, so the bin count does not need reporting.",
+   "If recalibration lowers ECE, the model's ROC-AUC must have gone up by a similar amount as well."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "A point below the diagonal has an x value (what the model predicted) higher than its y value (what happened). If patients in a bin were scored 0.40 on average but only 25% were readmitted, the model overestimates risk there, and its scores for that bin should be pulled down. ECE is the weighted average of the gaps |observed − predicted| across bins, with each bin weighted by the share of patients in it, so a 30-point gap in a bin with 15 patients barely moves it. And calibration is not discrimination. A model that predicts the base rate for everyone is perfectly calibrated on average but cannot separate high-risk from low-risk patients.\n\nThe option about points above the diagonal has it backwards. There the observed rate is higher than predicted, so the scores are too low. ECE does depend on the binning: more bins means fewer patients per bin and noisier gaps, which tends to push ECE up, so the bin count should be reported. Finally, a monotonic recalibration such as Platt scaling keeps the order of the scores, so ROC-AUC stays the same while ECE falls.",
+  "deeper": "In an interview, pair ECE with the diagram itself and a count per bin. A single ECE number hides where the miscalibration sits, and for a readmission model the high-risk bins usually drive care decisions. A strong candidate also mentions equal-count bins, which avoid near-empty bins at the extremes.",
+  "tags": [
+   "calibration",
+   "ece",
+   "healthcare"
+  ],
+  "concepts": [
+   "calibration"
+  ]
+ },
+ {
+  "id": "eval-0027",
+  "topic": "evaluation",
+  "subtopic": "recalibrating scores",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "A support vector machine flags toxic product reviews. Its raw outputs are margin scores, not probabilities. The team holds out a calibration set, fits a logistic regression that takes the raw score as its only input and the true label as the target, and then reports that regression's output as the probability of toxicity. This recalibration method is called ______.",
+  "answer": "Platt scaling",
+  "accept": [
+   "platt",
+   "platt calibration",
+   "platt's method",
+   "platt's scaling",
+   "platts scaling",
+   "sigmoid calibration",
+   "sigmoid scaling",
+   "logistic calibration",
+   "platt scaling method"
+  ],
+  "explanation": "Platt scaling fits p = 1 / (1 + exp(−(a·s + b))), where s is the raw score and a and b are learned on held-out data. That is exactly a one-feature logistic regression on the score. Because the sigmoid is monotonic, the order of the reviews does not change, so ranking metrics such as ROC-AUC stay the same while the probabilities become usable.\n\nThe most common wrong answer is isotonic regression. It also recalibrates, but it fits a free-form, step-shaped increasing function instead of a sigmoid. It needs more calibration data and can overfit when the set is small. Some people answer temperature scaling, which divides a neural network's logits by one learned number and has no separate shift term. It is a close cousin, but the method described here, with a slope and an intercept on the score, is Platt scaling. Fitting the map on the training data instead of a held-out set is the other classic slip, because the model has already fitted those examples, so their scores are more extreme than scores on new reviews.",
+  "deeper": "A good follow-up is when to pick each method. Platt scaling suits small calibration sets and S-shaped distortion, which is typical of SVMs and boosted trees. Isotonic regression handles odd shapes but wants thousands of examples. Either way, check a reliability diagram before and after.",
+  "tags": [
+   "calibration",
+   "svm"
+  ],
+  "concepts": [
+   "calibration",
+   "logistic-regression",
+   "support-vector-machine"
+  ]
+ },
+ {
+  "id": "eval-0028",
+  "topic": "evaluation",
+  "subtopic": "PR-AUC of a random model",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A model flags faulty sensor readings on a wind farm. In the test set, 5% of readings are faulty. The model scores a PR-AUC (average precision) of 0.30, and a teammate says that is worse than a coin flip. What PR-AUC would a model with random scores get on this test set, in expectation?",
+  "options": [
+   "About 0.05, the share of faulty readings, so 0.30 is about six times the random level.",
+   "About 0.50, the same as the random ROC-AUC, so 0.30 means the model ranks worse than chance.",
+   "About 0.00, because random scores almost never put a faulty reading at the top of the list.",
+   "About 0.95, the share of normal readings, because random scores get most of those right."
+  ],
+  "answer": 0,
+  "explanation": "With random scores, the readings above any threshold are a random sample of the test set, so about 5% of them are faulty at every threshold. Precision stays near 0.05 all the way along the recall axis, and the area under that flat line is about 0.05. So the baseline for PR-AUC is the positive rate, and 0.30 is a real gain over it.\n\nThe option claiming 0.50 mixes up the two curves. ROC-AUC has a random baseline of 0.5 whatever the class mix, but PR-AUC does not. The option claiming 0.00 forgets that precision is a share, not a count. Random scores still put some faulty readings near the top, about 5% of whatever is flagged. The option claiming 0.95 uses the wrong class. Precision and recall here are about the faulty class, so the normal readings do not set the baseline.",
+  "deeper": "Always say the positive rate next to a PR-AUC. A score of 0.30 is strong when positives are 1% and weak when they are 25%. It also means PR-AUC values from test sets with different class mixes cannot be compared directly.",
+  "tags": [
+   "pr-auc",
+   "baseline",
+   "imbalance"
+  ],
+  "concepts": [
+   "pr-curve",
+   "roc-auc",
+   "baseline-model"
+  ]
+ },
+ {
+  "id": "eval-0029",
+  "topic": "evaluation",
+  "subtopic": "A/B test sample size",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "A travel site wants to test a new booking flow. The current booking rate is 4.0%, and the smallest lift worth detecting is a 10% relative increase. The test uses a two-sided significance level of 0.05 and 80% power, so use 1.96 for the significance level and 0.84 for power. Use the standard per-arm sample size formula with unpooled variances:\n\nn = (1.96 + 0.84)² × (p₁(1 − p₁) + p₂(1 − p₂)) / (p₂ − p₁)²\n\nRound n up to a whole user. The site gets 6,000 new eligible users a day, split evenly between control and treatment. How many whole days must the test run to reach the required sample in both arms? Give a whole number.",
+  "answer": 14,
+  "tolerance": 0.5,
+  "check": "import math\np1 = 0.04\np2 = p1 * 1.10\nz = 1.96 + 0.84\nn = math.ceil(z ** 2 * (p1 * (1 - p1) + p2 * (1 - p2)) / (p2 - p1) ** 2)\nper_arm_per_day = 6000 / 2\nresult = math.ceil(n / per_arm_per_day)",
+  "explanation": "Step 1, turn the relative lift into rates: p₁ = 0.040 and p₂ = 0.040 × 1.10 = 0.044, so p₂ − p₁ = 0.004.\n\nStep 2, the variance term: 0.04 × 0.96 + 0.044 × 0.956 = 0.0384 + 0.042064 = 0.080464.\n\nStep 3, n = 2.8² × 0.080464 / 0.004² = 7.84 × 0.080464 / 0.000016 ≈ 39,427.4, which rounds up to 39,428 users per arm.\n\nStep 4, each arm gets 6,000 / 2 = 3,000 users a day, so 39,428 / 3,000 ≈ 13.14 days. You cannot stop part way through a day and still have enough users, so the test needs 14 days.\n\nThe most common mistake is in step 4: dividing one arm's sample by the full 6,000 a day gives about 7 days, half of what is needed. The second is using the relative lift, 0.10, as p₂ − p₁. That makes n tiny and the test hopelessly underpowered. Small absolute gaps on a low base rate are what make sample sizes large.",
+  "deeper": "Here 14 days is also two full weeks, which is good, because weekday and weekend users often behave differently. Interviewers like to hear that you would round up to whole weeks anyway, and that halving the detectable lift roughly quadruples the sample needed.",
+  "tags": [
+   "ab-testing",
+   "power",
+   "sample-size"
+  ],
+  "concepts": [
+   "ab-testing",
+   "statistical-power",
+   "hypothesis-testing"
+  ]
+ },
+ {
+  "id": "eval-0030",
+  "topic": "evaluation",
+  "subtopic": "peeking at an A/B test",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A growth team plans a four-week A/B test of a new onboarding email. The analyst computes the p-value for sign-up rate every morning and plans to stop and ship the first day it drops below 0.05. Which statement best describes the problem and a sound fix?",
+  "options": [
+   "Each daily look is another chance to cross 0.05 by luck, so false positives run well above 5%. Fix the sample size up front or use a sequential test built for repeated looks.",
+   "Daily looks are fine because each p-value uses all the data collected so far, so a value below 0.05 on any day is valid. The only fix needed is to log the day the test stopped.",
+   "Stopping early mainly causes false negatives, because the test ends with less data than planned. The fix is to keep looking daily but always run at least one week past the planned end.",
+   "The extra risk from daily looks is small, and switching to a one-sided test halves the false positive rate, which more than offsets it. The fix is to use a one-sided test from the start."
+  ],
+  "answer": 0,
+  "explanation": "A p-value below 0.05 means a 5% false positive rate only for a single test done once at a planned sample size. Under the null hypothesis the p-value drifts up and down as data arrives. Stopping the first time it dips below 0.05 gives luck many chances to win. A simulation of a test with no real effect puts the false positive rate near 25% with 20 looks and near 27% with the 28 daily looks of a four-week test, more than five times the planned rate. The fixes are to fix the sample size and analyse once, or to use a method designed for repeated looks, such as a group sequential design with alpha spending or always-valid p-values.\n\nThe option saying daily looks are fine misses that each extra look is another test, so using all the data does not help. The option about false negatives has the main harm the wrong way round. This stopping rule only stops on a significant result, so it inflates false positives. The one-sided option is wrong too: a one-sided test at 0.05 still has a 5% false positive rate for a single look, and peeking inflates it just the same.",
+  "deeper": "Teams often want to stop early for good reasons, such as a harmful change. A strong answer separates the two: guardrail checks that may stop a test for harm, and a pre-planned decision rule for success. Mention alpha spending or sequential testing by name, then explain the idea in one sentence.",
+  "tags": [
+   "ab-testing",
+   "peeking"
+  ],
+  "concepts": [
+   "ab-testing",
+   "multiple-comparisons",
+   "p-value"
+  ]
+ },
+ {
+  "id": "eval-0031",
+  "topic": "evaluation",
+  "subtopic": "threats to A/B validity",
+  "format": "multi",
+  "difficulty": 3,
+  "prompt": "A food delivery app runs a two-week A/B test of a new restaurant ranking on its home feed. Users are split 50/50 at random, and both arms order from the same restaurants and use the same couriers. Which of these are real threats to trusting the result? Select all that apply.",
+  "options": [
+   "Treatment users pile onto a few top-ranked restaurants, which slows those kitchens for control users as well.",
+   "Of 2,000,000 assigned users, the logs show 1,016,000 in treatment and 984,000 in control.",
+   "Regular users click more in the first days because the feed looks new, and the gap shrinks in week two.",
+   "The team tracked 25 metrics and the write-up highlights the 2 that reached p < 0.05.",
+   "The two arms differ slightly in average user age, by about what random assignment would produce.",
+   "The test ran two full weeks instead of a few days, so it covers every day of the week twice."
+  ],
+  "answer": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "explanation": "Four of these break the test. Shared kitchens mean the arms interfere with each other: treatment can make control look worse, so the measured gap overstates the true effect. The split is 50.8% to 49.2%. That sounds small, but with 2 million users chance alone rarely moves it by more than 0.1 points, and a chi-square test gives about 512, so the gap is far too large to be luck. This sample ratio mismatch points to a bug in assignment or logging. The early burst that fades is a novelty effect, so the first-week lift will not last. And with 25 metrics at 0.05, you expect about one false hit by chance, so two highlighted wins are weak evidence without a correction.\n\nThe small age difference is not a threat. Random assignment balances groups only on average, and small chance differences are exactly what the p-value already accounts for. Running two full weeks is a strength, because it averages over weekday and weekend behaviour instead of capturing only part of the cycle.",
+  "deeper": "Marketplaces are where interference bites hardest. Interviewers like candidates who suggest switchback tests (alternating the whole market between arms by time slot) or splitting by city. Checking sample ratio mismatch before reading any metric is a habit worth naming.",
+  "tags": [
+   "ab-testing",
+   "marketplace"
+  ],
+  "concepts": [
+   "ab-testing",
+   "multiple-comparisons"
+  ]
+ },
+ {
+  "id": "eval-0032",
+  "topic": "evaluation",
+  "subtopic": "offline gains that vanish online",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A job board trains a new search ranker on click logs from its current ranker. On a held-out week of those logs, the new model predicts clicks better, with AUC 0.74 against 0.71. Most logged clicks happened in the top three slots. In a well-powered two-week A/B test, job applications per search do not change. What is the most likely explanation?",
+  "options": [
+   "The logs reflect the old ranker's choices and slot order, so predicting those clicks better need not mean better rankings.",
+   "The held-out week came right after the training weeks, so it shared too much with them, and a week from months later would show no gain.",
+   "AUC ignores calibration, and applications depend on well-calibrated click probabilities, so offline log loss would have predicted the flat result.",
+   "The offline test scored single impressions while the A/B test split users, and that change of unit alone hides a real gain online."
+  ],
+  "answer": 0,
+  "explanation": "Logged clicks are shaped by the old system. Users mostly click what sits in the top slots, partly because it sits there. That is position bias. And jobs the old ranker never showed have no clicks at all, which is a feedback loop. A new model can get better at predicting these biased clicks, for example by learning what the old ranker liked, without finding jobs that users would apply to. Clicks are also only a proxy for applications, the real goal.\n\nThe option about the held-out week has it backwards. A week right after training is the standard choice, and an older week drifts further from current users without removing the bias in the logs. The option about calibration misses that a ranker uses only the order of its scores, and log loss computed on the same biased click logs would share the same blind spot. The option about the unit of analysis is wrong because splitting by user is the normal way to test a ranker. If the new ranker really put better jobs on top, applications per search would rise under a user split too.",
+  "deeper": "Fixes include position-debiased training (inverse propensity weighting), a small slice of randomised results to collect unbiased labels, and interleaving tests that compare rankers on the same users. A strong candidate also asks whether the offline metric used applications or only clicks.",
+  "tags": [
+   "ranking",
+   "position-bias",
+   "online"
+  ],
+  "concepts": [
+   "offline-online-evaluation",
+   "position-bias",
+   "feedback-loop"
+  ]
+ },
+ {
+  "id": "eval-0033",
+  "topic": "evaluation",
+  "subtopic": "slice-based error analysis",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "An intent classifier for a support bot scores 91% accuracy on a 12,000-ticket test set. Before launch, the team wants to know whether it fails for particular groups, such as users writing in Portuguese or tickets sent from the mobile app. Which practices are sound? Select all that apply.",
+  "options": [
+   "Report accuracy for each language and channel, side by side with the overall 91%.",
+   "Show how many test tickets each slice has, with an interval, so a 40-ticket slice is read with care.",
+   "For slices well below 91%, read a sample of their misclassified tickets to find the cause.",
+   "Report the plain average of the per-slice accuracies as the overall accuracy, so each group counts once.",
+   "Leave out every slice with fewer than 200 test tickets, since such small slices tell you nothing.",
+   "Measure each slice on the training set instead, since it has far more tickets per slice than the test set."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "Slice evaluation exists because a good overall number can hide a group where the model fails. Putting per-slice accuracy next to the overall figure shows which groups lag. Sample size matters because a slice of 40 tickets has a 95% interval of roughly ±12 points around 80% accuracy, so a gap that size may be noise. Reading the errors in a weak slice turns a number into a cause, such as missing training data in one language.\n\nThe plain average of slice accuracies is a macro average. It is a useful extra view, but calling it overall accuracy is wrong, since it no longer matches the share of all tickets classified correctly. Dropping small slices hides exactly the groups most likely to be underserved. The better move is to report them with wide intervals and collect more data. Training-set accuracy is inflated by fitting, so it cannot show how the model does on new tickets from any group.",
+  "deeper": "In practice, slice definitions are agreed before results come in, and new slices found while digging are treated as hypotheses to confirm on fresh data. Interviewers also like hearing that slice metrics belong in monitoring after launch, not only in the pre-launch report.",
+  "tags": [
+   "slices",
+   "error-analysis"
+  ],
+  "concepts": [
+   "slice-based-evaluation",
+   "confidence-interval",
+   "macro-micro-averaging"
+  ]
+ },
+ {
+  "id": "eval-0034",
+  "topic": "evaluation",
+  "subtopic": "Simpson's paradox in model comparison",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "An online grocer measures search rankers by the share of searches that end in an add-to-cart. The new ranker was switched on first for new users, so last month's logs look like this:\n\n- Old ranker: returning users 8,000 searches at 30%, new users 2,000 searches at 10%, overall 26%\n- New ranker: returning users 2,000 searches at 32%, new users 8,000 searches at 12%, overall 16%\n\nThe new ranker wins in both groups but loses overall. Explain how that happens, and say which comparison should drive the launch decision and how you would get it.",
+  "answer": "This is Simpson's paradox. The overall rate is a weighted average of the group rates, and the weights differ. New users add to cart far less often whatever the ranker. 80% of the new ranker's searches came from new users, against 20% for the old ranker, so its overall rate is dragged down by its traffic mix, not by worse ranking. Within each group it is 2 points better. Because the mix came from the rollout plan, the within-group comparison is the fair one. I would standardise both rankers to the same mix, such as expected launch traffic, which gives 28% against 26% at an 80/20 mix. The clean answer is a randomised A/B test, where both arms get the same mix. I would also confirm the groups are defined before treatment, because if the ranker changed who counts as a new user, the overall number would matter.",
+  "points": [
+   "Names Simpson's paradox: overall rate is a weighted average with different weights",
+   "New users convert less, and the new ranker saw mostly new users",
+   "The mix difference comes from the rollout, so compare within groups",
+   "Reweight both to a common traffic mix, or run a randomised A/B test",
+   "Check the grouping is fixed before treatment and not caused by the ranker"
+  ],
+  "explanation": "The numbers check out. Old ranker: 0.8 × 30% + 0.2 × 10% = 26%. New ranker: 0.2 × 32% + 0.8 × 12% = 16%. The new ranker is better in each group but carries far more of the hard traffic. Reweighting the new ranker to the old mix gives 0.8 × 32% + 0.2 × 12% = 28%, two points above 26%.\n\nThe common mistake is to trust the overall number because it uses all the data. All the data is exactly the problem when each ranker saw a different population. The opposite mistake is to always prefer the group view. That is only right when the grouping variable is not changed by the thing being tested. If the new ranker had turned returning users into lapsed ones, the overall drop would be a real effect. Here, who saw which ranker was decided by the rollout plan, so the group view isolates the ranker's effect and the overall view mostly measures the traffic mix.",
+  "deeper": "Staged rollouts by user type, region or platform create this trap all the time. A strong candidate asks how traffic was assigned before reading any comparison, and prefers a randomised test, or at least a reweighted comparison, over a raw before-and-after number.",
+  "tags": [
+   "simpson",
+   "segments",
+   "rollout"
+  ],
+  "concepts": [
+   "slice-based-evaluation",
+   "ab-testing",
+   "selection-bias"
+  ]
+ },
+ {
+  "id": "eval-0035",
+  "topic": "evaluation",
+  "subtopic": "naming a confusion matrix cell",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A camera model watches forests for wildfire smoke, and smoke is the positive class. One morning it raises a smoke alert, but the image only shows fog. In the model's confusion matrix, this case is counted as a ______.",
+  "answer": "false positive",
+  "accept": [
+   "fp",
+   "false positives",
+   "type i error",
+   "type 1 error",
+   "false alarm",
+   "false-positive"
+  ],
+  "explanation": "Read the name in two parts. The second word is what the model predicted: it said smoke, the positive class, so the case is a positive. The first word says whether that prediction was right: there was no smoke, so it was false. Together that makes a false positive. In statistics it is also called a type I error, or in plain words a false alarm.\n\nThe common mistake is to answer false negative, reasoning that fog is a negative thing or that the truth was negative. The name follows the prediction, not the truth. A false negative would be the opposite case: real smoke that the model missed. False positives push precision down, because precision divides by everything the model flagged. False negatives push recall down, because recall divides by everything that was really there.",
+  "deeper": "For a wildfire system the two errors have very different costs. A false positive sends a crew to look at fog, while a false negative lets a fire grow. Interviewers often ask you to name both cells and say which one the business would rather pay for.",
+  "tags": [
+   "confusion-matrix"
+  ],
+  "concepts": [
+   "confusion-matrix",
+   "false-positive-rate"
+  ]
+ },
+ {
+  "id": "eval-0036",
+  "topic": "evaluation",
+  "subtopic": "limits of BLEU and ROUGE",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A model summarises customer support calls. For one call, summary X scores ROUGE-L 0.62 against the human reference and summary Y scores 0.41. On reading them, Y is a correct paraphrase of the reference, while X copies much of the reference wording but states the wrong refund amount. What does this show?",
+  "options": [
+   "ROUGE measures word overlap, so it rewards copied wording and treats a wrong amount as one mismatched word.",
+   "ROUGE must have been computed wrongly, because a summary with a factual error cannot outscore a correct summary.",
+   "Y would come out ahead on BLEU, because BLEU matches synonyms and checks meaning rather than the exact words used.",
+   "ROUGE-L fails only on long texts, so scoring single words with ROUGE-1 instead would put Y ahead of X."
+  ],
+  "answer": 0,
+  "explanation": "ROUGE counts how many words or word sequences a summary shares with a reference. ROUGE-L uses the longest common subsequence. Summary X reuses the reference wording, so it overlaps a lot. The wrong refund amount is just one token that does not match, so it costs X about as much as any other changed word. Summary Y says the same facts in new words, so it overlaps less and scores lower even though it is better.\n\nNothing was computed wrongly. This is ROUGE working as designed, and it has no notion of facts. BLEU has the same blind spot, since it is also built on exact n-gram overlap and does not match synonyms or meaning. Switching to ROUGE-1 does not help either. X still shares more single words with the reference than the paraphrase does, and a wrong number is still only one word.",
+  "deeper": "Treat BLEU and ROUGE as cheap regression signals, not judges of quality. For summaries, teams add factual checks such as entailment models or an LLM judge with a rubric, plus human review on a sample. Numbers, names and dates deserve targeted checks of their own.",
+  "tags": [
+   "nlg",
+   "rouge",
+   "summarisation"
+  ],
+  "concepts": [
+   "bleu-rouge",
+   "llm-as-judge",
+   "groundedness"
+  ]
+ },
+ {
+  "id": "eval-0037",
+  "topic": "evaluation",
+  "subtopic": "evaluating with delayed, shifting labels",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A card issuer retrains its fraud model every month. Fraud is confirmed by chargebacks, which can arrive up to 60 days after a transaction, and fraudsters change tactics every few weeks. How would you evaluate a new model version before and after it goes live?",
+  "answer": "Offline, I would split by time, never at random: train on older months and test on a later window, so the test looks like the future the model will face. The test window must end at least 60 days ago, so its labels have matured. Otherwise recent fraud that has not been reported yet is counted as legitimate, which corrupts both precision and recall. I would backtest over several consecutive windows to see how fast performance decays as tactics shift. I would report business metrics at a fixed alert budget, such as fraud dollars caught and the false decline rate, next to PR-AUC. Online, I would run the new model in shadow mode or on a small share of traffic. While labels are pending, I would watch fast signals: score distribution drift, alert rate, analyst review outcomes and early customer disputes. Then I would recompute the real metrics as chargebacks mature.",
+  "points": [
+   "Split by time, training on the past and testing on a later window",
+   "Score only on matured labels, at least 60 days old, or fresh fraud looks legitimate",
+   "Backtest over several windows to measure decay under drift",
+   "Report business metrics at a fixed alert budget, such as dollars caught and false declines",
+   "Online, use shadow mode or a small rollout with fast proxy signals until labels arrive"
+  ],
+  "explanation": "Two problems stack up here. Fraud patterns shift, so a random split lets the model see future tactics in training and makes the test look easier than real life. And labels arrive late, so the most recent data is partly mislabelled: a fraudulent transaction from last week usually still looks legitimate in the table.\n\nThe most common mistake is to test on the freshest month because it seems most relevant. Its unreported fraud is labelled as legitimate, so a correct alert on it is scored as a false positive and a miss on it is scored as a true negative. The numbers can move in either direction, and they will change again once chargebacks land. Waiting for label maturity costs time, which is why the online plan leans on fast proxies such as analyst review outcomes and score drift. These cannot replace confirmed labels, but they catch a broken model within days instead of two months.",
+  "deeper": "A strong candidate also mentions that the model's own decisions change the labels. Declined transactions never become chargebacks, so their true label stays unknown. Teams handle this with a small random approval holdout or by labelling declines through analyst review.",
+  "tags": [
+   "fraud",
+   "label-delay",
+   "drift"
+  ],
+  "concepts": [
+   "label-delay",
+   "time-series-split",
+   "offline-online-evaluation",
+   "concept-drift"
+  ]
+ },
+ {
+  "id": "eval-0038",
+  "topic": "evaluation",
+  "subtopic": "explaining precision and recall",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A product manager owns the spam filter for a business email product. They ask you what precision and recall mean for their filter, and which of the two they should keep a closer eye on. How would you explain it?",
+  "answer": "Precision answers: of the emails we moved to spam, how many really were spam? If precision is 98%, then 2 in every 100 emails in the spam folder were real mail that the customer may never see. Recall answers: of all the spam that arrived, how much did we catch? At 90% recall, 1 in 10 spam emails still reaches the inbox. The two trade off through the score threshold. A stricter filter catches more spam but hides more real mail. For business email I would watch precision first, because a hidden invoice or contract costs far more than one extra spam message a user can delete. In practice I would set a floor on precision, or a cap on how much legitimate mail gets filtered, and then push recall as high as possible within that limit.",
+  "points": [
+   "Precision is the share of filtered emails that really were spam",
+   "Recall is the share of all spam that the filter caught",
+   "They trade off through the threshold",
+   "Watch precision first, because hiding real mail costs more than missing spam",
+   "Set a precision floor, then maximise recall within it"
+  ],
+  "explanation": "The key to explaining these to a non-specialist is to tie each metric to a mistake the user feels. Low precision means real mail lands in spam. Low recall means spam lands in the inbox. Then the choice between them becomes a question about which mistake costs more, which the product manager can answer better than anyone.\n\nThe common mistake is to define the two with formulas only, or to mix them up by saying precision is how much spam we caught. That is recall. The second mistake is to call one metric enough on its own. A filter that sends everything to spam has perfect recall, and a filter that only catches the most obvious spam can have near perfect precision while missing most of it. That is why the advice is a floor on one and maximising the other, not watching precision alone.",
+  "deeper": "A sharp follow-up: precision depends on how much spam arrives. On a day with a spam flood, precision rises even if the filter hides the same number of real emails. So many teams also track the false positive rate on legitimate mail, which counts hidden real emails directly.",
+  "tags": [
+   "precision",
+   "recall",
+   "communication"
+  ],
+  "concepts": [
+   "precision",
+   "recall",
+   "decision-threshold"
+  ]
+ },
+ {
+  "id": "eval-0039",
+  "topic": "evaluation",
+  "subtopic": "facts about the ROC curve",
+  "format": "multi",
+  "difficulty": 1,
+  "prompt": "Which statements about the ROC curve of a binary classifier are true? Select all that apply.",
+  "options": [
+   "The diagonal from (0, 0) to (1, 1) is what random scores produce on average.",
+   "Each point on the curve comes from one choice of decision threshold.",
+   "Squaring every score, when all scores lie between 0 and 1, leaves the curve unchanged.",
+   "The x-axis shows precision and the y-axis shows recall at each threshold.",
+   "Raising the decision threshold from 0.5 to 0.7 changes the shape of the curve."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "An ROC curve plots the true positive rate (recall) against the false positive rate as the threshold sweeps from high to low. Each threshold gives one point, so the curve is a picture of every threshold at once. Random scores flag positives and negatives at the same rate, so TPR equals FPR on average, which is the diagonal. The curve only depends on how the scores order the examples. Squaring numbers between 0 and 1 keeps their order, so every threshold has a matching one that flags exactly the same examples, and the curve does not move.\n\nThe statement about precision and recall describes a different plot, the precision-recall curve. The ROC x-axis is the false positive rate, FP / (FP + TN). The statement about raising the threshold confuses the curve with a single point on it. Changing the threshold moves you to another point on the same curve. It does not reshape the curve.",
+  "deeper": "Because ROC depends only on ordering, calibration problems never show up in it. A common follow-up is to ask why a model with a fine ROC curve can still give useless probabilities, and how you would check for that with a reliability diagram.",
+  "tags": [
+   "roc"
+  ],
+  "concepts": [
+   "roc-curve",
+   "roc-auc",
+   "false-positive-rate"
+  ]
+ },
+ {
+  "id": "eval-0040",
+  "topic": "evaluation",
+  "subtopic": "precision when prevalence changes",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "An insurer built a claims-fraud model in a market where 5% of claims are fraudulent. There, at the chosen threshold, it has a true positive rate of 0.80 and a false positive rate of 0.04. The same model and threshold are now used in a new market where only 1% of claims are fraudulent. Assume the true positive rate and false positive rate stay the same. What precision should the team expect in the new market? Give it as a decimal to 2 places.",
+  "answer": 0.17,
+  "tolerance": 0.005,
+  "check": "tpr = 0.80\nfpr = 0.04\nprev = 0.01\ntp = tpr * prev\nfp = fpr * (1 - prev)\nresult = tp / (tp + fp)",
+  "explanation": "Work per 10,000 claims in the new market. 1% are fraud, so 100 fraudulent and 9,900 honest claims.\n\nStep 1, true positives: 0.80 × 100 = 80.\n\nStep 2, false positives: 0.04 × 9,900 = 396.\n\nStep 3, precision = 80 / (80 + 396) = 80 / 476 ≈ 0.168, which is 0.17.\n\nIn the original market the same model had 400 true positives and 0.04 × 9,500 = 380 false positives per 10,000, a precision of about 0.51. The model did not get worse at telling fraud from honest claims. TPR and FPR are each measured within one class, so they ignore how common fraud is. Precision mixes the two classes, so when honest claims become a bigger share, the same 4% false alarm rate produces far more false alerts per real hit.\n\nThe common mistake is to assume precision carries over at about 0.51 because the model is unchanged. Another is to multiply 0.80 by 0.01 and stop there, which is the true positive share of all claims, not precision.",
+  "deeper": "This is why investigation teams in a new market can get swamped even when the model is fine. A strong candidate suggests raising the threshold for the new market to bring the alert volume back in line with team capacity, and checking whether TPR and FPR really held, since the fraud patterns may differ too.",
+  "tags": [
+   "precision",
+   "prevalence",
+   "fraud"
+  ],
+  "concepts": [
+   "precision",
+   "false-positive-rate",
+   "distribution-shift"
+  ]
+ },
+ {
+  "id": "eval-0041",
+  "topic": "evaluation",
+  "subtopic": "checking the traffic split",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "A music streaming app plans an even 50/50 split for an A/B test of a new playlist screen. After a week, control has 503,912 users and treatment has 496,088. A chi-square test comparing these counts with the planned split gives p < 0.0001. Before reading any business metric, the team flags this problem, which usually points to a bug in assignment or logging. The problem is called a ______.",
+  "answer": "sample ratio mismatch",
+  "accept": [
+   "srm",
+   "sample ratio mismatches",
+   "sample-ratio mismatch",
+   "sample ratio mismatch (srm)"
+  ],
+  "explanation": "A sample ratio mismatch means the users who ended up in each arm do not match the split you planned, by more than chance allows. With 1,000,000 users and a fair 50/50 coin, the count in one arm has a standard deviation of √(1,000,000 × 0.5 × 0.5) = 500. Control is 3,912 above 500,000, nearly 8 standard deviations, and the chi-square value is about 61. That is not luck.\n\nThe common mistake is to wave the gap away because 50.4% against 49.6% looks close to even. At large sample sizes even small percentage gaps are far outside chance. The other mistake is to call it selection bias or Simpson's paradox. Those are broader ideas. SRM is the specific check on counts per arm, and when it fails, the users that are missing from one arm are usually not missing at random, for example users whose app crashed before the treatment screen logged them. That biases every metric, so the result should not be trusted until the cause is found.",
+  "deeper": "Mature experiment platforms run the SRM check automatically and block results when it fails. Common causes include bot filtering that hits one arm more, redirects that drop users, and a treatment that crashes for some devices before the exposure event fires.",
+  "tags": [
+   "ab-testing",
+   "srm"
+  ],
+  "concepts": [
+   "ab-testing",
+   "hypothesis-testing"
+  ]
+ },
+ {
+  "id": "eval-0042",
+  "topic": "evaluation",
+  "subtopic": "launch criteria for a ranking model",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A hotel booking site has a new search ranker. Offline, NDCG@10 on human-labelled queries rose from 0.61 to 0.64. A two-week A/B test shows bookings per search up 0.4% (95% confidence interval 0.1% to 0.7%), p95 page latency up 40 ms and the cancellation rate unchanged. What offline metrics, online success metrics and guardrail metrics should be set before such a test, and would you ship this result?",
+  "answer": "Before the test I would fix three sets. Offline: NDCG@10 on labelled queries, a booking-based metric replayed on logs, and serving latency, used as a gate to decide whether an online test is worth running. Online success: one primary metric agreed in advance, here bookings or revenue per search, with the test length and minimum lift set from a power analysis. Guardrails with limits: page latency, cancellation rate, error rate, revenue per booking and partner coverage. On this result I would lean toward shipping. The interval excludes zero, and 0.4% of bookings is a lot of money at scale. The latency rise is already priced into the measured booking lift, so the question is whether 40 ms stays inside the latency limit set beforehand. I would also check sample ratio, a flat daily lift with no novelty fade, and consistent segments, then ship with a small holdback to confirm the effect lasts.",
+  "points": [
+   "Offline metrics such as NDCG@10 act as a gate, not the launch decision",
+   "One primary online metric, such as bookings per search, fixed before the test with a power analysis",
+   "Guardrails with preset limits: latency, cancellations, errors, revenue per booking",
+   "Ship when the interval excludes zero and every guardrail is inside its limit",
+   "Check sample ratio, novelty fade and segments, and keep a holdback after launch"
+  ],
+  "explanation": "Offline NDCG tells you the new ranker orders labelled results better, but labels from raters are not bookings. That is why it works as a gate for spending test traffic, while the launch decision rests on the online primary metric. Guardrails exist because a ranker can raise bookings while hurting something else, such as pushing hotels that get cancelled more, or slowing the page.\n\nThe most common mistake is to dismiss a 0.4% lift as too small. Small relative lifts on a core metric at a big booking site are often worth millions a year, and the interval says the lift is real. The opposite mistake is to ship on the lift without checking the guardrails, or to judge the 40 ms after the fact. The limit should be agreed before the test so the decision is not argued from the result. Two weeks also leaves room for a novelty effect, which is why a holdback after launch is worth keeping.",
+  "deeper": "Interviewers like to push on the latency trade. A strong answer notes that the measured booking lift already includes the latency cost for this test, but that latency adds up across launches, so many teams keep a latency budget and ask a ranker to pay for its milliseconds with a clear lift.",
+  "tags": [
+   "ranking",
+   "launch",
+   "guardrails"
+  ],
+  "concepts": [
+   "ab-testing",
+   "ndcg",
+   "offline-online-evaluation"
+  ]
  }
 ]
