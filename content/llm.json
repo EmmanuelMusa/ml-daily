@@ -154,5 +154,423 @@
    "top-p-sampling",
    "next-token-prediction"
   ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0007",
+  "subtopic": "queries, keys and values",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "In a self-attention layer of a document-search model, each token embedding x is turned into three vectors: a query q = xW_Q, a key k = xW_K and a value v = xW_V. Which description of their roles is correct?",
+  "options": [
+   "The query carries the token's content, the key records its position in the sentence, and the value is the attention weight that token receives.",
+   "Keys and values are compared with a dot product to get the weights, and those weights then scale the query vector to form the output.",
+   "A token's query is matched against every key to score relevance, and the softmaxed scores mix the value vectors into that token's output.",
+   "The query and key are the same vector used twice, and the value is the input embedding passed through unchanged so no detail is lost."
+  ],
+  "answer": 2,
+  "explanation": "Think of a lookup. The query says what this token is looking for, each key says what a token offers to be matched on, and each value is the content that gets passed along. The layer takes the dot product of one token's query with every key, applies a softmax to turn the scores into weights, and outputs the weighted sum of the values.\n\nThe option that gives the key a position role is wrong because keys are learned projections of content, and position comes from separate positional encodings. The value is also a vector of content, not a weight. The option that compares keys with values swaps the roles: scores come from queries against keys, and the weights mix values, never the query. The option that reuses one vector for query and key is wrong because W_Q, W_K and W_V are three separately learned matrices. Separate query and key projections let \"what I need\" differ from \"what I offer\", so attention need not be symmetric, and the value projection is learned too.",
+  "deeper": "A good interview answer adds why the split helps: a pronoun's query can match a noun's key even though the two words look nothing alike. Interviewers may follow up by asking which of these vectors the KV cache stores during generation and why queries are not cached.",
+  "tags": [
+   "attention",
+   "transformers"
+  ],
+  "concepts": [
+   "self-attention"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0008",
+  "subtopic": "attention weights by hand",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "One attention head has d_k = 4. A query attends over three tokens:\n\n- q = [2, 0, 2, 0]\n- k₁ = [1, 0, 1, 0], v₁ = [4, 0]\n- k₂ = [0, 1, 0, 1], v₂ = [0, 8]\n- k₃ = [1, 0, 0, 0], v₃ = [2, 2]\n\nThe head computes softmax(q·kᵢ / √d_k) and outputs the weighted sum of the values. What is the first component of the output vector? Give it as a decimal to 2 places.",
+  "answer": 3.15,
+  "tolerance": 0.005,
+  "check": "import math\nq = [2, 0, 2, 0]\nkeys = [[1, 0, 1, 0], [0, 1, 0, 1], [1, 0, 0, 0]]\nvalues = [[4, 0], [0, 8], [2, 2]]\nd_k = 4\nscores = [sum(a * b for a, b in zip(q, k)) / math.sqrt(d_k) for k in keys]\nexps = [math.exp(s) for s in scores]\nweights = [e / sum(exps) for e in exps]\nresult = sum(w * v[0] for w, v in zip(weights, values))",
+  "explanation": "First the raw dot products: q·k₁ = 2 + 2 = 4, q·k₂ = 0 and q·k₃ = 2. Divide by √4 = 2 to get scores 2, 0 and 1.\n\nNext the softmax. e² ≈ 7.389, e⁰ = 1 and e¹ ≈ 2.718, which sum to about 11.107. The weights are 7.389 / 11.107 ≈ 0.665, 1 / 11.107 ≈ 0.090 and 2.718 / 11.107 ≈ 0.245. They add up to 1, as softmax weights must.\n\nFinally the output is the weighted sum of the values. Its first component is 0.665 × 4 + 0.090 × 0 + 0.245 × 2 ≈ 2.661 + 0.489 ≈ 3.15.\n\nThe most common mistake is to skip the √d_k step. Using the raw scores 4, 0 and 2 gives weights of about 0.867, 0.016 and 0.117 and an output of about 3.70. The softmax is not linear, so the missing division does not cancel out. It makes the weights more peaked. Another slip is to weight the keys instead of the values. The keys only decide the weights. The values are what gets mixed.",
+  "deeper": "Working one query by hand is a common whiteboard warm-up. A strong candidate then says that a real layer does this for every query at once as softmax(QKᵀ / √d_k)V, and checks the second output component too. It is 0.090 × 8 + 0.245 × 2 ≈ 1.21, and most of it comes from the token with the smallest weight, because its value is large. A weight says how much a token counts, not how much it adds.",
+  "tags": [
+   "attention",
+   "softmax"
+  ],
+  "concepts": [
+   "self-attention",
+   "softmax"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0009",
+  "subtopic": "why several heads",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A model with width d_model = 768 uses 12 attention heads of size 64 in each layer instead of one head of size 768. What does this split mainly gain?",
+  "options": [
+   "It cuts the attention compute by about a factor of 12, because each head works on vectors that are 12 times smaller than the full width.",
+   "Each head has its own projections and softmax, so heads can attend to different tokens for different reasons at about the same total cost.",
+   "Each head reads a different slice of the sequence, so together the 12 heads can handle an input about 12 times longer than one head could.",
+   "The 12 heads share one set of weights and their outputs are averaged, which lowers the variance of the attention scores like an ensemble."
+  ],
+  "answer": 1,
+  "explanation": "A single head produces one softmax distribution per token, so it has to blend every kind of relationship into one set of weights. With 12 heads, each has its own query, key and value projections, so one head can track the subject of a verb while another follows a pronoun back to its noun. The head outputs are concatenated and passed through an output projection, so the model can combine these views.\n\nThe compute option is wrong because the total stays about the same: 12 heads of size 64 do the same projection work as one head of size 768, and the score matrices add up to a similar cost. The option about slices of the sequence is wrong because every head sees every token. Heads split the feature width, not the positions, so context length does not change. The ensemble option is wrong twice: heads have separate weights, and their outputs are concatenated rather than averaged.",
+  "deeper": "Interviewers sometimes ask whether all heads are needed. Studies that prune heads find many can be removed with little loss, which suggests some redundancy. A strong candidate also mentions grouped-query attention, where several query heads share one key and value head to shrink the KV cache during inference.",
+  "tags": [
+   "attention",
+   "heads"
+  ],
+  "concepts": [
+   "multi-head-attention",
+   "self-attention"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0010",
+  "subtopic": "blocking future tokens",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A decoder-only model is trained on code completion. In each attention score matrix, rows are query positions and columns are key positions. Every entry above the diagonal, the score from a position to a later one, is set to −∞ before the softmax, so each token can only attend to itself and earlier tokens. Named for the rule it enforces, that the output at a position may depend only on what came before it, this is called a ______ mask.",
+  "answer": "causal",
+  "accept": [
+   "causal mask",
+   "look-ahead",
+   "look ahead",
+   "lookahead",
+   "look-ahead mask",
+   "subsequent",
+   "autoregressive"
+  ],
+  "explanation": "A causal mask makes training match generation. At inference the model writes one token at a time and cannot see the future. During training, all positions are predicted in parallel from one forward pass, so without the mask the token at position t could simply look at position t + 1, copy it, and drive the loss toward zero without learning anything useful. Setting those scores to −∞ means the softmax gives them a weight of exactly 0.\n\nThe common mix-up is with the padding mask. A padding mask hides the filler tokens added to make sequences in a batch the same length. It depends on where the padding sits, not on order, and an encoder uses it while still letting every real token see both sides. The causal mask is the same for every sequence of a given length. With rows as queries, it keeps the lower triangle and blocks the upper one, which is why people describe it by either triangle. The name for the rule, causal, avoids that confusion. Many models use both masks at once.",
+  "deeper": "A follow-up interviewers like: if a training loss drops suspiciously close to zero in a new decoder implementation, a missing or flipped causal mask is one of the first things to check. Encoder-decoder models use it only in the decoder's self-attention, not in cross-attention.",
+  "tags": [
+   "masking",
+   "decoder"
+  ],
+  "concepts": [
+   "causal-mask"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0011",
+  "subtopic": "position information",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A review-sentiment model uses a bidirectional transformer encoder and averages its outputs. It was trained with position information accidentally switched off, and it gives \"not good, actually great\" and \"not great, actually good\" exactly the same score. Which option explains the failure and correctly describes how rotary position embeddings (RoPE) encode order?",
+  "options": [
+   "Attention scores use only token contents, so a reordered input gives reordered outputs. RoPE rotates the value vectors by position, so outputs carry location while weights stay the same.",
+   "The softmax rescales every row, which erases where each score came from. RoPE adds a learned vector for each absolute position to the token embeddings before the first layer.",
+   "Attention scores use only token contents, so a reordered input gives reordered outputs. RoPE adds a fixed bias to every score that falls linearly with the distance between two tokens.",
+   "Attention scores use only token contents, so a reordered input gives reordered outputs. RoPE rotates queries and keys by angles set by position, so each score also depends on distance."
+  ],
+  "answer": 3,
+  "explanation": "A score q·k depends only on what the two tokens are, not where they sit. So without position information, shuffling the input tokens just shuffles the outputs, and averaging them gives the same result. Both reviews contain the same tokens, so they get the same score. RoPE fixes this by rotating each pair of dimensions in the query and key by an angle proportional to the token's position. The dot product of two rotated vectors depends on the difference of their angles, so each score depends on how far apart the tokens are, which is relative position.\n\nThe option that rotates value vectors is wrong because RoPE acts on queries and keys. Rotating values would leave the weights blind to order. The softmax option gives a false reason, since normalizing a row does not lose which key each score belongs to, and its description is of learned absolute position embeddings. The option with a linear distance bias describes ALiBi, a different method that leaves queries and keys unchanged.",
+  "deeper": "A strong candidate notes why RoPE is popular: relative position is built into every score in every layer, and nothing is added to the embeddings. A common follow-up is how RoPE behaves past the training length, which leads into position interpolation and other context-extension tricks.",
+  "tags": [
+   "position",
+   "rope"
+  ],
+  "concepts": [
+   "positional-encoding",
+   "self-attention"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0012",
+  "subtopic": "encoder, decoder or both",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "An online retailer has three language tasks: tagging support tickets into 20 categories, translating product manuals from German into Spanish, and writing open-ended marketing copy from a short brief. Which assignment matches what each transformer architecture was designed for?",
+  "options": [
+   "Encoder-only for ticket tagging, encoder-decoder for manual translation, decoder-only for marketing copy.",
+   "Decoder-only for ticket tagging, encoder-only for manual translation, encoder-decoder for marketing copy.",
+   "Encoder-decoder for ticket tagging, decoder-only for manual translation, encoder-only for marketing copy.",
+   "Encoder-decoder for ticket tagging, encoder-only for manual translation, decoder-only for marketing copy."
+  ],
+  "answer": 0,
+  "explanation": "An encoder-only model reads the whole ticket with attention in both directions and produces rich representations. A small classification head on top predicts the category, which is exactly what it was built for. An encoder-decoder model reads the full source sentence with the encoder, then the decoder writes the target language one token at a time while attending back to the source, which is the classic shape of translation. A decoder-only model is trained to continue text, so open-ended writing from a short brief is its natural job.\n\nEvery other assignment puts the encoder-only model on a generation task. That cannot work as designed, because an encoder outputs one vector per input token and has no step that writes new tokens. Those options also give tagging to a generative model. That can be made to work, but it wastes compute on generating text when a single label is all you need.",
+  "deeper": "In practice, large decoder-only models now handle all three tasks through prompting. A strong candidate still knows the tradeoff: a small fine-tuned encoder classifier is often far cheaper and faster for high-volume tagging, and an interviewer may ask when that beats prompting a large general model.",
+  "tags": [
+   "architectures"
+  ],
+  "concepts": [
+   "encoder-decoder-architectures"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0013",
+  "subtopic": "parameters in a transformer",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "A decoder-only model has 24 layers and width d_model = 2,048. Each layer has multi-head attention with full-width query, key, value and output projections, and an MLP that expands to 4 × d_model and back. The vocabulary has 50,000 tokens, and the input embedding and output layer share one tied matrix. Ignoring biases and layer-norm weights, how many parameters does the model have? Give the answer in billions to 2 decimal places.",
+  "answer": 1.31,
+  "tolerance": 0.005,
+  "check": "d = 2048\nlayers = 24\nvocab = 50000\nattention = 4 * d * d\nmlp = d * (4 * d) + (4 * d) * d\nper_layer = attention + mlp\nembedding = vocab * d\nresult = (layers * per_layer + embedding) / 1e9",
+  "explanation": "Start with one layer. Attention has four d × d matrices for query, key, value and output, which is 4d². The MLP has a d × 4d matrix going up and a 4d × d matrix coming back, which is 8d². So each layer has about 12d².\n\nWith d = 2,048, d² = 4,194,304, so one layer has 12 × 4,194,304 = 50,331,648 parameters. Across 24 layers that is 1,207,959,552.\n\nThe tied embedding adds 50,000 × 2,048 = 102,400,000 once. The total is 1,207,959,552 + 102,400,000 = 1,310,359,552, or about 1.31 billion.\n\nThe usual mistakes are counting attention as 3d² by forgetting the output projection, counting the MLP as one 4d² matrix, or adding the embedding twice even though the prompt says it is tied. Splitting attention into heads does not change the count, because the heads together still use full-width projections.",
+  "deeper": "The 12 × d² × layers shortcut lets you sanity-check a model card in seconds. Interviewers may then ask how the count changes with grouped-query attention, which shrinks the key and value projections, or with a gated MLP, which uses three matrices instead of two at a smaller hidden width.",
+  "tags": [
+   "parameters",
+   "sizing"
+  ],
+  "concepts": [
+   "transformer-block"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0014",
+  "subtopic": "merging frequent pairs",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A team building a tokenizer for legal contracts starts with a vocabulary of single bytes. It counts every adjacent pair of symbols in the training text, adds the most frequent pair to the vocabulary as a new symbol, rewrites the text with that merge, and repeats until the vocabulary reaches 32,000 entries. This subword method is called ______.",
+  "answer": "byte-pair encoding",
+  "accept": [
+   "BPE",
+   "byte pair encoding",
+   "byte-level BPE",
+   "byte level bpe",
+   "bpe tokenization",
+   "byte-pair encoding (BPE)"
+  ],
+  "explanation": "Byte-pair encoding builds its vocabulary bottom-up. Pairs that occur together often, such as \"th\" and then \"the\", get merged early, so common words and word pieces end up as single tokens while rare words stay split into smaller pieces. The learned list of merges is then applied in the same order to tokenize new text. Starting from bytes means any input can be encoded, so there is never an unknown token.\n\nThe common mix-up is with WordPiece. It also merges pairs, but it picks the merge that most increases the likelihood of the training data, not the one with the highest raw count. Another mix-up is the Unigram method, which works the other way round: it starts with a large set of candidate pieces and prunes the ones that matter least. The prompt describes raw frequency counts and growing from bytes, which is byte-pair encoding.",
+  "deeper": "For a legal domain, a strong candidate would check how the tokenizer splits clause numbers, citations and defined terms. Training a tokenizer on domain text shortens sequences, but a new tokenizer cannot be swapped into an existing pretrained model without retraining its embeddings.",
+  "tags": [
+   "tokenization",
+   "bpe"
+  ],
+  "concepts": [
+   "tokenization"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0015",
+  "subtopic": "vocabulary size trade-off",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A team is pretraining a 300M-parameter model with d_model = 1,024. Its input embedding and output layer are separate matrices. Someone proposes growing the vocabulary from 32,000 to 256,000 tokens. Which assessment is most accurate?",
+  "options": [
+   "Sequences get shorter, so attention costs less, but only the input embedding grows, by about 229M weights, since the output layer maps to d_model and keeps its size.",
+   "Sequences get longer, since a larger vocabulary splits each word into more pieces, so attention cost rises while the embedding matrix keeps its size.",
+   "Sequences get shorter, so attention costs less and more text fits per window, but the two matrices each gain about 229M weights and rare tokens get few updates.",
+   "Sequences get shorter, and each token is trained better, because spreading the same corpus over more vocabulary entries gives every entry more examples."
+  ],
+  "answer": 2,
+  "explanation": "A bigger vocabulary lets common words and phrases become single tokens, so the same text takes fewer tokens. That cuts attention cost and fits more text in the context window. The price is size: each of the two matrices grows by (256,000 − 32,000) × 1,024 ≈ 229M weights, so the two together add about 459M to a 300M model. The output layer also computes a score for every vocabulary entry at every position, so it adds real compute. And with the same corpus split across 8 times as many entries, many rare tokens appear only a handful of times, so their embeddings stay poorly trained.\n\nThe option where only the input embedding grows gets the output layer backwards. It maps each d_model vector to one score per vocabulary entry, so it is a d_model × vocabulary matrix that grows by the same 229M, and its d_model × vocabulary multiply-adds per token grow too. The option saying sequences get longer has the direction backwards, since more entries mean longer pieces, not shorter ones. The option claiming every entry gets more examples is backwards too, because the same text is shared among more entries, so each one sees fewer.",
+  "deeper": "Large vocabularies make more sense for big models, where the embedding share is small, and for multilingual or code-heavy data, where a small vocabulary splits text badly. A strong candidate would measure tokens per document on real data before and after, then weigh that against the parameter and memory cost.",
+  "tags": [
+   "tokenization",
+   "vocabulary"
+  ],
+  "concepts": [
+   "tokenization"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0016",
+  "subtopic": "perplexity from loss",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A code-completion model is evaluated on a validation set of 40,000 tokens. The cross-entropy loss, using the natural log and summed over all tokens, is 72,000 nats. What is the model's perplexity on this set? Give it as a decimal to 2 places.",
+  "answer": 6.05,
+  "tolerance": 0.005,
+  "check": "import math\ntotal_nats = 72000\ntokens = 40000\nresult = math.exp(total_nats / tokens)",
+  "explanation": "Perplexity is the exponential of the average per-token cross-entropy. First average the loss: 72,000 / 40,000 = 1.8 nats per token. Then exponentiate with the same base as the log: e^1.8 ≈ 6.05.\n\nA perplexity of about 6 means that, on average, the model is as uncertain as if it were choosing evenly among about 6 tokens at each step.\n\nThe most common mistake is a base mismatch. Computing 2^1.8 ≈ 3.48 treats a natural-log loss as if it were in bits. That would only be right if the loss had been measured with log base 2. The other frequent slip is to exponentiate the summed loss instead of the average, which gives a number far too large to mean anything. Always divide by the number of tokens first, then use the base that matches the log.",
+  "deeper": "Training frameworks usually report the mean loss in nats, so perplexity is just exp of the logged loss. A strong candidate adds that the token count matters: if the loss is averaged over padding or prompt tokens by mistake, the perplexity looks better than it really is.",
+  "tags": [
+   "perplexity",
+   "evaluation"
+  ],
+  "concepts": [
+   "perplexity",
+   "cross-entropy-loss"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0017",
+  "subtopic": "what perplexity does and does not show",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A team compares checkpoints of a customer-support language model using perplexity on held-out text. Which statements about perplexity are correct? Select all that apply.",
+  "options": [
+   "With the same tokenizer and held-out text, lower perplexity means the model gives that text higher probability.",
+   "Two models with different tokenizers can be ranked fairly by their per-token perplexity on the same documents.",
+   "Lower perplexity on general web text guarantees more helpful and more truthful answers in a support chat.",
+   "A perplexity of k means the model is about as unsure as picking evenly among k tokens at each step.",
+   "Perplexity can be measured on raw held-out text alone, with no human labels or reference answers.",
+   "A perplexity of 1.0 on the test set is the normal result for a well-trained model that generalizes well."
+  ],
+  "answer": [
+   0,
+   3,
+   4
+  ],
+  "explanation": "Perplexity is exp of the average negative log-probability per token. So with the tokenizer and text held fixed, lower perplexity means higher probability on that text. It reads as an effective branching factor: perplexity k is like guessing uniformly among k tokens. It needs only raw text, because each token's target is simply the next token, which is why it is cheap to track during training.\n\nRanking models with different tokenizers is unfair because the average is per token. A tokenizer that cuts text into more, easier pieces can get a lower per-token perplexity without modelling the text any better. To compare across tokenizers, normalize per byte or per word. Low perplexity on web text measures how well the model predicts typical text, not whether its answers are correct or useful, so helpfulness needs task evals or human ratings. A perplexity of 1.0 means the model was certain of every token, which on real held-out text points to test data leaking into training, not to good generalization.",
+  "deeper": "In practice perplexity is good for catching training problems and comparing checkpoints of one model. For a support bot, a strong candidate pairs it with task metrics such as resolution rate, answer accuracy on a labelled set, and human or model-graded quality reviews.",
+  "tags": [
+   "perplexity",
+   "evaluation"
+  ],
+  "concepts": [
+   "perplexity",
+   "tokenization"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0018",
+  "subtopic": "from base model to assistant",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "You download an open base language model and type \"How do I reset my router?\" It replies with more questions, as if continuing a forum page, instead of answering. Explain why, and walk through the training stages that turn a base model into a chat assistant and what each stage changes.",
+  "answer": "The base model was only pretrained on next-token prediction over a huge text corpus. It learned language and a lot of knowledge, but to it a question is just text to continue, and on the web a question is often followed by more questions. Supervised fine-tuning then trains it on curated prompt and response pairs in a chat format, so it learns to answer, follow instructions and stop at the end of its turn. Preference tuning, with RLHF or DPO, uses comparisons between pairs of replies to push it toward answers people rate as more helpful, honest and safe, such as admitting uncertainty or declining harmful requests. Most knowledge comes from pretraining. The later stages mainly change behaviour, format and tone, using far less data. Pushed too far, preference tuning can make a model verbose or overly cautious.",
+  "points": [
+   "Pretraining on next-token prediction gives knowledge and language skill but no habit of answering",
+   "A base model continues text, so a question can be followed by more questions",
+   "Supervised fine-tuning on prompt and response pairs in a chat format teaches instruction following and turn-taking",
+   "Preference tuning such as RLHF or DPO uses compared replies to improve helpfulness, honesty and safety",
+   "Later stages change behaviour more than knowledge and use far less data than pretraining",
+   "Over-tuning on preferences can cause verbosity, over-refusal or reward hacking"
+  ],
+  "explanation": "The key idea is that each stage has a different job. Pretraining is the expensive part, run on trillions of tokens, and it is where the model learns grammar, facts and reasoning patterns. Its only goal is to predict the next token, so it imitates whatever usually comes next on the web, which explains the forum-style reply.\n\nSupervised fine-tuning uses a much smaller set of high-quality examples, often tens of thousands, written in a fixed chat template. It teaches the shape of a helpful answer. Preference tuning then refines choices that are hard to show with single examples, such as which of two correct answers is clearer or safer.\n\nThe common mistake is to think fine-tuning is where the model learns its knowledge. Facts added only in fine-tuning are learned unreliably and can even raise hallucination. Another mistake is to describe RLHF as the whole process, skipping the supervised stage that makes preference tuning work.",
+  "deeper": "Interviewers often follow up with why a chat model needs its exact chat template at inference, or why a base model is sometimes the better starting point for your own fine-tune. A strong candidate also mentions that a few examples in the prompt can make a base model answer, without any training.",
+  "tags": [
+   "training",
+   "alignment"
+  ],
+  "concepts": [
+   "pretraining",
+   "supervised-fine-tuning",
+   "rlhf"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0019",
+  "subtopic": "the pretraining objective",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "During pretraining, a GPT-style model reads a huge corpus of raw text. At every position t, its loss is the cross-entropy between its predicted distribution over the vocabulary and the actual token at position t + 1, using only tokens 1 to t as input. This training objective is called ______.",
+  "answer": "next-token prediction",
+  "accept": [
+   "next token prediction",
+   "causal language modeling",
+   "causal language modelling",
+   "causal lm",
+   "autoregressive language modeling",
+   "autoregressive language modelling",
+   "language modeling",
+   "language modelling",
+   "next word prediction"
+  ],
+  "explanation": "Next-token prediction, also called causal language modelling, turns raw text into its own labels. Every position gives one training example: the earlier tokens are the input and the following token is the target. That is why pretraining can use trillions of tokens without any human labelling. The causal mask lets one forward pass train every position of a sequence at the same time.\n\nThe common mix-up is with masked language modelling, the objective used by encoder models such as BERT. There, about 15% of tokens are hidden and the model predicts them using words on both sides. That builds good representations for classification but does not train the model to write text left to right. The prompt says the model uses only tokens 1 to t, so it cannot see the right side, which rules masked language modelling out.",
+  "deeper": "A strong candidate connects this objective to behaviour: the model learns to produce likely continuations, not true ones, which is one root of hallucination. Interviewers may also ask how the same objective is reused in fine-tuning, where the loss is usually kept only on the response tokens.",
+  "tags": [
+   "pretraining",
+   "objective"
+  ],
+  "concepts": [
+   "next-token-prediction",
+   "pretraining"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0020",
+  "subtopic": "loss masking in SFT",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A legal-tech team fine-tunes a model on 20,000 examples. Each one has a contract excerpt and a question as the prompt, about 1,500 tokens in all, followed by a 100-token answer written by a lawyer. Why would they usually compute the loss on the answer tokens only?",
+  "options": [
+   "Masking the prompt tokens hides them from attention, so the model has to answer from what it already knows and learns legal facts more deeply.",
+   "Loss on the prompt tokens is always close to zero, so including them wastes compute but leaves the size and direction of the gradient unchanged.",
+   "The prompt tokens have no gradient path to the weights, so a loss computed on them would make the backward pass fail with an error during training.",
+   "Most of the training signal would go to predicting contract text the model never has to write, leaving only a small share for the answers that matter."
+  ],
+  "answer": 3,
+  "explanation": "In supervised fine-tuning, the goal is to teach the model how to respond. Here each example has about 1,500 prompt tokens and only 100 answer tokens. If every token counts in the loss, about 94% of the signal trains the model to predict contract wording and user questions, text it will only ever read and never write. Keeping the loss on the answer tokens focuses learning on the behaviour you want, and it stops the model from learning to imitate the user side of the chat.\n\nThe option about hiding prompt tokens confuses two separate masks. Loss masking only removes positions from the loss. The answer tokens still attend to the full contract, which they need to answer. The option claiming the prompt loss is near zero is wrong because contract text is far from trivially predictable, so it would change the gradient a lot. The option about a failing backward pass is wrong because prompt positions are computed by the same weights, so a loss on them trains those weights normally.",
+  "deeper": "In code this usually means setting the label at prompt positions to an ignore value so the loss skips them. A strong candidate adds that multi-turn chats mask every user turn, and that some teams keep a small weight on prompt tokens when prompts are rare, high-quality text worth learning from.",
+  "tags": [
+   "sft",
+   "fine-tuning"
+  ],
+  "concepts": [
+   "supervised-fine-tuning"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0021",
+  "subtopic": "forgetting after fine-tuning",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "An insurer fully fine-tuned a general assistant for 5 epochs at a high learning rate on 8,000 claim summaries and nothing else. Claim summaries improved a lot, but the model now writes poor emails and fumbles simple general questions it used to handle well. What is the most likely cause and a sensible fix?",
+  "options": [
+   "Fine-tuning changed the tokenizer, so everyday words now split badly. Retrain the tokenizer on mixed text and keep the current fine-tuned weights.",
+   "Narrow updates overwrote general skills, which is catastrophic forgetting. Mix general data back in, cut the learning rate or epochs, or train LoRA adapters.",
+   "The model underfits general tasks because 8,000 examples is too few. Train for more epochs on the claim data until its general skills come back.",
+   "Weight decay during fine-tuning zeroed out general-purpose neurons. Turn weight decay off and rerun the same 5 epochs at the same learning rate."
+  ],
+  "answer": 1,
+  "explanation": "Full fine-tuning updates every weight. Five epochs at a high learning rate on one narrow task push the weights far toward that task, and nothing in the data asks the model to keep its other skills. This is catastrophic forgetting. Mixing a share of general instruction data into training reminds the model of other tasks. A lower learning rate or fewer epochs limits how far the weights move. LoRA freezes the base weights and learns a small update, so the original model is kept and tends to forget less.\n\nThe tokenizer option is wrong because fine-tuning does not change the tokenizer, which is a fixed lookup built before training. The underfitting option gets the direction backwards: the model has fit the claim data too hard, and more epochs on that same data would make forgetting worse. The weight-decay option names a minor effect. Weight decay shrinks weights slightly, but it does not zero out skills, and rerunning with the same epochs and learning rate keeps the real cause.",
+  "deeper": "A strong candidate sets up a general regression suite before fine-tuning, such as a few hundred varied prompts scored before and after, so forgetting is caught early. Interviewers may ask how much general data to mix in. A small share is a common start, tuned against both the domain and the general evals.",
+  "tags": [
+   "fine-tuning",
+   "forgetting"
+  ],
+  "concepts": [
+   "catastrophic-forgetting",
+   "lora"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0022",
+  "subtopic": "LoRA trainable parameters",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A model has 28 layers and width 3,072. A team applies LoRA with rank r = 16 to two matrices in every layer: the query projection, which is 3,072 × 3,072, and the MLP up-projection, which maps 3,072 inputs to 8,192 outputs. How many trainable parameters does LoRA add in total? Give the answer in millions to 2 decimal places.",
+  "answer": 7.8,
+  "tolerance": 0.005,
+  "check": "r = 16\nlayers = 28\nmatrices = [(3072, 3072), (3072, 8192)]\nper_layer = sum(r * (d_in + d_out) for d_in, d_out in matrices)\nresult = layers * per_layer / 1e6",
+  "explanation": "LoRA replaces the update to a d_in × d_out matrix with two thin matrices. One is d_in × r and the other is r × d_out, so the trainable count is r × (d_in + d_out).\n\nQuery projection: 16 × (3,072 + 3,072) = 16 × 6,144 = 98,304.\nUp-projection: 16 × (3,072 + 8,192) = 16 × 11,264 = 180,224.\nPer layer: 98,304 + 180,224 = 278,528.\nAcross 28 layers: 278,528 × 28 = 7,798,784, which is about 7.80 million.\n\nFor comparison, fully fine-tuning those same matrices would train 28 × (3,072 × 3,072 + 3,072 × 8,192) ≈ 969 million weights, so LoRA trains about 0.8% as many.\n\nThe most common mistake is to multiply r × d_in × d_out, as if one matrix had all three sizes. That gives a number larger than the original matrix, which defeats the purpose. Another slip is to use r × 2 × 3,072 for the up-projection as if it were square, which undercounts it.",
+  "deeper": "Trainable parameters are only part of the memory story. A strong candidate notes that the frozen base weights and the activations still dominate GPU memory, which is why QLoRA also quantizes the base. Optimizer state is where LoRA saves most, since it is kept only for the small adapter weights.",
+  "tags": [
+   "lora",
+   "fine-tuning"
+  ],
+  "concepts": [
+   "lora"
+  ]
+ },
+ {
+  "topic": "llm",
+  "id": "llm-0023",
+  "subtopic": "LoRA rank, alpha and merging",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A team fine-tunes a call-centre summarizer with LoRA using the standard α / r scaling. Their first run used rank 8 with alpha 16. For the second run they raised the rank to 64 and left alpha at 16. They will serve only this one fine-tuned model and care about latency. Which statement is correct?",
+  "options": [
+   "After training, the scaled update BA can be added into W, so the merged model runs as fast as the base. With alpha held at 16, the rank-64 update is multiplied by 0.25, not 2.",
+   "The adapters must stay a separate branch at serving time, because merging BA into W would undo the fine-tune, so each adapted layer always adds an extra matrix product.",
+   "After training, the scaled update BA can be added into W, so the merged model runs as fast as the base. With alpha held at 16, the rank-64 update keeps the same scale of 2, since alpha alone sets it.",
+   "LoRA can only be applied to the query and value projections, because MLP weights are too large for a low-rank update, so the higher rank must go on those two matrices."
+  ],
+  "answer": 0,
+  "explanation": "LoRA learns ΔW = BA and adds it to the frozen W, scaled by α / r. Because that is just a matrix of the same shape as W, you can compute W + (α / r)BA once and store it. The served model then has exactly the base architecture, so there is no added latency. With α = 16, the scale was 16 / 8 = 2 in the first run and 16 / 64 = 0.25 in the second, so the larger-rank update is scaled down. Teams usually retune the learning rate or alpha when they change the rank.\n\nThe option saying adapters must stay separate is wrong. Merging gives the same outputs as running the branch. Keeping it separate is a choice for hot-swapping many adapters, not a requirement. The option that also merges but keeps the scale at 2 forgets that the multiplier is α / r, not α. Holding alpha fixed while raising the rank shrinks the multiplier, which is exactly why runs at different ranks are not directly comparable. The option limiting LoRA to query and value projections is wrong because LoRA works on any linear layer, and adapting the MLP layers as well often helps.",
+  "deeper": "A strong candidate explains when not to merge: a platform serving dozens of customer adapters keeps one base model in memory and applies each small adapter per request. Interviewers may also ask about rank-stabilized scaling, which uses α / √r so that higher ranks are not scaled down as hard.",
+  "tags": [
+   "lora",
+   "serving"
+  ],
+  "concepts": [
+   "lora"
+  ]
  }
 ]
