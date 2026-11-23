@@ -129,5 +129,529 @@
    "batch-normalization",
    "pytorch-autograd"
   ]
+ },
+ {
+  "id": "py-0006",
+  "topic": "python",
+  "subtopic": "slices vs fancy indexing",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "Using NumPy 2.x, a scoring job keeps five model scores in one array and takes two pieces out of it. What does the last line print?\n\n```python\nimport numpy as np\nscores = np.array([10, 20, 30, 40, 50])\nmiddle = scores[1:3]\npicked = scores[[3, 4]]\nmiddle[0] = -1\npicked[0] = -2\nprint(scores.tolist())\n```",
+  "options": [
+   "[10, -1, 30, 40, 50]",
+   "[10, -1, 30, -2, 50]",
+   "[10, 20, 30, 40, 50]",
+   "[10, 20, 30, -2, 50]"
+  ],
+  "answer": 0,
+  "check": "import numpy as np\nscores = np.array([10, 20, 30, 40, 50])\nmiddle = scores[1:3]\npicked = scores[[3, 4]]\nmiddle[0] = -1\npicked[0] = -2\nresult = str(scores.tolist())",
+  "explanation": "A basic slice such as `scores[1:3]` is a view. It points at the same memory as `scores`, just with a different start and length. So `middle[0] = -1` writes straight into `scores[1]`.\n\nIndexing with a list, `scores[[3, 4]]`, is fancy indexing, and it always builds a new array. The picked items could be in any order or repeated, so NumPy cannot describe them as a start, stop and step over the old memory. It copies them instead. Writing to `picked` changes only `picked`, and `scores[3]` stays 40.\n\nThe option where both writes show up assumes every index result is a view. The option where nothing changes assumes every result is a copy, which is how pandas 3 behaves under copy-on-write, but not plain NumPy. The option where only the fourth score changes has the two rules the wrong way round. Boolean masks count as fancy indexing too, so `scores[scores > 25]` is also a copy.",
+  "deeper": "When unsure, ask NumPy: `np.shares_memory(scores, middle)` is True and the same call on `picked` is False. Note that assigning through fancy indexing on the original, as in `scores[[3, 4]] = -2`, does write in place. Only reading with fancy indexing makes a copy.",
+  "tags": [
+   "numpy",
+   "views"
+  ],
+  "concepts": [
+   "views-vs-copies"
+  ]
+ },
+ {
+  "id": "py-0007",
+  "topic": "python",
+  "subtopic": "boolean mask arithmetic",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "Using NumPy 2.x, a fraud team adds up the value of large transactions that a rule has flagged. What does the last line return? Give a whole number.\n\n```python\nimport numpy as np\namounts = np.array([120, 15, 980, 40, 610, 75])\nflagged = np.array([False, False, True, False, True, True])\namounts[flagged & (amounts > 100)].sum()\n```",
+  "answer": 1590,
+  "tolerance": 0.5,
+  "check": "import numpy as np\namounts = np.array([120, 15, 980, 40, 610, 75])\nflagged = np.array([False, False, True, False, True, True])\nresult = int(amounts[flagged & (amounts > 100)].sum())",
+  "explanation": "Work out each mask, then combine them element by element with `&`.\n\n- `flagged` is True at positions 2, 4 and 5, which hold 980, 610 and 75.\n- `amounts > 100` is True at positions 0, 2 and 4, which hold 120, 980 and 610.\n- Both are True only at positions 2 and 4.\n\nIndexing with that mask keeps 980 and 610, and the sum is 1590.\n\nThe most common slip is to answer 2. That is the result of summing the mask itself, `(flagged & (amounts > 100)).sum()`, which counts the True values instead of adding the amounts. Others forget one condition and get 1665, the sum of every flagged amount, or 1710, the sum of every amount over 100. The parentheses matter as well. `&` binds more tightly than `>`, so without them Python would compute `flagged & amounts` first, which is not what you mean.",
+  "deeper": "Interviewers often ask why `flagged and amounts > 100` fails. Python's `and` needs one True or False for the whole array, so NumPy raises a ValueError. Use `&`, `|` and `~` for element-wise logic, and wrap each comparison in parentheses.",
+  "tags": [
+   "numpy",
+   "masks"
+  ],
+  "concepts": [
+   "boolean-indexing"
+  ]
+ },
+ {
+  "id": "py-0008",
+  "topic": "python",
+  "subtopic": "small integer overflow",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "Using NumPy 2.x, an image augmentation step brightens 8-bit pixel values. What is `brighter.tolist()`?\n\n```python\nimport numpy as np\npixels = np.array([250, 100], dtype=np.uint8)\nbrighter = pixels + 10\n```",
+  "options": [
+   "[4, 110]",
+   "[255, 110]",
+   "[260, 110]",
+   "An OverflowError is raised"
+  ],
+  "answer": 0,
+  "check": "import numpy as np\npixels = np.array([250, 100], dtype=np.uint8)\nbrighter = pixels + 10\nresult = str(brighter.tolist())",
+  "explanation": "In NumPy 2, a plain Python integer such as 10 takes on the dtype of the array it meets. So `pixels + 10` is computed in uint8, which can only hold 0 to 255. Integer arithmetic in a fixed-width type wraps around modulo 256, so 250 + 10 = 260 becomes 260 − 256 = 4. The 100 becomes 110 as expected. A bright pixel has turned almost black, and nothing warns you.\n\nThe option with 255 describes saturating arithmetic, which some image libraries offer but NumPy does not do by default. The option with 260 assumes NumPy widens the dtype to fit the result. It does not widen for a Python scalar. The OverflowError option is half right: NumPy 2 does raise it, but only when the Python number itself cannot fit in uint8, as in `pixels + 300`. Overflow during the arithmetic is silent.\n\nThe fix is to widen first and clip: `np.clip(pixels.astype(np.int16) + 10, 0, 255).astype(np.uint8)`.",
+  "deeper": "Reductions are safer than element-wise maths here. `pixels.sum()` accumulates in a wider integer type and `pixels.mean()` returns a float. A good habit in data loaders is to convert images to float32 early, do augmentation there, and only cast back to uint8 when saving.",
+  "tags": [
+   "numpy",
+   "dtypes",
+   "images"
+  ],
+  "concepts": [
+   "numpy-dtypes"
+  ]
+ },
+ {
+  "id": "py-0009",
+  "topic": "python",
+  "subtopic": "float equality",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "Using NumPy 2.x, a unit test checks that two class weights add up to an expected total. What does this print? Write the two values the way Python prints them.\n\n```python\nimport numpy as np\ntotal = 0.1 + 0.2\nprint(total == 0.3, np.isclose(total, 0.3))\n```",
+  "answer": "False True",
+  "accept": [
+   "false, true",
+   "false,true",
+   "(false, true)",
+   "[false, true]",
+   "false and true"
+  ],
+  "check": "import numpy as np\ntotal = 0.1 + 0.2\nresult = f\"{total == 0.3} {np.isclose(total, 0.3)}\"",
+  "explanation": "Neither 0.1 nor 0.2 can be stored exactly in binary floating point, so each is rounded to the nearest 64-bit double. Their sum comes out as 0.30000000000000004, one step away from the double that Python uses for 0.3. The `==` operator compares the exact stored values, so it prints False.\n\n`np.isclose` asks a softer question: is |a − b| ≤ atol + rtol × |b|? With the defaults rtol = 1e-05 and atol = 1e-08, a gap of about 5.5e-17 easily passes, so it prints True.\n\nThe common mistake is to expect True True, or to blame NumPy. This is plain IEEE 754 arithmetic and happens in pure Python too. A second mistake is to trust the default `atol` for tiny numbers. `np.isclose(1e-9, 0.0)` is True, which may hide a real difference when you compare small probabilities or gradients.",
+  "deeper": "In tests, use `np.testing.assert_allclose` or `pytest.approx` instead of `==` for floats. In interviews this shows up as \"why does my softmax output not sum to exactly 1\". The answer is rounding, and the check should use a tolerance that suits the scale of the numbers.",
+  "tags": [
+   "numpy",
+   "floats"
+  ],
+  "concepts": [
+   "numpy-dtypes"
+  ]
+ },
+ {
+  "id": "py-0010",
+  "topic": "python",
+  "subtopic": "dtype after true division",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "Using NumPy 2.x, a reporting job turns integer click counts into rates. What does the last line print?\n\n```python\nimport numpy as np\nclicks = np.array([3, 6, 9])\nrates = clicks / 3\nprint(rates.dtype)\n```",
+  "answer": "float64",
+  "accept": [
+   "np.float64",
+   "numpy.float64",
+   "dtype('float64')",
+   "float 64"
+  ],
+  "check": "import numpy as np\nclicks = np.array([3, 6, 9])\nrates = clicks / 3\nresult = str(rates.dtype)",
+  "explanation": "The `/` operator is true division. For integer inputs it always returns floating point values, and NumPy uses float64 for that. So `rates` is `[1.0, 2.0, 3.0]` with dtype float64, even though every result is a whole number.\n\nThe common mistake is to answer int64 because 3, 6 and 9 all divide evenly by 3. NumPy chooses the output dtype from the input dtypes and the operation, never from the values in the array. That is what makes the result predictable: the same line gives the same dtype whatever data flows through it.\n\nIf you want integers, `clicks // 3` is floor division and keeps int64. If you want float32 to save memory before sending data to a GPU, cast on purpose with `.astype(np.float32)` instead of relying on the default.",
+  "deeper": "Dtype surprises cost real memory. A feature matrix of 100 million values is 800 MB in float64 and 400 MB in float32. Strong candidates check `df.dtypes` or `arr.dtype` after each transform and cast once, at a clear point in the pipeline.",
+  "tags": [
+   "numpy",
+   "dtypes"
+  ],
+  "concepts": [
+   "numpy-dtypes"
+  ]
+ },
+ {
+  "id": "py-0011",
+  "topic": "python",
+  "subtopic": "replacing a loop",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "Using NumPy 2.x, this loop computes revenue per order from a quantity column and a unit price column. Which replacement gives the same `revenue` and gives the right reason it runs faster?\n\n```python\nimport numpy as np\norders = np.array([[2, 9.5], [1, 20.0], [4, 3.25]])  # quantity, unit price\nrevenue = np.empty(len(orders))\nfor i in range(len(orders)):\n    revenue[i] = orders[i, 0] * orders[i, 1]\n```",
+  "options": [
+   "`orders[:, 0] * orders[:, 1]`, since the multiply runs in compiled code over whole columns",
+   "`np.vectorize(lambda q, p: q * p)(orders[:, 0], orders[:, 1])`, since it compiles the lambda",
+   "`orders[0, :] * orders[1, :]`, since rows sit next to each other in memory",
+   "`orders.prod(axis=0)`, since one reduction call replaces every pass of the loop"
+  ],
+  "answer": 0,
+  "check": "import numpy as np\norders = np.array([[2, 9.5], [1, 20.0], [4, 3.25]])  # quantity, unit price\nrevenue = np.empty(len(orders))\nfor i in range(len(orders)):\n    revenue[i] = orders[i, 0] * orders[i, 1]\nkey = orders[:, 0] * orders[:, 1]\nvec = np.vectorize(lambda q, p: q * p)(orders[:, 0], orders[:, 1])\nrows = orders[0, :] * orders[1, :]\nprod0 = orders.prod(axis=0)\nassert np.array_equal(key, revenue) and np.array_equal(vec, revenue)\nassert rows.shape != revenue.shape and prod0.shape != revenue.shape\nresult = \"`orders[:, 0] * orders[:, 1]`, since the multiply runs in compiled code over whole columns\"",
+  "explanation": "`orders[:, 0]` is the whole quantity column and `orders[:, 1]` is the whole price column. Multiplying them gives one product per row, `[19.0, 20.0, 13.0]`, the same as the loop. It is faster because the loop over elements happens inside NumPy's compiled C code. The Python loop instead runs the interpreter once per row, boxing and unboxing each number.\n\nThe `np.vectorize` option does give the right numbers, but its reason is false. `np.vectorize` is a convenience wrapper that still calls the Python lambda once per element, so it is about as slow as the loop. The option that multiplies `orders[0, :]` by `orders[1, :]` takes rows, not columns. It multiplies the first order by the second and returns two wrong values. `orders.prod(axis=0)` collapses the rows, so it gives one product per column, a total quantity product and a price product, not revenue per order.",
+  "deeper": "`orders.prod(axis=1)` would also work here, since it multiplies across each row. In real code, name the columns or use a structured layout so intent is clear. An interviewer may ask when vectorizing does not help, for example when each step depends on the previous result, as in a running balance with resets.",
+  "tags": [
+   "numpy",
+   "vectorization"
+  ],
+  "concepts": [
+   "vectorization"
+  ]
+ },
+ {
+  "id": "py-0012",
+  "topic": "python",
+  "subtopic": "values after broadcasting",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "Using NumPy 2.x, a logistics team prices three parcels with four carriers. What is `cost[1, 2]`? Give the number to 1 decimal place.\n\n```python\nimport numpy as np\nweights = np.array([[1.0], [2.5], [4.0]])  # kg, one row per parcel\nrates = np.array([3.0, 5.0, 8.0, 6.0])    # price per kg, one per carrier\nfees = np.array([2.0, 0.0, 1.0, 4.0])     # flat fee, one per carrier\ncost = weights * rates + fees\n```",
+  "answer": 21.0,
+  "tolerance": 0.05,
+  "check": "import numpy as np\nweights = np.array([[1.0], [2.5], [4.0]])  # kg, one row per parcel\nrates = np.array([3.0, 5.0, 8.0, 6.0])    # price per kg, one per carrier\nfees = np.array([2.0, 0.0, 1.0, 4.0])     # flat fee, one per carrier\ncost = weights * rates + fees\nresult = float(cost[1, 2])",
+  "explanation": "`weights` has shape (3, 1) and `rates` has shape (4,). Broadcasting lines them up from the right, treats `rates` as (1, 4), and stretches both to (3, 4). So `cost[i, j]` is parcel i's weight times carrier j's rate, plus carrier j's fee. `fees` also has shape (4,), so it is added along the carrier axis.\n\nFor `cost[1, 2]`, row 1 is the 2.5 kg parcel and column 2 is the carrier with rate 8.0 and fee 1.0. That gives 2.5 × 8.0 + 1.0 = 21.0.\n\nThe common mistake is to swap the axes and read row 2, column 1: 4.0 × 5.0 + 0.0 = 20.0. Another is to pick the fee by the row number, fees[1] = 0.0, which also gives 20.0. Remember that the first index follows `weights` because it supplied the rows. If `weights` were a flat array of shape (3,), the multiply would fail, since 3 and 4 cannot broadcast.",
+  "deeper": "This pattern, a column vector against a row vector, builds every pairing in one step. It is how you score all users against all items or all queries against all documents. In an interview, say the output shape first, (3, 4) here, and which axis means what, before computing any value.",
+  "tags": [
+   "numpy",
+   "broadcasting"
+  ],
+  "concepts": [
+   "numpy-broadcasting"
+  ]
+ },
+ {
+  "id": "py-0013",
+  "topic": "python",
+  "subtopic": "np.where output",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "Using NumPy 2.x, a spam filter turns predicted probabilities into labels with a 0.5 cut-off. What does the last line print? Write it as a Python list.\n\n```python\nimport numpy as np\nprobs = np.array([0.91, 0.35, 0.50, 0.08])\nlabels = np.where(probs >= 0.5, 1, 0)\nprint(labels.tolist())\n```",
+  "answer": "[1, 0, 1, 0]",
+  "accept": [
+   "[1,0,1,0]",
+   "1, 0, 1, 0",
+   "1,0,1,0",
+   "1 0 1 0",
+   "[1 0 1 0]"
+  ],
+  "check": "import numpy as np\nprobs = np.array([0.91, 0.35, 0.50, 0.08])\nlabels = np.where(probs >= 0.5, 1, 0)\nresult = str(labels.tolist())",
+  "explanation": "With three arguments, `np.where(cond, x, y)` works element by element. Where the condition is True it takes `x`, here 1, and elsewhere it takes `y`, here 0. The condition is `probs >= 0.5`:\n\n- 0.91 ≥ 0.5, so 1\n- 0.35 < 0.5, so 0\n- 0.50 ≥ 0.5, so 1\n- 0.08 < 0.5, so 0\n\nThe result is `[1, 0, 1, 0]`.\n\nOne common slip is to treat 0.50 as below the cut-off, which gives `[1, 0, 0, 0]`. That is what `probs > 0.5` would produce, so the comparison operator matters at the boundary. Another is to mix this up with the one-argument form. `np.where(probs >= 0.5)` returns a tuple of index arrays, `(array([0, 2]),)`, which tells you where the condition holds rather than giving a label per row.",
+  "deeper": "`(probs >= 0.5).astype(int)` gives the same labels and is often clearer. `np.where` earns its place when the two branches are arrays, for example capping values with `np.where(x > cap, cap, x)`. In production the cut-off is rarely 0.5. It is tuned to the cost of false alarms against missed spam.",
+  "tags": [
+   "numpy",
+   "where"
+  ],
+  "concepts": [
+   "boolean-indexing"
+  ]
+ },
+ {
+  "id": "py-0014",
+  "topic": "python",
+  "subtopic": "agg vs transform",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "Using pandas 3.x, you want a per-row feature for a payments model: each payment's amount divided by that user's average amount. How many rows do `a` and `t` have, and which should you divide `df[\"amount\"]` by?\n\n```python\nimport pandas as pd\ndf = pd.DataFrame({\n    \"user\": [\"u1\", \"u2\", \"u1\", \"u3\", \"u1\", \"u2\"],\n    \"amount\": [20, 50, 40, 10, 60, 10],\n})\na = df.groupby(\"user\")[\"amount\"].agg(\"mean\")\nt = df.groupby(\"user\")[\"amount\"].transform(\"mean\")\n```",
+  "options": [
+   "`a` has 3 rows and `t` has 6. Divide by `t`, since it lines up with `df` row by row.",
+   "`a` has 3 rows and `t` has 6. Divide by `a`, since pandas matches each row to its user.",
+   "`a` has 6 rows and `t` has 3. Divide by `a`, since it repeats the mean on every row.",
+   "Both have 6 rows with the same values. Either works, since both align to `df` alike."
+  ],
+  "answer": 0,
+  "check": "import pandas as pd\ndf = pd.DataFrame({\n    \"user\": [\"u1\", \"u2\", \"u1\", \"u3\", \"u1\", \"u2\"],\n    \"amount\": [20, 50, 40, 10, 60, 10],\n})\na = df.groupby(\"user\")[\"amount\"].agg(\"mean\")\nt = df.groupby(\"user\")[\"amount\"].transform(\"mean\")\nassert len(a) == 3 and len(t) == 6\nbad = df[\"amount\"] / a\nassert bad.isna().all() and len(bad) == 9\ngood = df[\"amount\"] / t\nassert good.notna().all() and list(good.index) == list(df.index)\nresult = \"`a` has 3 rows and `t` has 6. Divide by `t`, since it lines up with `df` row by row.\"",
+  "explanation": "`agg` reduces each group to one value, so `a` has one row per user, indexed by u1, u2 and u3. `transform` returns a result with the same index as the input, giving each row its own group's mean, so `t` has 6 rows indexed 0 to 5. Dividing `df[\"amount\"]` by `t` pairs row 0 with row 0 and so on, which is exactly the per-row ratio you want.\n\nThe option that divides by `a` is the subtle trap. pandas aligns on index labels, not on the `user` column. The labels 0 to 5 never match u1, u2 or u3, so the result has 9 rows, all NaN, and no error is raised. The option with the lengths swapped mixes up which method reduces. The option claiming both have 6 rows assumes `agg` broadcasts back to the rows, which it never does.\n\nIf you already have `a`, `df[\"user\"].map(a)` turns it into a row-aligned Series.",
+  "deeper": "In feature pipelines, `transform` is the tool for \"compare each row with its group\" features, such as z-scores within a store or a share of a user's spend. Interviewers like a follow-up: if these averages include the current or future payments, the feature leaks. In time-ordered data, use an expanding mean of earlier rows instead.",
+  "tags": [
+   "pandas",
+   "groupby"
+  ],
+  "concepts": [
+   "pandas-groupby",
+   "pandas-indexing"
+  ]
+ },
+ {
+  "id": "py-0015",
+  "topic": "python",
+  "subtopic": "rows after a merge",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "Using pandas 3.x, a click log is joined to an ad table that, by mistake, lists ad 1 twice. How many rows does `out` have? Give a whole number.\n\n```python\nimport pandas as pd\nclicks = pd.DataFrame({\"ad_id\": [1, 1, 2, 3, 3, 3], \"ts\": range(6)})\nads = pd.DataFrame({\"ad_id\": [1, 1, 3, 4], \"campaign\": [\"a\", \"b\", \"c\", \"d\"]})\nout = clicks.merge(ads, on=\"ad_id\", how=\"left\")\nlen(out)\n```",
+  "answer": 8,
+  "tolerance": 0.5,
+  "check": "import pandas as pd\nclicks = pd.DataFrame({\"ad_id\": [1, 1, 2, 3, 3, 3], \"ts\": range(6)})\nads = pd.DataFrame({\"ad_id\": [1, 1, 3, 4], \"campaign\": [\"a\", \"b\", \"c\", \"d\"]})\nout = clicks.merge(ads, on=\"ad_id\", how=\"left\")\nresult = len(out)",
+  "explanation": "A left merge keeps every row of `clicks` and pairs it with every matching row of `ads`. Work key by key:\n\n- ad 1: 2 clicks × 2 ad rows = 4 rows\n- ad 2: 1 click with no match, kept once with a missing campaign = 1 row\n- ad 3: 3 clicks × 1 ad row = 3 rows\n- ad 4 exists only in `ads`, so a left join drops it\n\nThat gives 4 + 1 + 3 = 8.\n\nThe most common mistake is to answer 6, believing a left join never changes the row count. That only holds when the right table's keys are unique. Duplicate keys on the right multiply the matching left rows. Others answer 7, which is what an inner join gives because it drops ad 2, or 9, which counts ad 4 as if it were an outer join.",
+  "deeper": "Silent row growth after a merge is a classic cause of inflated metrics, such as clicks counted twice. Pass `validate=\"many_to_one\"` so pandas raises an error when the right keys are not unique, and compare `len()` before and after every join in a feature pipeline.",
+  "tags": [
+   "pandas",
+   "merge"
+  ],
+  "concepts": [
+   "pandas-merge"
+  ]
+ },
+ {
+  "id": "py-0016",
+  "topic": "python",
+  "subtopic": "Series alignment",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "Using pandas 3.x, ad spend by channel comes from two systems and is added together. What does the last line return? Give a whole number.\n\n```python\nimport pandas as pd\nspend = pd.Series([100, 250, 80], index=[\"search\", \"social\", \"email\"])\nextra = pd.Series([40, 60, 20], index=[\"social\", \"video\", \"search\"])\ntotal = spend + extra\ntotal.mean()\n```",
+  "answer": 205,
+  "tolerance": 0.5,
+  "check": "import pandas as pd\nspend = pd.Series([100, 250, 80], index=[\"search\", \"social\", \"email\"])\nextra = pd.Series([40, 60, 20], index=[\"social\", \"video\", \"search\"])\ntotal = spend + extra\nresult = float(total.mean())",
+  "explanation": "Arithmetic between two Series lines them up by index label, not by position. The result's index is the union of both: email, search, social and video.\n\n- search: 100 + 20 = 120\n- social: 250 + 40 = 290\n- email: only in `spend`, so NaN\n- video: only in `extra`, so NaN\n\n`mean()` skips NaN by default, so it averages the two real values: (120 + 290) / 2 = 205.\n\nThere are three common wrong paths. Adding by position gives 140, 310 and 100, with a mean of about 183.3. Treating NaN as 0 but still counting it gives 410 / 4 = 102.5. Assuming a missing channel counts as zero spend, which is what `spend.add(extra, fill_value=0)` does, gives 120, 290, 80 and 60, with a mean of 137.5. The last one may be what the business wants, but it is not what `+` does.",
+  "deeper": "Alignment is a feature, not a bug, but it hides data problems. Two NaN rows here mean two channels were silently dropped from the average. In pipelines, check `total.isna().sum()` after combining sources, and decide on purpose whether a missing key means zero or unknown.",
+  "tags": [
+   "pandas",
+   "alignment"
+  ],
+  "concepts": [
+   "pandas-indexing"
+  ]
+ },
+ {
+  "id": "py-0017",
+  "topic": "python",
+  "subtopic": "loc vs iloc",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "Using pandas 3.x, a product table uses row ids 10 to 50 as its index. What does the last line return?\n\n```python\nimport pandas as pd\ndf = pd.DataFrame({\"sku\": [\"a\", \"b\", \"c\", \"d\", \"e\"]},\n                  index=[10, 20, 30, 40, 50])\n(df.loc[20:40, \"sku\"].tolist(), df.iloc[1:3][\"sku\"].tolist())\n```",
+  "options": [
+   "(['b', 'c', 'd'], ['b', 'c'])",
+   "(['b', 'c'], ['b', 'c'])",
+   "(['b', 'c', 'd'], ['b', 'c', 'd'])",
+   "(['b', 'c'], ['b', 'c', 'd'])"
+  ],
+  "answer": 0,
+  "check": "import pandas as pd\ndf = pd.DataFrame({\"sku\": [\"a\", \"b\", \"c\", \"d\", \"e\"]},\n                  index=[10, 20, 30, 40, 50])\nresult = str((df.loc[20:40, \"sku\"].tolist(), df.iloc[1:3][\"sku\"].tolist()))",
+  "explanation": "`loc` selects by index label, and its slices include both ends. `df.loc[20:40]` therefore returns the rows labelled 20, 30 and 40, which hold b, c and d.\n\n`iloc` selects by position, like a Python list, and its slices leave out the end. `df.iloc[1:3]` returns positions 1 and 2, which hold b and c.\n\nThe option where both slices exclude the end applies Python list rules to `loc`. The option where both include the end applies label rules to `iloc`. The option with the rules swapped is the easiest trap if you remember that the two differ but not which way. A memory aid: with labels you often do not know what label comes after the last one you want, so including the end is the only practical rule.",
+  "deeper": "The classic bug is using `df[1:3]` or `loc` with a default integer index and then reindexing or filtering, after which labels no longer match positions. Interviewers like to ask what `df.loc[0]` does after `df = df[df.amount > 0]`. If row 0 was filtered out, it raises a KeyError.",
+  "tags": [
+   "pandas",
+   "indexing"
+  ],
+  "concepts": [
+   "pandas-indexing"
+  ]
+ },
+ {
+  "id": "py-0018",
+  "topic": "python",
+  "subtopic": "rolling features that leak",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A fraud model scores each card transaction at the moment it happens. A teammate builds this pandas 3.x feature, gets 0.99 AUC offline, and then sees the model do much worse in production. What is the problem, and what is the right fix?\n\n```python\ntx = tx.sort_values([\"card\", \"ts\"])\ntx[\"fraud_rate_3\"] = (\n    tx.groupby(\"card\")[\"is_fraud\"]\n      .transform(lambda s: s.rolling(3, min_periods=1).mean())\n)\n```",
+  "options": [
+   "Each row's window includes its own `is_fraud` label. Inside each card group, shift by one before rolling.",
+   "Early rows have fewer than three past values. Set `min_periods=3` so every window is full and fair.",
+   "The rolling window mixes transactions from different cards. Sort by `ts` alone before grouping.",
+   "Each row's window includes its own `is_fraud` label. Shift the whole column by one, then group and roll."
+  ],
+  "answer": 0,
+  "check": "import pandas as pd\ntx = pd.DataFrame({\"card\": [\"a\", \"a\", \"a\", \"b\", \"b\", \"b\"], \"ts\": [1, 2, 3, 1, 2, 3],\n                   \"is_fraud\": [0, 0, 1, 0, 1, 0]})\ntx = tx.sort_values([\"card\", \"ts\"])\ntx[\"fraud_rate_3\"] = (\n    tx.groupby(\"card\")[\"is_fraud\"]\n      .transform(lambda s: s.rolling(3, min_periods=1).mean())\n)\nassert abs(tx[\"fraud_rate_3\"].iloc[2] - 1 / 3) < 1e-9\nfixed = tx.groupby(\"card\")[\"is_fraud\"].transform(lambda s: s.shift(1).rolling(3, min_periods=1).mean())\nassert fixed.iloc[2] == 0 and pd.isna(fixed.iloc[3])\nwrong = tx[\"is_fraud\"].shift(1).groupby(tx[\"card\"]).transform(lambda s: s.rolling(3, min_periods=1).mean())\nassert wrong.iloc[3] == 1\nresult = \"Each row's window includes its own `is_fraud` label. Inside each card group, shift by one before rolling.\"",
+  "explanation": "A rolling window ends at the current row and includes it. So `fraud_rate_3` for a transaction averages its own `is_fraud` label with the two before it. Any row labelled fraud gets a higher feature value, and the model learns to read its answer off the feature. In production that label does not exist yet when the transaction is scored, so the signal vanishes. The fix is `s.shift(1).rolling(3, min_periods=1).mean()` inside the per-card transform, so each row only sees earlier transactions on the same card.\n\nThe option that shifts the whole column before grouping finds the right problem but breaks the fix. The first row of each card would receive the last label of the previous card, which in this sort order is usually a later transaction from someone else. Setting `min_periods=3` only blanks early rows and still includes the current label. The claim that cards are mixed is false, because the groupby already keeps each card separate, and sorting by `ts` alone would not remove the leak.",
+  "deeper": "A strong candidate adds that fraud labels arrive late, often weeks later through chargebacks. Shifting by one row assumes the previous label was known at scoring time. A safer feature only uses labels whose confirmation date is before the current transaction, which is point-in-time correctness.",
+  "tags": [
+   "pandas",
+   "leakage",
+   "fraud"
+  ],
+  "concepts": [
+   "target-leakage",
+   "pandas-groupby",
+   "point-in-time-correctness"
+  ]
+ },
+ {
+  "id": "py-0019",
+  "topic": "python",
+  "subtopic": "features out of a ColumnTransformer",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "Using scikit-learn 1.x, a churn team prepares features with this ColumnTransformer. What does the last line return? Give a whole number.\n\n```python\nimport pandas as pd\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\n\ndf = pd.DataFrame({\n    \"user_id\": [101, 102, 103, 104, 105, 106],\n    \"plan\": [\"free\", \"pro\", \"team\", \"free\", \"pro\", \"free\"],\n    \"country\": [\"CA\", \"US\", \"UK\", \"DE\", \"CA\", \"US\"],\n    \"age\": [23, 35, 41, 29, 52, 31],\n    \"tenure_months\": [2, 18, 30, 5, 44, 9],\n})\nct = ColumnTransformer([\n    (\"cat\", OneHotEncoder(handle_unknown=\"ignore\"), [\"plan\", \"country\"]),\n    (\"num\", StandardScaler(), [\"age\", \"tenure_months\"]),\n])\nX_out = ct.fit_transform(df)\nX_out.shape[1]\n```",
+  "answer": 9,
+  "tolerance": 0.5,
+  "check": "import pandas as pd\nfrom sklearn.compose import ColumnTransformer\nfrom sklearn.preprocessing import OneHotEncoder, StandardScaler\n\ndf = pd.DataFrame({\n    \"user_id\": [101, 102, 103, 104, 105, 106],\n    \"plan\": [\"free\", \"pro\", \"team\", \"free\", \"pro\", \"free\"],\n    \"country\": [\"CA\", \"US\", \"UK\", \"DE\", \"CA\", \"US\"],\n    \"age\": [23, 35, 41, 29, 52, 31],\n    \"tenure_months\": [2, 18, 30, 5, 44, 9],\n})\nct = ColumnTransformer([\n    (\"cat\", OneHotEncoder(handle_unknown=\"ignore\"), [\"plan\", \"country\"]),\n    (\"num\", StandardScaler(), [\"age\", \"tenure_months\"]),\n])\nX_out = ct.fit_transform(df)\nresult = int(X_out.shape[1])",
+  "explanation": "Count each block of output columns.\n\n- One-hot encoding makes one column per category seen during `fit`. `plan` has free, pro and team, so 3 columns. `country` has CA, US, UK and DE, so 4 columns.\n- `StandardScaler` keeps one column per input, so `age` and `tenure_months` give 2 columns.\n- `user_id` is not listed in any transformer, and `remainder` defaults to `\"drop\"`, so it disappears.\n\nThe total is 3 + 4 + 2 = 9.\n\nThe most common mistake is 10, from assuming unlisted columns pass through. They only do with `remainder=\"passthrough\"`. Another is 7, from dropping one level per categorical feature, which only happens with `drop=\"first\"`. Some count input columns instead and say 5. `handle_unknown=\"ignore\"` does not change the count. It means a category first seen at prediction time becomes all zeros in that block instead of raising an error.",
+  "deeper": "Call `ct.get_feature_names_out()` to see the names, such as `cat__plan_pro`. Interviewers like the follow-up on high-cardinality columns: one-hot encoding a field with 50,000 values makes 50,000 sparse columns, so you might cap rare levels with `min_frequency` or switch to target or hashed encoding.",
+  "tags": [
+   "sklearn",
+   "encoding"
+  ],
+  "concepts": [
+   "sklearn-pipeline",
+   "one-hot-encoding"
+  ]
+ },
+ {
+  "id": "py-0020",
+  "topic": "python",
+  "subtopic": "estimator API details",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "Using scikit-learn 1.x, a churn model is trained on string labels. A teammate then treats `p[:, 1]` as each customer's churn probability. What does `p[:, 1]` actually hold?\n\n```python\nfrom sklearn.linear_model import LogisticRegression\nX = [[1.0], [7.0], [2.0], [8.0], [1.5], [9.0]]\ny = [\"stay\", \"churn\", \"stay\", \"churn\", \"stay\", \"churn\"]\nclf = LogisticRegression().fit(X, y)\np = clf.predict_proba([[8.5], [1.2]])\n```",
+  "options": [
+   "The probability of \"stay\", since columns follow the sorted `clf.classes_`",
+   "The probability of \"churn\", since column 1 always holds the positive class",
+   "The probability of \"churn\", since it is the second label that appears in `y`",
+   "Nothing usable, since `fit` returns None and so `clf` is None at this point"
+  ],
+  "answer": 0,
+  "check": "from sklearn.linear_model import LogisticRegression\nX = [[1.0], [7.0], [2.0], [8.0], [1.5], [9.0]]\ny = [\"stay\", \"churn\", \"stay\", \"churn\", \"stay\", \"churn\"]\nclf = LogisticRegression().fit(X, y)\np = clf.predict_proba([[8.5], [1.2]])\nassert list(clf.classes_) == [\"churn\", \"stay\"]\nassert isinstance(clf, LogisticRegression)\nassert p[0, 1] < 0.5 < p[1, 1]\nresult = \"The probability of \\\"stay\\\", since columns follow the sorted `clf.classes_`\"",
+  "explanation": "A fitted classifier stores its labels in `classes_`, sorted the same way `np.unique` sorts them. Here that is `[\"churn\", \"stay\"]`, because \"churn\" comes first alphabetically. Column j of `predict_proba` is the probability of `classes_[j]`, so column 1 is \"stay\". The teammate's feature is the chance a customer stays, the exact opposite of what they wanted.\n\nThe idea that column 1 is always the positive class comes from 0 and 1 labels, where 1 happens to sort last. scikit-learn has no notion of a positive class in `predict_proba`. The order in which labels first appear in `y` does not matter either, since the sort decides. The option about `fit` returning None is wrong because `fit` returns the estimator itself. That is why `LogisticRegression().fit(X, y)` can be chained and `clf` is a working model.\n\nThe safe pattern is `p[:, list(clf.classes_).index(\"churn\")]`, or encoding the target as 0 and 1 before training.",
+  "deeper": "This bug slips through because metrics may still look plausible. ROC-AUC computed on the wrong column comes out as 1 minus the true AUC, so a strong model suddenly looks worse than random. Interviewers like candidates who print `classes_` before using probabilities.",
+  "tags": [
+   "sklearn",
+   "api"
+  ],
+  "concepts": [
+   "estimator-api"
+  ]
+ },
+ {
+  "id": "py-0021",
+  "topic": "python",
+  "subtopic": "where randomness enters scikit-learn",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "Using scikit-learn 1.x, you want a churn experiment to give the same numbers on every run. In which of these steps does `random_state` actually control randomness? Select all that apply.",
+  "options": [
+   "`train_test_split(X, y, test_size=0.2)` with its default shuffling",
+   "`KFold(n_splits=5, shuffle=True)` used as the `cv` of a grid search",
+   "`RandomForestClassifier`, which bootstraps rows and samples features",
+   "`KFold(n_splits=5)` with `shuffle` left at its default value",
+   "`StandardScaler`, fit on the training rows before the model",
+   "`LinearRegression`, fit by ordinary least squares on the same data"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "`random_state` matters wherever a step draws random numbers.\n\n- `train_test_split` shuffles rows before cutting by default, so the seed decides which rows land in the test set.\n- `KFold` with `shuffle=True` shuffles before forming folds, so the seed decides fold membership and therefore every cross-validation score.\n- A random forest draws a bootstrap sample of rows for each tree and a random subset of features at each split. Without a fixed seed, two fits give different trees and slightly different predictions.\n\nThe other three have nothing random to control. `KFold` without shuffling cuts the data into consecutive blocks in order. Recent scikit-learn versions even raise an error if you pass `random_state` with `shuffle=False`, because it would have no effect. `StandardScaler` computes a mean and standard deviation, which are fixed by the data. `LinearRegression` solves least squares directly and has no `random_state` parameter at all. Model initialization is another source of randomness the seed controls, for example in `MLPClassifier` or `KMeans`.",
+  "deeper": "A useful detail: passing an int gives the same draws on every call, while passing a shared `np.random.RandomState` object gives different draws each time it is used. For full reproducibility, also fix library versions and note that `n_jobs` and GPU code can add their own nondeterminism.",
+  "tags": [
+   "sklearn",
+   "reproducibility"
+  ],
+  "concepts": [
+   "reproducibility",
+   "random-forest",
+   "cross-validation"
+  ]
+ },
+ {
+  "id": "py-0022",
+  "topic": "python",
+  "subtopic": "stratified split counts",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "Using scikit-learn 1.x, a fraud dataset has 2,000 rows, and 6% of them are fraud. You split it with `train_test_split(X, y, test_size=0.15, stratify=y, random_state=7)`. How many fraud rows land in the test set? Give a whole number.",
+  "answer": 18,
+  "tolerance": 0.5,
+  "check": "import numpy as np\nfrom sklearn.model_selection import train_test_split\nn = 2000\nn_fraud = int(round(0.06 * n))\ny = np.array([1] * n_fraud + [0] * (n - n_fraud))\nX = np.arange(n).reshape(-1, 1)\nX_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.15, stratify=y, random_state=7)\nresult = int(y_te.sum())",
+  "explanation": "Work in three steps.\n\n1. Fraud rows overall: 6% of 2,000 = 120, so 1,880 rows are legitimate.\n2. Test set size: 0.15 × 2,000 = 300 rows.\n3. With `stratify=y`, each class is split in the same proportion, so the test set gets 0.15 × 120 = 18 fraud rows and 282 legitimate ones. That keeps the test fraud rate at 18 / 300 = 6%, the same as the full data.\n\nThe common mistake is to read `test_size` as the training share and answer 0.85 × 120 = 102, which is the number of fraud rows left in training. Another is to think the answer depends on `random_state`. With stratification the counts per class are fixed, and the seed only decides which particular rows go where. Without `stratify`, the count would vary from seed to seed around 18, and with rare classes it can drift far enough to make test metrics unstable.",
+  "deeper": "When the numbers do not divide evenly, scikit-learn rounds the split sizes and allocates leftovers across classes, so counts can be off by one. For very rare classes, use `StratifiedKFold` and report the spread across folds, since 18 positives give a noisy estimate of recall.",
+  "tags": [
+   "sklearn",
+   "splits",
+   "imbalance"
+  ],
+  "concepts": [
+   "stratified-sampling",
+   "train-validation-test-split"
+  ]
+ },
+ {
+  "id": "py-0023",
+  "topic": "python",
+  "subtopic": "PyTorch autograd basics",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A PyTorch weight `w` has `requires_grad=True`. A debugging loop runs three steps. Each step does a fresh forward pass and then calls `loss.backward()`, and each backward pass on its own gives `w` a gradient of 0.5. The loop never calls `optimizer.zero_grad()` or `optimizer.step()`, so `w` itself never changes. What is `w.grad` after the third step?",
+  "options": [
+   "1.5, because each `backward()` call adds its gradient into `w.grad`",
+   "0.5, because each `backward()` call replaces the value held in `w.grad`",
+   "None, because `w.grad` is only filled in once `optimizer.step()` runs",
+   "An error, because the graph is freed after the first `backward()` call"
+  ],
+  "answer": 0,
+  "explanation": "PyTorch records a graph of operations during the forward pass. `backward()` walks that graph and adds each leaf tensor's gradient into its `.grad` field. It never overwrites. Three backward passes of 0.5 each leave 0.5 + 0.5 + 0.5 = 1.5. That accumulation is deliberate, because it lets you sum gradients over several small batches, but it is why training loops call `optimizer.zero_grad()` every step.\n\nThe option claiming replacement describes what many people assume, and it is the reason forgetting `zero_grad()` is such a common bug. The option about `optimizer.step()` reverses the order. `backward()` fills `.grad` and `step()` only reads it to update the weight. The graph-freed option is half true. The graph is freed after `backward()`, but each step here builds a new graph with its own forward pass, so there is no error. Calling `backward()` a second time on the same graph is what usually fails, unless the first call passed `retain_graph=True`.\n\nSo after N debug passes without a reset, `w.grad` holds the sum of N gradients, not the latest one. That is why a gradient that looks several times too large is often a missing `zero_grad()`.",
+  "deeper": "Interviewers may ask when accumulation is useful. Gradient accumulation splits a large batch into micro-batches, calls `backward()` on each with the loss divided by the number of micro-batches, and only then steps and zeroes. A strong answer also mentions `detach()` for fixed targets, such as the target network in a DQN.",
+  "tags": [
+   "pytorch",
+   "autograd"
+  ],
+  "concepts": [
+   "pytorch-autograd",
+   "gradient-accumulation"
+  ]
+ },
+ {
+  "id": "py-0024",
+  "topic": "python",
+  "subtopic": "common PyTorch mistakes",
+  "format": "multi",
+  "difficulty": 3,
+  "prompt": "You review PyTorch training code for a 10-class image classifier and a separate price regressor, both trained on a CUDA GPU. Which of these are real bugs? Select all that apply.",
+  "options": [
+   "The model is moved with `model.to(\"cuda\")`, but each input batch stays on the CPU",
+   "The classifier ends in `softmax`, and that output is passed to `nn.CrossEntropyLoss`",
+   "The regressor outputs shape (batch, 1), its targets have shape (batch,), and both go to `nn.MSELoss`",
+   "Classifier targets are class indices of dtype long rather than one-hot vectors",
+   "`optimizer.zero_grad()` runs at the start of each step, before the forward pass",
+   "Validation runs under `model.eval()` and `torch.no_grad()`, then `model.train()` is called again"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "Three of these are bugs, and only one of them crashes.\n\n- Model weights on the GPU and inputs on the CPU cannot be combined, so the first layer raises a runtime error about tensors on different devices. Each batch needs `.to(device)` too.\n- `nn.CrossEntropyLoss` applies log-softmax itself and expects raw logits. Feeding it softmax output applies softmax twice. The inputs are squeezed into 0 to 1, gradients shrink and the model trains slowly or stalls, with no error.\n- Shapes (batch, 1) and (batch,) broadcast to (batch, batch) inside `MSELoss`, so every prediction is compared with every target. PyTorch emits a UserWarning about the size mismatch but does not raise, so training runs on. The loss pulls every prediction toward the mean price of the batch, and the model learns little about individual items.\n\nThe other three are correct code. Class indices of dtype long are exactly the target format `CrossEntropyLoss` is built for. Zeroing gradients at the start of the step is as good as zeroing right after `step()`, since either way they are cleared before the next `backward()`. Switching to eval mode with `no_grad()` for validation, then back to train mode, is the textbook pattern.",
+  "deeper": "Silent bugs are what interviewers probe. A good habit is to assert shapes before the loss, overfit a single small batch to confirm the loss can reach near zero, and check that the initial classification loss is close to ln(10) ≈ 2.3 for 10 balanced classes.",
+  "tags": [
+   "pytorch",
+   "debugging"
+  ],
+  "concepts": [
+   "cross-entropy-loss",
+   "softmax",
+   "numpy-broadcasting"
+  ]
+ },
+ {
+  "id": "py-0025",
+  "topic": "python",
+  "subtopic": "speeding up a pandas pipeline",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "This pandas 3.x feature step runs on a 5-million-row orders table, and it takes hours. `order_date` and `signup_date` are datetime columns. Review it and explain how you would make it fast.\n\n```python\ndf[\"days_since_signup\"] = df.apply(\n    lambda r: (r[\"order_date\"] - r[\"signup_date\"]).days, axis=1)\ndf[\"user_orders\"] = df.apply(\n    lambda r: (df[\"user_id\"] == r[\"user_id\"]).sum(), axis=1)\ndf[\"big_order\"] = df.apply(\n    lambda r: 1 if r[\"amount\"] > 100 else 0, axis=1)\n```",
+  "answer": "All three lines use `apply` with `axis=1`, which builds a Series for every row and calls a Python function on it, so nothing runs at NumPy speed. The second line is far worse. For every row it compares the whole `user_id` column, which is O(n²), about 25 trillion comparisons at 5 million rows. I would replace each line with a column operation. `(df[\"order_date\"] - df[\"signup_date\"]).dt.days` subtracts the date columns in one call. `df.groupby(\"user_id\")[\"user_id\"].transform(\"size\")` counts orders per user in one pass and puts the count back on each row. `(df[\"amount\"] > 100).astype(int)` turns a vectorized comparison into 0 and 1. Before switching, I would check the dtypes and confirm the new columns match the old ones on a sample, then time each step to see what is left.",
+  "points": [
+   "Row-wise apply calls Python once per row, so it is not vectorized",
+   "The per-row scan of the whole user_id column is O(n²) and dominates",
+   "Use column subtraction with .dt.days for the date feature",
+   "Use groupby with transform(\"size\") to count orders per user",
+   "Use a vectorized comparison cast to int for the flag",
+   "Check that the new columns match the old ones before swapping"
+  ],
+  "explanation": "The key insight is that the three slow lines are not equally slow. The date and flag lines are O(n) but pay Python overhead per row, so vectorizing them gives a large constant speed-up. The user count line is O(n²), because each of 5 million rows scans 5 million values. No amount of hardware fixes that. It needs a different algorithm, and a groupby is one pass over the data.\n\nThe common mistake is to reach for parallel tools, such as multiprocessing or a parallel apply library, or for `np.vectorize`. Spreading an O(n²) loop across 8 cores still leaves an O(n²) loop, and `np.vectorize` still calls Python per element. Another weaker answer rewrites the count as a groupby `agg` and then merges it back, which works but costs an extra join compared with `transform`.\n\nA careful reviewer also confirms the dates are true datetime64 columns. If they are strings, the first fix is `pd.to_datetime` once, not per row.",
+  "deeper": "A strong candidate also flags a leakage risk. `user_orders` counts all of a user's orders, including ones placed after the current order. If the model predicts at order time, the feature should be the count so far, such as `df.sort_values(\"order_date\").groupby(\"user_id\").cumcount()`.",
+  "tags": [
+   "pandas",
+   "performance"
+  ],
+  "concepts": [
+   "vectorization",
+   "pandas-groupby"
+  ]
+ },
+ {
+  "id": "py-0026",
+  "topic": "python",
+  "subtopic": "a reusable scikit-learn pipeline",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "You are setting up a churn model that several teammates will retrain and tune. The data has numeric columns with missing values, a few low-cardinality categorical columns, and a free-text `last_ticket` column that needs a custom cleaning step. How would you structure preprocessing and the model in scikit-learn so it is reusable and free of leakage?",
+  "answer": "I would build one Pipeline whose first step is a ColumnTransformer. Numeric columns go through SimpleImputer and StandardScaler, categorical columns through OneHotEncoder with handle_unknown=\"ignore\", and the text column through a custom cleaning transformer followed by TfidfVectorizer. The custom step subclasses BaseEstimator and TransformerMixin, stores its settings in __init__ unchanged, learns anything it needs in fit and returns self, and only applies that in transform. The classifier is the last step. I would run GridSearchCV or RandomizedSearchCV on the whole pipeline, with keys such as model__C and prep__text__tfidf__min_df. Because every learned step sits inside the pipeline, each fold refits the imputers, scalers, encoders and vocabulary on its training rows only, so validation rows never shape preprocessing. I would keep a final test set for one last check and save the fitted pipeline as a single artifact, so serving applies identical transforms.",
+  "points": [
+   "One Pipeline with a ColumnTransformer routing each column type to its own steps",
+   "Custom transformer follows the estimator API: fit learns and returns self, transform applies",
+   "Hyperparameter search runs on the whole pipeline using step__param names",
+   "Each CV fold refits every learned step on training folds only, which prevents leakage",
+   "Save and serve the fitted pipeline as one object so training and serving match"
+  ],
+  "explanation": "The point of the design is that everything learned from data lives inside one estimator. Cross-validation and search then treat preprocessing as part of the model, which is what it is in production.\n\nThe most common mistake is to preprocess the full dataset first, for example imputing with the global median or fitting the TF-IDF vocabulary on all rows, and only then tune the model. Every fold then sees statistics computed partly from its own validation rows, so scores are optimistic and the chosen settings may not hold up. A second mistake is a custom transformer that does work in `__init__` or renames its arguments. `GridSearchCV` clones estimators by reading `get_params()`, so such a class breaks cloning or silently ignores the settings you search over.\n\nA third is keeping preprocessing in a notebook and the model in a pickle. Serving code then re-implements the transforms by hand, and small differences cause training and serving skew.",
+  "deeper": "Two practical details impress interviewers. Pass the text column to the ColumnTransformer as a string, `\"last_ticket\"`, not a list, because TfidfVectorizer expects one-dimensional input. And if the cleaning step learns nothing, a FunctionTransformer is simpler than a full custom class.",
+  "tags": [
+   "sklearn",
+   "pipeline"
+  ],
+  "concepts": [
+   "sklearn-pipeline",
+   "estimator-api",
+   "preprocessing-leakage",
+   "hyperparameter-tuning"
+  ]
  }
 ]
