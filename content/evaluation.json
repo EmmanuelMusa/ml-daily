@@ -204,5 +204,421 @@
    "expected-value",
    "precision-at-k"
   ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0009",
+  "subtopic": "the accuracy paradox",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A logistics company predicts which conveyor motors will fail within the next 24 hours. In the test data, 99.0% of motor-days have no failure. The new model scores 99.2% accuracy, and a manager asks what that number tells them. Which answer is most accurate?",
+  "options": [
+   "Very little about failures, since always predicting \"no failure\" scores 99.0% too.",
+   "That the model correctly catches about 99% of the motors that are about to fail.",
+   "That about 0.8% of the motors the model flags will turn out to be false alarms.",
+   "That the model is reliable, since 99.2% on a large test set cannot happen by luck."
+  ],
+  "answer": 0,
+  "explanation": "Accuracy counts every correct prediction, and here almost every motor-day is a non-failure. A model that always says \"no failure\" is right 99.0% of the time while catching nothing. The new model beats that baseline by only 0.2 points, and that small gap fits very different behaviours. With 0.8% of motor-days wrong and 1.0% being failures, the model could catch every failure while raising a few false alarms, or catch only one failure in five and never raise an alarm. Accuracy alone cannot tell these apart.\n\nThe option about catching 99% of failing motors confuses accuracy with recall, which looks only at real failures. The option about 0.8% false alarms confuses the overall error rate with the share of flags that are wrong, which is 1 minus precision. A large test set makes the 99.2% estimate precise, but a precise estimate of an uninformative number is still uninformative.",
+  "deeper": "In an interview, name the majority-class baseline first, then ask for the confusion matrix. For maintenance, recall on failures and the number of false alarms per week are what the operations team feels. A cost per missed failure and per needless inspection turns those into one number a manager can act on.",
+  "tags": [
+   "accuracy",
+   "imbalance",
+   "maintenance"
+  ],
+  "concepts": [
+   "accuracy",
+   "class-imbalance",
+   "baseline-model"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0010",
+  "subtopic": "recall and specificity",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "An airport tests a model that flags checked bags for a manual search. On 5,000 test bags the results are:\n\n- Flagged, bag held a banned item: 36\n- Not flagged, bag held a banned item: 4\n- Flagged, bag was clean: 248\n- Not flagged, bag was clean: 4,712\n\nWhat is the model's specificity? Give it as a decimal to 2 places.",
+  "answer": 0.95,
+  "tolerance": 0.005,
+  "check": "tp = 36\nfn = 4\nfp = 248\ntn = 4712\nresult = tn / (tn + fp)",
+  "explanation": "Specificity is the share of truly negative cases that the model correctly leaves alone: TN / (TN + FP). Here the negatives are the clean bags. There are 4,712 + 248 = 4,960 of them, and the model left 4,712 unflagged. So specificity is 4,712 / 4,960 = 0.95.\n\nRecall is the same idea for the positive class: TP / (TP + FN) = 36 / (36 + 4) = 0.90. Together the two describe how the model treats each true class on its own.\n\nThe most common mistake is to divide by all 5,000 bags, which gives 4,712 / 5,000 ≈ 0.94. That puts the bags with banned items into the denominator, even though specificity is only about clean bags. Another slip is to use the flagged column, 36 / (36 + 248) ≈ 0.13, which is precision. Notice how that low precision sits beside a high specificity. With so many clean bags, even 5% of them flagged swamps the 36 real hits.",
+  "deeper": "Recall and specificity each look inside one true class, so they stay the same if banned items become rarer or more common, as long as the model behaves the same on each kind of bag. Precision does not. That is why screening teams quote recall and specificity for the test itself, then work out flag volume for the traffic they really see.",
+  "tags": [
+   "specificity",
+   "recall",
+   "confusion-matrix"
+  ],
+  "concepts": [
+   "specificity",
+   "recall",
+   "confusion-matrix"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0011",
+  "subtopic": "false positive rate",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A forum's moderation model reviewed 20,000 harmless posts and wrongly removed 300 of them. The figure 300 / 20,000 = 0.015, which is FP / (FP + TN), is the model's ______. It is also the horizontal axis of a ROC curve.",
+  "answer": "false positive rate",
+  "accept": [
+   "fpr",
+   "fall-out",
+   "fallout",
+   "false alarm rate",
+   "1 - specificity",
+   "1 − specificity",
+   "1-specificity",
+   "type I error rate",
+   "type 1 error rate"
+  ],
+  "explanation": "The false positive rate looks only at the true negatives, here the harmless posts, and asks what share of them the model wrongly flagged. Its denominator is every actual negative: the ones wrongly removed (FP) plus the ones correctly left up (TN). So 300 / 20,000 = 1.5%.\n\nThe usual mix-up is with the false discovery rate, FP / (FP + TP), which is 1 minus precision. That one divides by everything the model removed and asks how many removals were mistakes. The two can be very different. If the model also removed 700 truly harmful posts, the false discovery rate would be 300 / 1,000 = 30% while the false positive rate stays at 1.5%. Another slip is to call it the false negative rate, which is about harmful posts the model missed. The false positive rate equals 1 minus specificity, so that form is accepted too.",
+  "deeper": "On a ROC curve each threshold gives one point, with the false positive rate on the x-axis and recall on the y-axis. In moderation, a rate that sounds tiny can still mean thousands of wrongly removed posts a day at scale, so teams often turn the rate into an expected count of appeals.",
+  "tags": [
+   "fpr",
+   "moderation"
+  ],
+  "concepts": [
+   "false-positive-rate",
+   "confusion-matrix",
+   "specificity"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0012",
+  "subtopic": "moving the threshold",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A B2B sales team scores leads with a model and sends every lead scoring above 0.4 to a sales rep. Reps complain that too many leads are poor, so the team raises the threshold to 0.7. Nothing else changes. What usually happens to precision and recall for the \"good lead\" class?",
+  "options": [
+   "Recall falls or stays the same, and precision usually rises.",
+   "Recall usually rises, and precision falls or stays the same.",
+   "Both usually rise, since only the most confident leads are sent.",
+   "Neither changes, since the threshold does not alter the scores."
+  ],
+  "answer": 0,
+  "explanation": "Raising the threshold means fewer leads get labelled good. Every lead above 0.7 was already above 0.4, so the new set of flagged leads is a subset of the old one. The model can only lose true positives, never gain them, so recall (true positives divided by all truly good leads) falls or stays the same. The leads dropped are the ones scored between 0.4 and 0.7, which are usually weaker, so the share of flagged leads that are good, precision, usually goes up. It is not guaranteed. If that dropped band happened to be rich in good leads, precision could dip.\n\nThe option claiming recall rises while precision falls has both directions backwards. Sending fewer leads cannot find more good ones, and it trims the weakest leads first. Both rising is the hope behind the change, but it ignores the good leads scored between 0.4 and 0.7 that are now missed. The scores do stay the same, but precision and recall are computed from the yes or no decisions, and those change.",
+  "deeper": "A strong answer adds that the right threshold comes from rep capacity and the value of a won deal, not from a round number. Plotting precision and recall against the threshold shows the team exactly how many good leads the move from 0.4 to 0.7 gives up.",
+  "tags": [
+   "threshold",
+   "precision",
+   "recall"
+  ],
+  "concepts": [
+   "decision-threshold",
+   "precision",
+   "recall"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0013",
+  "subtopic": "what ROC-AUC means",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A hospital builds a model that predicts which patients will miss their next appointment. On a held-out set it has ROC-AUC 0.82, and the default threshold is 0.5. Which statement about the 0.82 is correct?",
+  "options": [
+   "Pick a patient who missed and one who attended at random, and the model scores the no-show higher 82% of the time.",
+   "At the 0.5 threshold, the model labels 82% of all patients correctly as either a no-show or an attendee.",
+   "Of the patients the model flags as likely no-shows at the 0.5 threshold, 82% really do miss their appointment.",
+   "Moving the threshold from 0.5 to 0.3 would change the 0.82, because more patients would then be flagged as no-shows."
+  ],
+  "answer": 0,
+  "explanation": "ROC-AUC is the probability that a randomly chosen positive gets a higher score than a randomly chosen negative, with ties counted as half. Here the positives are patients who missed. So 0.82 says the model orders a random missed-attended pair correctly 82% of the time. It is a statement about ranking, built from every possible threshold at once.\n\nThat is why the option about moving the threshold to 0.3 is wrong. A new threshold picks a different point on the same ROC curve but leaves the area under it untouched. The option about labelling 82% of patients correctly describes accuracy at 0.5, which needs a cut-off and depends heavily on how common no-shows are. The option about 82% of flagged patients describes precision at 0.5, also a single-threshold number. A model with ROC-AUC 0.82 can have precision far below or above 82%, depending on the threshold and the no-show rate.",
+  "deeper": "Interviewers like the pairwise reading because it shows why AUC ignores calibration. Any change that keeps the order of scores, such as squaring them, leaves AUC the same. A good follow-up is that AUC helps compare models, but the clinic still needs a threshold chosen from how many reminder calls staff can make.",
+  "tags": [
+   "roc-auc",
+   "healthcare"
+  ],
+  "concepts": [
+   "roc-auc",
+   "roc-curve",
+   "decision-threshold"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0014",
+  "subtopic": "AUC by counting pairs",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A legal team tests a model that scores emails for attorney-client privilege. On a tiny check set, the three privileged emails score 0.92, 0.70 and 0.45. The four non-privileged emails score 0.80, 0.45, 0.30 and 0.10. Compute ROC-AUC by comparing every privileged email with every non-privileged one, counting a tie as half a correct pair. Give it as a decimal to 2 places.",
+  "answer": 0.79,
+  "tolerance": 0.005,
+  "check": "pos = [0.92, 0.70, 0.45]\nneg = [0.80, 0.45, 0.30, 0.10]\ns = 0.0\nfor p in pos:\n    for n in neg:\n        if p > n:\n            s += 1.0\n        elif p == n:\n            s += 0.5\nresult = s / (len(pos) * len(neg))",
+  "explanation": "ROC-AUC equals the share of positive-negative pairs that the model orders correctly. With 3 privileged and 4 non-privileged emails there are 3 × 4 = 12 pairs.\n\n- 0.92 beats all four negatives: 4 pairs.\n- 0.70 loses to 0.80 but beats 0.45, 0.30 and 0.10: 3 pairs.\n- 0.45 loses to 0.80, ties with 0.45 and beats 0.30 and 0.10: 2 + 0.5 = 2.5 pairs.\n\nThe total is 4 + 3 + 2.5 = 9.5 correct pairs, and 9.5 / 12 ≈ 0.79.\n\nThe most common slip is the tie. Dropping it gives 9 / 12 = 0.75, and counting it as a full win gives 10 / 12 ≈ 0.83. Counting a tie as half matches the area under the ROC curve, where a tied score moves the curve diagonally. Another mistake is to compare only neighbouring scores in the sorted list instead of every positive with every negative.",
+  "deeper": "This pair-counting view is the Mann-Whitney U statistic divided by the number of pairs. Nobody counts by hand in practice, but interviewers use small cases like this to check you know what AUC measures. It also explains why AUC is unchanged by any order-preserving change to the scores.",
+  "tags": [
+   "roc-auc",
+   "by-hand"
+  ],
+  "concepts": [
+   "roc-auc",
+   "roc-curve"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0015",
+  "subtopic": "weighting recall more",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A bank's model flags payments that may be going to the wrong account. Missing one is far worse than an extra manual check, so the team stops using F1. They switch to a harmonic-mean metric in which recall counts β times as much as precision, and they pick β = 2. The general name for this weighted metric is the ______.",
+  "answer": "F-beta score",
+  "accept": [
+   "f beta",
+   "fbeta",
+   "fbeta score",
+   "f-beta",
+   "f beta measure",
+   "fβ",
+   "fβ score",
+   "fβ-score",
+   "f measure",
+   "f score",
+   "f-measure",
+   "f-score"
+  ],
+  "explanation": "The F-beta score is (1 + β²) × P × R / (β² × P + R), a weighted harmonic mean of precision and recall. With β = 1 it is the ordinary F1, which treats the two equally. With β = 2 recall gets more weight, so a model that misses fewer wrong-account payments scores better even if it raises more checks. For example, with precision 0.5 and recall 0.9, F1 ≈ 0.64 but F2 ≈ 0.78. With β below 1, such as 0.5, precision gets the extra weight instead.\n\nA common mistake is to think a weighted arithmetic mean, such as 0.2 × P + 0.8 × R, does the same job. An arithmetic mean lets a model hide a terrible precision behind a high recall. A model that flags every payment has recall 1 and still scores at least 0.8 that way. The harmonic mean stays low whenever either part is very low, which is why the F family uses it. Another slip is to think a larger β favours precision. It favours recall.",
+  "deeper": "In interviews, say why you chose β, not just its value. A strong answer ties it to costs, for example a misdirected payment costing far more than a five-minute manual review. Many teams still report precision and recall next to F2, because one blended number hides which side moved.",
+  "tags": [
+   "f-beta",
+   "payments"
+  ],
+  "concepts": [
+   "f1-score",
+   "recall",
+   "precision"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0016",
+  "subtopic": "macro vs micro averaging",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A support-ticket router sorts 1,000 tickets into three classes. For each class, here is how many tickets it predicted and how many of those predictions were right:\n\n- Billing: predicted 600, correct 540\n- Technical: predicted 350, correct 315\n- Legal: predicted 50, correct 15\n\nEach ticket gets exactly one predicted class. What is micro-averaged precision minus macro-averaged precision? Give it as a decimal to 2 places.",
+  "answer": 0.17,
+  "tolerance": 0.005,
+  "check": "pred = [600, 350, 50]\ncorrect = [540, 315, 15]\nmacro = sum(c / p for c, p in zip(correct, pred)) / len(pred)\nmicro = sum(correct) / sum(pred)\nresult = micro - macro",
+  "explanation": "Macro averaging computes precision for each class, then takes the plain mean. Billing is 540 / 600 = 0.90, technical is 315 / 350 = 0.90 and legal is 15 / 50 = 0.30. The macro average is (0.90 + 0.90 + 0.30) / 3 = 0.70.\n\nMicro averaging pools the counts first: (540 + 315 + 15) / (600 + 350 + 50) = 870 / 1,000 = 0.87. Since every ticket gets exactly one label, micro precision here equals plain accuracy.\n\nThe gap is 0.87 − 0.70 = 0.17. Micro weights each class by how often it is predicted, so the 50 legal predictions barely move it. Macro gives legal a full third of the vote, so its weak 0.30 drags the average down.\n\nThe common mistake is to weight each class precision by how many tickets that class predicted and call the result macro. (0.90 × 600 + 0.90 × 350 + 0.30 × 50) / 1,000 = 0.87, which is the micro figure again, and the gap wrongly disappears.",
+  "deeper": "Which average to report depends on what matters. If legal tickets carry the most risk, macro or a per-class table keeps their poor precision visible, while micro hides it behind the big classes. Scikit-learn also offers a weighted average, which weights each class by its number of true tickets.",
+  "tags": [
+   "multiclass",
+   "averaging"
+  ],
+  "concepts": [
+   "macro-micro-averaging",
+   "precision"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0017",
+  "subtopic": "log loss by hand",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A courier's model predicts the chance that each parcel arrives late. Four parcels come back:\n\n- Late, predicted 0.9\n- On time, predicted 0.2\n- Late, predicted 0.8\n- On time, predicted 0.99\n\nThe numbers are the predicted probability of being late. Using the natural log, what is the mean log loss over the four parcels? Give it as a decimal to 2 places.",
+  "answer": 1.29,
+  "tolerance": 0.005,
+  "check": "import math\ny = [1, 0, 1, 0]\np = [0.9, 0.2, 0.8, 0.99]\nlosses = [-(t * math.log(q) + (1 - t) * math.log(1 - q)) for t, q in zip(y, p)]\nresult = sum(losses) / len(losses)",
+  "explanation": "Log loss charges −ln of the probability the model gave to what really happened. For a late parcel that is −ln(p), and for an on-time parcel it is −ln(1 − p).\n\n- Late at 0.9: −ln(0.9) ≈ 0.105\n- On time at 0.2: −ln(0.8) ≈ 0.223\n- Late at 0.8: −ln(0.8) ≈ 0.223\n- On time at 0.99: −ln(0.01) ≈ 4.605\n\nThe sum is about 5.157, and the mean is 5.157 / 4 ≈ 1.29.\n\nThe last parcel does almost all the damage. The model was 99% sure it would be late, and it was not. Without it, the mean of the other three is only about 0.18. Log loss grows without limit as the probability given to the true outcome nears zero.\n\nThe common mistake is to use −ln(p) for every row, including the on-time parcels. That gives about 0.49, because it charges the confident wrong prediction almost nothing and charges the good 0.2 prediction heavily.",
+  "deeper": "This is why libraries clip probabilities away from exactly 0 and 1, and why one mislabelled row can wreck a leaderboard score. In an interview, mention that log loss judges calibration as well as ranking, so two models with the same AUC can have very different log loss.",
+  "tags": [
+   "log-loss",
+   "logistics"
+  ],
+  "concepts": [
+   "log-loss",
+   "cross-entropy-loss",
+   "calibration"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0018",
+  "subtopic": "MAE or RMSE",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A power utility forecasts hourly electricity demand. Small misses are cheap to cover, but a large miss forces it to buy emergency power at many times the normal price. Which error metric best reflects that cost when comparing forecasting models?",
+  "options": [
+   "RMSE, because squaring each error makes a few large misses count far more than many small ones.",
+   "MAE, because it is in megawatts like the forecast, while RMSE is in megawatts squared.",
+   "MAE, because it is always at least as large as RMSE, so it gives the more cautious figure for planning.",
+   "MAPE, because percentage errors are largest at peak hours when demand is highest."
+  ],
+  "answer": 0,
+  "explanation": "RMSE squares each error before averaging, then takes a square root. Squaring makes one 100 MW miss count as much as a hundred 10 MW misses, so a model that sometimes misses badly scores poorly even if it is usually close. That matches a cost that grows sharply with the size of the miss.\n\nThe option about units is wrong because the square root brings RMSE back to megawatts, the same units as MAE. The option about MAE being larger has it backwards. RMSE is always greater than or equal to MAE, and the two are equal only when every error has the same size. The MAPE option fails because actual demand sits in the denominator. At peak hours that denominator is largest, so the same megawatt miss becomes a smaller percentage, the opposite of what the utility needs.\n\nRMSE is still symmetric, so it treats over- and under-forecasts alike. If only one direction is costly, an asymmetric loss such as quantile loss fits even better.",
+  "deeper": "A strong answer reports both. MAE gives planners a typical miss in plain megawatts, and the gap between RMSE and MAE shows how much the large misses matter. Interviewers may also ask how you would train for this cost, which leads to quantile or other asymmetric losses.",
+  "tags": [
+   "regression",
+   "forecasting"
+  ],
+  "concepts": [
+   "rmse",
+   "mae"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0019",
+  "subtopic": "MAE and RMSE from errors",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A bakery forecasts daily loaves for one shop. Over five days the errors (forecast minus actual) are +2, −4, +1, −3 and +10 loaves. The team already reports an MAE of 4.0 loaves. What is the RMSE? Give it in loaves to 1 decimal place.",
+  "answer": 5.1,
+  "tolerance": 0.05,
+  "check": "import math\nerrors = [2, -4, 1, -3, 10]\nresult = math.sqrt(sum(e * e for e in errors) / len(errors))",
+  "explanation": "RMSE squares each error, averages the squares, then takes the square root. The squares are 4, 16, 1, 9 and 100. Their sum is 130, the mean is 130 / 5 = 26, and √26 ≈ 5.1 loaves.\n\nFor comparison, MAE averages the sizes of the errors: (2 + 4 + 1 + 3 + 10) / 5 = 20 / 5 = 4.0. RMSE is higher because the one 10-loaf miss supplies 100 of the 130 in the squared sum. If all five errors had been 4 loaves, RMSE and MAE would both be 4.0.\n\nThe common mistakes skip or reorder a step. Averaging the signed errors gives (2 − 4 + 1 − 3 + 10) / 5 = 1.2, which is the bias, not the size of the error, because positive and negative misses cancel. Taking the square root of the sum instead of the mean gives √130 ≈ 11.4. Forgetting the square root leaves 26, which is the MSE in loaves squared.",
+  "deeper": "The ratio RMSE / MAE is a quick outlier check. Here it is about 1.27, which hints that one day drove most of the error. In a forecasting review, a strong candidate would look at that day, perhaps a holiday or a local event, before tuning the model.",
+  "tags": [
+   "regression",
+   "forecasting"
+  ],
+  "concepts": [
+   "rmse",
+   "mae"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0020",
+  "subtopic": "what R-squared tells you",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A team predicts house sale prices. On the training data R² is 0.91. On a held-out test set from a later year, scikit-learn's `r2_score` returns −0.15. What does the negative test score mean?",
+  "options": [
+   "The model's test predictions have more squared error than predicting the test set's mean price for every house.",
+   "R² cannot be below zero, so the test score points to a bug in how the metric was computed on the test set.",
+   "The model explains 15% of the price variance on the test set, but with predictions that run the wrong way.",
+   "The model needs more features, since adding features always raises R² on any data set, test sets included."
+  ],
+  "answer": 0,
+  "explanation": "R² is 1 − SS_res / SS_tot. SS_res is the squared error of the model's predictions, and SS_tot is the squared error of always predicting the mean of the actual values. A score below zero means SS_res is larger than SS_tot, so the model does worse than that constant guess. With a training R² of 0.91, the likely causes are overfitting or a shift in prices between the years.\n\nThe belief that R² cannot be negative comes from least squares fits with an intercept, scored on their own training data, where the fit can always fall back to the mean. On new data there is no such floor. Reading −0.15 as 15% explained the wrong way is not how R² works. It is simply a worse-than-baseline score. Adding features never lowers training R² for least squares, but on a test set extra features often make things worse by adding variance.",
+  "deeper": "Interviewers like to follow up with adjusted R², which penalises extra features, and with why a later-year test set is the honest one. If prices rose overall, the model may be biased low across the board. Plotting residuals against time or predicted price usually shows this quickly.",
+  "tags": [
+   "r-squared",
+   "regression"
+  ],
+  "concepts": [
+   "r-squared",
+   "overfitting"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0021",
+  "subtopic": "percentage error pitfalls",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A grocery chain scores its daily demand forecasts with MAPE across 5,000 products. Many products sell only 1 to 3 units a day, and days with zero sales are left out of the metric. The weekly MAPE reads 340% and jumps around even when the forecasts barely change. What is the best diagnosis and fix?",
+  "options": [
+   "Small actuals in the denominator turn tiny misses into huge percentages. Report WAPE, total absolute error over total sales.",
+   "MAPE treats over- and under-forecasts the same, which hides forecast bias. Report RMSE, which separates the two kinds of miss.",
+   "Products sell on very different scales, which MAPE cannot handle. Report RMSE pooled across all 5,000 products and days instead.",
+   "The slow sellers are just noise. Keep MAPE but drop products that sell under 3 units a day from the report."
+  ],
+  "answer": 0,
+  "explanation": "MAPE averages |actual − forecast| / actual. When the actual is 1 unit, forecasting 3 is a 200% error, and a product that sells 1 unit one day and 3 the next swings between 200% and 0% with the same forecast. Slow sellers like this push the average to 340%. WAPE sums the absolute errors over all products and days and divides by total sales once, so a 2-unit miss counts as 2 units, not 200%.\n\nThe option about symmetry is wrong twice. MAPE is not symmetric: an under-forecast costs at most 100%, while an over-forecast has no cap, so MAPE quietly rewards forecasting low. RMSE squares away the sign, so it does not separate the two kinds of miss either. Pooled RMSE does not fix scale. It is in units, so high-volume products dominate it, and MAPE was scale-free to begin with. Dropping slow sellers hides products whose stock still has to be planned, rather than fixing the metric.",
+  "deeper": "Other common choices are MASE, which scales errors by the error of a naive forecast, and reporting error per product family. In an interview, add that you would track bias separately, as the sum of signed errors over total sales, because neither WAPE nor RMSE shows whether forecasts run high or low.",
+  "tags": [
+   "forecasting",
+   "mape",
+   "retail"
+  ],
+  "concepts": [
+   "mae",
+   "rmse"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0022",
+  "subtopic": "precision@k and recall@k",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A recipe app shows a user a ranked list of 10 recommended recipes. Using the recipes the user later saved as ground truth, 6 recipes in the whole catalogue are relevant to them. In the ranked list, relevant recipes sit at positions 1, 3, 4, 7 and 9. What is recall@5? Give it as a decimal to 2 places.",
+  "answer": 0.5,
+  "tolerance": 0.005,
+  "check": "relevant_positions = [1, 3, 4, 7, 9]\ntotal_relevant = 6\nk = 5\nhits = sum(1 for p in relevant_positions if p <= k)\nresult = hits / total_relevant",
+  "explanation": "Recall@k asks what share of all relevant items appear in the top k. The top 5 positions hold relevant recipes at positions 1, 3 and 4, so there are 3 hits. There are 6 relevant recipes in the whole catalogue, so recall@5 = 3 / 6 = 0.50.\n\nThe common mistake is dividing by k. That gives 3 / 5 = 0.60, which is precision@5, the share of the shown slots that are relevant. Another slip is to count the hits at positions 7 and 9, which sit outside the top 5. A third is to divide by the 5 relevant recipes that appear somewhere in the list instead of all 6 in the catalogue. The sixth relevant recipe was never shown, and recall@k is meant to charge the model for that. Also note that recall@5 can never exceed 5 divided by the number of relevant items, so with many relevant items even a perfect list scores low.",
+  "deeper": "Precision@k fits a fixed set of slots, such as a carousel of five recipes, where every slot should be useful. Recall@k fits a retrieval stage that hands candidates to a re-ranker, where an item missed early can never be shown. A strong candidate also asks where the ground truth came from, since saves miss recipes the user never saw.",
+  "tags": [
+   "ranking",
+   "recsys"
+  ],
+  "concepts": [
+   "precision-at-k"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0023",
+  "subtopic": "mean reciprocal rank",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A help-centre search is tested on five queries. Each query has one or more relevant articles, found at these ranks:\n\n- Query 1: rank 1\n- Query 2: ranks 3 and 5\n- Query 3: no relevant article in the top 10\n- Query 4: ranks 2 and 4\n- Query 5: rank 4\n\nA query with no relevant article in the top 10 scores 0. What is the mean reciprocal rank? Give it as a decimal to 2 places.",
+  "answer": 0.42,
+  "tolerance": 0.005,
+  "check": "first_relevant = [1, 3, None, 2, 4]\nrr = [0.0 if r is None else 1.0 / r for r in first_relevant]\nresult = sum(rr) / len(rr)",
+  "explanation": "Reciprocal rank uses only the first relevant result for each query and scores it as 1 divided by its rank. The later relevant results for queries 2 and 4 do not count.\n\n- Query 1: 1 / 1 = 1.000\n- Query 2: 1 / 3 ≈ 0.333\n- Query 3: 0\n- Query 4: 1 / 2 = 0.500\n- Query 5: 1 / 4 = 0.250\n\nThe sum is about 2.083, and the mean over 5 queries is about 0.42.\n\nOne common mistake is to drop query 3 and average over four queries. That gives about 0.52 and hides the query that failed completely. Another is to average the first ranks and then invert, turning ranks 1, 3, 2 and 4 into a mean rank of 2.5 and a score of 0.40. That is not the same calculation, and a single deep result can swing it a lot. A third slip is to add 1/5 and 1/4 for the extra relevant articles in queries 2 and 4.",
+  "deeper": "MRR suits tasks where the user wants one answer, such as a help article or a known product page. It ignores every relevant result after the first, so it fits poorly when users read several results. For the retriever in an LLM app, teams often report MRR next to recall@k.",
+  "tags": [
+   "ranking",
+   "search"
+  ],
+  "concepts": [
+   "mean-reciprocal-rank"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0024",
+  "subtopic": "NDCG by hand",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "A hotel search returns five results for a query. Raters labelled each one from 0 (useless) to 3 (perfect). In the order shown, the labels are 2, 3, 0, 1, 3.\n\nUse DCG@3 = Σ relᵢ / log₂(i + 1) over positions i = 1 to 3, with the label itself as the gain. IDCG@3 is the DCG@3 of the best possible ordering of all five results. What is NDCG@3? Give it as a decimal to 2 places.",
+  "answer": 0.66,
+  "tolerance": 0.005,
+  "check": "import math\nrel = [2, 3, 0, 1, 3]\nk = 3\ndef dcg(labels):\n    return sum(r / math.log2(i + 2) for i, r in enumerate(labels[:k]))\nresult = dcg(rel) / dcg(sorted(rel, reverse=True))",
+  "explanation": "First the DCG of the list as shown. The discounts for positions 1, 2 and 3 are log₂(2) = 1, log₂(3) ≈ 1.585 and log₂(4) = 2.\n\nDCG@3 = 2 / 1 + 3 / 1.585 + 0 / 2 ≈ 2 + 1.893 + 0 = 3.893.\n\nNext the ideal. Sorting all five labels gives 3, 3, 2, 1, 0, so the best possible top three is 3, 3, 2.\n\nIDCG@3 = 3 / 1 + 3 / 1.585 + 2 / 2 ≈ 3 + 1.893 + 1 = 5.893.\n\nNDCG@3 = 3.893 / 5.893 ≈ 0.66.\n\nThe common mistake is to build the ideal only from the three results that were shown in the top 3. Sorting 2, 3, 0 gives an ideal DCG of 3 + 2 / 1.585 ≈ 4.262 and an NDCG of about 0.91. That flatters the ranker, because it is never charged for leaving a perfect hotel down at position 5. Another slip is to use log₂(i) as the discount, which divides by zero at position 1.",
+  "deeper": "Many teams use the gain 2^rel − 1 instead of the raw label, which rewards perfect results much more than good ones. The two choices give different numbers, so always state which one you used. NDCG is then averaged over many queries, and queries with no relevant results need a rule, since their IDCG is 0.",
+  "tags": [
+   "ranking",
+   "ndcg",
+   "search"
+  ],
+  "concepts": [
+   "ndcg"
+  ]
+ },
+ {
+  "topic": "evaluation",
+  "id": "eval-0025",
+  "subtopic": "choosing a ranking metric",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "An internal company directory lets staff type a colleague's name and see a ranked list of profiles. Each query has exactly one correct profile, and people read from the top and stop at the first match. Which offline metric fits this search best?",
+  "options": [
+   "MRR, since it scores each query by how high its one correct profile sits in the list.",
+   "Precision@10, since it counts how many of the top 10 results are the right person for each query.",
+   "NDCG@10, since it rewards graded relevance across the whole first page of results.",
+   "Recall@10, since what matters most is that the right profile appears somewhere on the first page."
+  ],
+  "answer": 0,
+  "explanation": "With one correct answer per query and users who stop at the first match, what matters is the rank of that one profile. Reciprocal rank scores rank 1 as 1, rank 2 as 0.5 and rank 3 as about 0.33, and MRR averages this over queries. It tracks how far down people must read.\n\nPrecision@10 fits a different job. With one correct profile, its best possible score is 1 / 10 = 0.1, and it gives the same score whether the profile is at rank 1 or rank 10. Recall@10 has the same blind spot, since it only asks whether the profile made the first page. NDCG@10 is built for graded relevance spread across many results, and this directory has neither: one profile is right and the rest are simply wrong. With a single relevant item NDCG still rewards higher placement, but its gentle log discount scores rank 3 at 0.5, which suits a user who keeps scanning, not one who stops at the first match.",
+  "deeper": "If the team also cares how often the right person is the very first result, it can report success@1 next to MRR. For a product search where raters grade results as perfect, good or fair, NDCG becomes the better choice, and precision@k fits a feed with a fixed number of slots.",
+  "tags": [
+   "ranking",
+   "search"
+  ],
+  "concepts": [
+   "mean-reciprocal-rank",
+   "ndcg",
+   "precision-at-k"
+  ]
  }
 ]
