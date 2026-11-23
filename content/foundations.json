@@ -189,5 +189,653 @@
    "distribution-shift",
    "train-validation-test-split"
   ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0008",
+  "subtopic": "supervised, unsupervised or reinforcement",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A subscription retailer has three projects on its roadmap.\n\n- Churn: predict which members will cancel next month, using two years of history where every past member is marked as cancelled or stayed.\n- Segments: group shoppers by their purchase patterns. Nobody has labelled any segments.\n- Bidding: an agent places ad bids in live auctions and adjusts its strategy from the profit each won auction brings back.\n\nWhich matching of project to learning setup is correct?",
+  "options": [
+   "Churn is supervised, segments are unsupervised, bidding is reinforcement learning.",
+   "Churn is supervised, segments are unsupervised, bidding is supervised learning.",
+   "Churn is unsupervised, segments are supervised, bidding is reinforcement learning.",
+   "Churn is reinforcement learning, segments are unsupervised, bidding is supervised."
+  ],
+  "answer": 0,
+  "explanation": "Ask what feedback each project has. Churn has a known outcome for every past member, cancelled or stayed, so the model learns a mapping from inputs to a given label. That is supervised learning. Segments has no labels at all. The goal is to find structure, such as clusters of similar shoppers, which is unsupervised learning. Bidding has neither labels nor a fixed dataset. The agent picks an action, sees a reward only for the action it took, and its choices change what data it sees next. That is reinforcement learning.\n\nCalling bidding supervised is the tempting slip. There is no column holding the correct bid for each auction. The agent only learns how its own bid turned out, never what the best bid would have been. Calling churn unsupervised ignores the cancel labels the team already has. Calling segments supervised needs segment labels that nobody created. Calling churn reinforcement learning confuses predicting from fixed history with acting and learning from rewards.",
+  "deeper": "In real systems the lines blur. Bidding stacks often start with a supervised model that predicts win or click probability, then put a policy on top. Churn work turns RL-like once you decide who gets a retention offer, because the offer changes the outcome. A strong candidate names the feedback first: labels, none, or rewards for chosen actions.",
+  "tags": [
+   "learning-setups"
+  ],
+  "concepts": [
+   "supervised-learning",
+   "unsupervised-learning",
+   "reinforcement-learning"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0009",
+  "subtopic": "why the test set is touched once",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A search team builds 30 variants of a ranking model. They score every variant on the held-out test set, keep the one with the best test NDCG, and put that NDCG in the launch report as the expected live performance. What is the main problem?",
+  "options": [
+   "The reported score is optimistic, because the test set helped pick the model and is no longer unseen data.",
+   "Nothing is wrong, because no variant was trained on test rows, so the winning test score stays unbiased.",
+   "Scoring on the test set fed its rows into the weights, so the chosen model has partly trained on them.",
+   "The test set is now too small, because each evaluation uses up some rows and leaves fewer rows for later checks."
+  ],
+  "answer": 0,
+  "explanation": "Every test score is the true performance plus some noise from the particular rows in the test set. When you keep the best of 30 scores, you partly keep the variant whose noise happened to be most favourable. So the winner's test score is biased upward, and the launch report promises more than the model will deliver. The test set's job is to give an unbiased estimate of one choice made without looking at it. The fix is to pick between variants on a validation set or with cross-validation, then score the single winner on the test set once.\n\nThe option claiming nothing is wrong is the common belief. Training on test rows is one way to leak, but selecting on test scores is another. Choosing is a form of fitting, just at the level of models instead of weights. Scoring a model only runs predictions, so no rows enter the weights. Evaluation also does not consume rows. The set is the same size afterwards, it simply stops being an honest judge.",
+  "deeper": "The more variants you compare on one set, the bigger the optimism, which is the multiple comparisons problem in model form. Interviewers often follow up: what if the test set is already burned? Good answers are to collect a fresh holdout, for example from recent traffic, and to report the old number as optimistic.",
+  "tags": [
+   "test-set",
+   "selection"
+  ],
+  "concepts": [
+   "train-validation-test-split",
+   "generalization",
+   "multiple-comparisons"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0010",
+  "subtopic": "majority-class baseline",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A support-ticket router sorts tickets into three queues. The test set has 12,000 tickets: 7,320 billing, 3,480 technical and 1,200 account. A vendor's model scores 63% accuracy on it. What accuracy would a baseline get if it always predicts the most common queue? Give it as a decimal to 2 places.",
+  "answer": 0.61,
+  "tolerance": 0.005,
+  "check": "counts = {'billing': 7320, 'technical': 3480, 'account': 1200}\nresult = max(counts.values()) / sum(counts.values())",
+  "explanation": "A majority-class baseline predicts billing for every ticket. It is right exactly when the ticket really is billing, so its accuracy is 7,320 / 12,000 = 0.61. Check the total first: 7,320 + 3,480 + 1,200 = 12,000.\n\nThat changes how the vendor's 63% reads. It beats a model with no intelligence at all by just 2 points. It could be a model that sends nearly everything to billing and gets a few technical tickets right.\n\nThe common mistake is to compare against random guessing over three queues, which gives about 0.33 and makes 63% look strong. Uniform guessing is the wrong baseline when the classes are this uneven, because a lazy rule that knows the class rates does much better. The next step is to check accuracy or recall per queue. If the account queue is almost never predicted correctly, the headline number is hiding a broken class.",
+  "deeper": "Stating the majority baseline before praising any accuracy figure is a habit interviewers look for. In scikit-learn, DummyClassifier gives majority and stratified baselines in one line. A strong candidate also reports macro-averaged recall, which weights every queue equally and exposes a model that ignores the small ones.",
+  "tags": [
+   "baseline",
+   "accuracy"
+  ],
+  "concepts": [
+   "baseline-model",
+   "accuracy",
+   "macro-micro-averaging"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0011",
+  "subtopic": "will more data help",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "An insurer trains a model to flag claims that need manual review. The team plots a learning curve from 10,000 to 400,000 training rows. Since about 80,000 rows, training error has stayed near 11% and validation error near 12%, and both lines are flat. The product goal is 5% error. A vendor offers another 400,000 labelled claims for a high price. What should the team conclude?",
+  "options": [
+   "Hold off on buying. Both curves are flat at a high error, so the model needs more capacity or better features.",
+   "Buy the data. Validation error is still above training error, and more rows will close that gap down to 5%.",
+   "Buy the data. The model is overfitting, and more labelled rows are the standard first fix for overfitting.",
+   "Hold off on buying. The 1-point gap shows overfitting, so stronger regularization is the next thing the team should try."
+  ],
+  "answer": 0,
+  "explanation": "When both curves have been flat for hundreds of thousands of rows and sit close together, the model has learned about as much as it can from this kind of data. More rows just extend a flat line. The remaining problem is the distance between 11% training error and the 5% goal, which is bias. The model is too simple, or the features do not carry enough signal. Error analysis, better features or a more flexible model are the levers that can move training error down.\n\nThe option about closing the gap misreads the numbers. The gap is only 1 point, so closing it fully would bring validation error to about 11%, still far from 5%. Calling this overfitting is wrong because overfitting shows low training error and a large gap, the opposite of this picture. Stronger regularization would make an underfitting model even simpler and push both errors up.",
+  "deeper": "More data is worth buying when validation error is still falling at the right edge of the curve, or when there is a large train to validation gap. A strong candidate also asks whether the new rows differ in kind, such as a new region or product line. Data that covers new cases can help even when the curve looks flat.",
+  "tags": [
+   "learning-curves",
+   "data"
+  ],
+  "concepts": [
+   "learning-curve",
+   "bias-variance-tradeoff",
+   "underfitting"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0012",
+  "subtopic": "sweeping regularization strength",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A ridge regression model predicts delivery times from 300 features. With almost no penalty, its training error is far below its validation error. You refit it many times, raising the L2 strength λ step by step from near zero to a very large value. Which pattern should you expect?",
+  "options": [
+   "Training error rises steadily, validation error falls then rises, and the weights shrink toward zero.",
+   "Training error falls steadily, validation error falls then rises, and the weights grow steadily larger.",
+   "Training error rises steadily, validation error keeps falling, and most weights become exactly zero.",
+   "Training and validation error both fall steadily, and the weights shrink but never reach zero."
+  ],
+  "answer": 0,
+  "explanation": "Raising λ makes large weights more expensive, so the model is less free to fit the training data. Training error can only go up as λ grows, and the size of the weights can only go down. Validation error traces a U shape. At near zero penalty the model overfits, as the big gap shows. A moderate λ removes much more variance than the bias it adds, so validation error falls. At a very large λ every weight is pushed close to zero and the model predicts roughly the average delivery time, so it underfits and validation error climbs again. You pick λ at the bottom of the U.\n\nTraining error falling with a stronger penalty, and weights growing, both have the effect backwards. Validation error cannot keep falling forever, because the far end of the sweep is a near-constant model. Exact zeros are L1 behaviour. L2 shrinks weights smoothly without zeroing them. Both errors falling steadily cannot happen, since training error never improves when the penalty grows.",
+  "deeper": "In practice you sweep λ on a log scale, for example 10⁻⁴ to 10⁴, and plot both curves. An interviewer may ask why features must be standardised first: the penalty treats all weights alike, so a feature measured in metres and one in kilometres would be shrunk very differently.",
+  "tags": [
+   "regularization",
+   "ridge"
+  ],
+  "concepts": [
+   "regularization",
+   "l2-regularization",
+   "bias-variance-tradeoff"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0013",
+  "subtopic": "stopping on validation loss",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A team trains a speech recognition model for up to 100 epochs. After every epoch the training script checks the validation loss. When it has not improved for 5 epochs in a row, the script ends the run and restores the weights from the best epoch. This technique is called ______.",
+  "answer": "early stopping",
+  "accept": [
+   "earlystopping",
+   "early stop",
+   "early stopping with patience"
+  ],
+  "explanation": "Validation loss usually falls, levels off, and then starts to rise as the model begins to fit noise in the training set. Early stopping watches that curve and keeps the weights from its lowest point. The wait of 5 epochs is called patience. It stops one noisy bad epoch from ending training too soon. Early stopping counts as regularization because it limits how far the weights travel from their starting values, which caps how closely the model can fit the training data.\n\nA common wrong answer is checkpointing. Checkpointing only saves weights to disk. It does not decide when to stop. Another is reducing the learning rate on a plateau. That watches the same validation signal, but it lowers the learning rate and keeps training instead of ending the run. Many training setups use both together, so it helps to keep the names apart.",
+  "deeper": "Two gotchas come up in interviews. If the same validation set drives early stopping, tuning and the final report, the reported score is optimistic. And with learning rate schedules, validation loss can plateau and then drop again, so a patience that is too short can stop just before a real improvement.",
+  "tags": [
+   "early-stopping"
+  ],
+  "concepts": [
+   "early-stopping",
+   "overfitting"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0014",
+  "subtopic": "distance in high dimensions",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A k-nearest-neighbours model recommends similar products using 15 dense features, and it works well. The team then adds 3,000 one-hot and word-count features. Now, for most products, the nearest and farthest neighbours sit at almost the same distance, and the recommendations look random. The general effect where data becomes sparse and distances lose their contrast as the number of dimensions grows is called the ______.",
+  "answer": "curse of dimensionality",
+  "accept": [
+   "the curse of dimensionality",
+   "dimensionality curse"
+  ],
+  "explanation": "As you add dimensions, the space grows so fast that a fixed number of points becomes very spread out. For many kinds of data the distances between random pairs of points also bunch together, so the ratio of farthest to nearest distance moves toward 1. kNN only works if near really means similar. Here most of the 3,000 new features carry little signal, and each one adds a bit of random distance that drowns out the 15 useful features.\n\nA frequent wrong answer is overfitting. The two are linked, since sparse data makes overfitting easier, but the effect in the prompt is about the geometry of distance, not about a model memorising training rows. Another is sparsity, which describes one symptom rather than the effect itself. The fixes all reduce the effective number of dimensions: drop weak features, use PCA, or learn a compact embedding and measure distance there.",
+  "deeper": "Interviewers like candidates who connect this to retrieval. Vector search works on embeddings of a few hundred dimensions because the embedding is trained so that distance carries meaning. Raw one-hot vectors of thousands of dimensions rarely do, so methods that rely on distance, such as kNN and k-means, suffer most.",
+  "tags": [
+   "knn",
+   "dimensionality"
+  ],
+  "concepts": [
+   "curse-of-dimensionality",
+   "k-nearest-neighbors",
+   "feature-selection"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0015",
+  "subtopic": "training loss vs business metric",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A retinal screening model is trained with log loss. The clinical team only cares about recall at a fixed score threshold of 0.3, and that is the number they report. A new engineer asks why the team does not train on recall directly. What is the best answer?",
+  "options": [
+   "Recall at a fixed threshold changes in jumps as the weights move, so its gradient is zero almost everywhere.",
+   "Log loss always ranks models the same way recall does, so it is the same objective but faster to compute.",
+   "Recall can only be measured on held-out data, so it cannot be computed on the training set during fitting.",
+   "Training on recall would overfit, while log loss has a built-in penalty that keeps all of the weights small."
+  ],
+  "answer": 0,
+  "explanation": "Recall at 0.3 counts how many true cases score above the line. A small change to the weights almost never pushes any score across 0.3, so recall stays flat, then suddenly jumps when one does. Its gradient is zero almost everywhere and undefined at the jumps, so gradient descent has nothing to follow. Log loss is a smooth stand-in. Every example gives a gradient that pushes its probability toward the true label. Recall on its own is also trivially maximised by flagging every patient, so it would need a second term anyway.\n\nLog loss and recall can disagree. A model can have lower log loss and still lower recall at 0.3, which is why the team reports the metric it cares about. Recall can be computed on training data, it is just counting. Log loss has no built-in weight penalty. Regularization is a separate term you add to it.",
+  "deeper": "A strong candidate adds how the two meet: train on log loss, then choose the threshold on validation data to hit the recall the clinic needs. Class weights can tilt the loss toward missed positives. Log loss also tends to give well calibrated probabilities, which makes a threshold like 0.3 mean something.",
+  "tags": [
+   "loss",
+   "metrics"
+  ],
+  "concepts": [
+   "loss-function",
+   "log-loss",
+   "decision-threshold"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0016",
+  "subtopic": "generative vs discriminative",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "An email team is choosing between Naive Bayes and logistic regression for a spam filter. Explain the difference between a generative and a discriminative classifier, say which camp each of these two models is in, and describe a practical case where the generative view helps.",
+  "answer": "A discriminative model learns p(y given x) directly, or just a decision boundary. Logistic regression is discriminative. It fits weights that map an email's features straight to the probability of spam. A generative model learns how the data is produced: p(x given y) and p(y), which together give p(x, y). It then uses Bayes' rule to get p(y given x). Naive Bayes is generative. It estimates how often each word appears in spam and in normal mail, assuming words are independent given the class. The generative view helps when labelled data is scarce. Its strong assumptions leave few parameters, so it tends to get close to its own best accuracy with far fewer examples, though that best is often lower than logistic regression's. It also copes with missing features, and p(x) can hint at unusual emails. With plenty of data the discriminative model usually wins, because it does not spend effort modelling x and is not hurt by a wrong independence assumption.",
+  "points": [
+   "Discriminative models learn p(y given x) or a boundary directly",
+   "Generative models learn p(x given y) and p(y), then apply Bayes' rule",
+   "Logistic regression is discriminative and Naive Bayes is generative",
+   "Generative helps with little data, missing features or spotting unusual inputs",
+   "With lots of data, discriminative models usually reach lower error"
+  ],
+  "explanation": "The difference is what gets modelled. A discriminative model only cares about the boundary between classes. A generative model describes each class fully, so it can say how likely an input is under each class and turn that into a prediction with Bayes' rule.\n\nA common mistake is to think generative only means models that produce images or text. Any model of p(x given y) is generative, even a word-count model like Naive Bayes. Another is to call Naive Bayes discriminative because it outputs a class. The output is the same kind of thing, but the route to it is different.\n\nThe tradeoff is classic. Naive Bayes makes a strong and usually wrong assumption, that words are independent given the class. That assumption is a kind of bias that helps when data is small, because there are few parameters to estimate. Ng and Jordan's well-known comparison showed this as a tendency, not a guarantee: Naive Bayes neared its own lowest error with far fewer examples, but that lowest error was often higher. As data grows, the bias starts to cost more than it saves, and logistic regression pulls ahead. Its probabilities are also usually better calibrated, while Naive Bayes tends to push scores toward 0 and 1.",
+  "deeper": "Interviewers may connect this to modern models. A language model is generative over text, while a fine-tuned classifier head is discriminative. A good follow-up answer: with few labels, start with a generative or prior-heavy model, then switch to a discriminative one once labelled data piles up, comparing both on the same validation set.",
+  "tags": [
+   "generative",
+   "classification"
+  ],
+  "concepts": [
+   "generative-vs-discriminative",
+   "naive-bayes",
+   "logistic-regression"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0017",
+  "subtopic": "random vs grid search",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "You have budget for 9 training runs to tune a gradient-boosted model's learning rate and its column sample rate. From past projects you know the learning rate matters far more than the column sample rate. Why is random search usually a better use of the 9 runs than a 3 × 3 grid?",
+  "options": [
+   "Random search tries 9 different learning rates, while the grid tests only 3, each repeated 3 times.",
+   "Random search uses earlier results to choose the next trial, so it moves toward the best region quickly.",
+   "Random search is sure to hit the best setting, while a grid can step right over it between its points.",
+   "Random search trains each run on a random sample of rows, so it fits more runs into the same budget."
+  ],
+  "answer": 0,
+  "explanation": "In a 3 × 3 grid, each of the 3 learning rates is paired with 3 column sample rates. Since the column rate barely matters, those 3 runs give almost the same result, so 6 of the 9 runs teach you little. Random search draws both values fresh for every run, so all 9 runs land on different learning rates. You explore the axis that matters 3 times as finely for the same cost. The more unimportant hyperparameters there are, the bigger this advantage gets.\n\nUsing earlier results to pick the next trial describes Bayesian optimisation and other adaptive methods. Plain random search draws every trial independently. Random search has no guarantee of hitting the best setting. It can miss too, it just covers the important axis better on average. Training on a sample of rows is a separate budget trick used by methods such as successive halving. It is not what makes random search beat a grid.",
+  "deeper": "A strong candidate adds that the learning rate should be sampled on a log scale, for example between 0.001 and 0.3, so small values get fair coverage. Many teams start with random search, then switch to Bayesian optimisation once they know roughly where the good region is.",
+  "tags": [
+   "tuning",
+   "random-search"
+  ],
+  "concepts": [
+   "hyperparameter-tuning"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0018",
+  "subtopic": "hyperparameters vs parameters",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A gradient-boosted fraud model learns its split thresholds and leaf values from the training data. Settings such as the maximum tree depth, the number of trees and the learning rate are fixed before training starts and are chosen by comparing scores on validation data. These chosen-in-advance settings are called ______.",
+  "answer": "hyperparameters",
+  "accept": [
+   "hyperparameter",
+   "hyper parameters",
+   "hyper parameter",
+   "hyperparams",
+   "model hyperparameters"
+  ],
+  "explanation": "Parameters are what the training algorithm learns by fitting the data: weights in a linear model, split thresholds and leaf values in a tree. Hyperparameters control how that learning happens or how much capacity the model has, and the training algorithm does not set them itself. They are picked from outside, by trying values and comparing validation scores.\n\nThe common mistake is to call them parameters, or to think the learning rate is learned during training. A useful test is to ask what would happen if you chose the setting by minimising training loss. For tree depth you would always pick the deepest trees, because they fit training data best, and the model would overfit. That is exactly why these settings are tuned on validation data instead. Features are a different thing again: they are the inputs, not settings of the learner.",
+  "deeper": "Interviewers often follow up by asking how you tune them: grid, random or Bayesian search with cross-validation, and on a budget. A strong candidate also notes that preprocessing choices, such as the number of PCA components or the vocabulary size, are hyperparameters too and must be tuned inside the same validation loop.",
+  "tags": [
+   "hyperparameters"
+  ],
+  "concepts": [
+   "hyperparameter-tuning",
+   "cross-validation"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0019",
+  "subtopic": "random search odds",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A team runs random search over a large hyperparameter space. Assume each trial is drawn independently from the search distribution, and call a configuration good if it falls in the top 5% of that distribution by validation score. With 40 trials, what is the probability that at least one trial is good? Give it as a decimal to 2 places.",
+  "answer": 0.87,
+  "tolerance": 0.005,
+  "check": "p_good = 0.05\nn = 40\nresult = 1 - (1 - p_good) ** n",
+  "explanation": "Work with the opposite event first. A single trial misses the top 5% with probability 0.95. Because trials are independent, all 40 miss with probability 0.95⁴⁰ = 0.1285. So the chance that at least one trial is good is 1 − 0.1285 = 0.8715, which is 0.87 to 2 places.\n\nThe most common mistake is 40 × 0.05 = 2.0. That is the expected number of good trials, not a probability, and it cannot be right since a probability cannot exceed 1. Another slip is 0.05⁴⁰, which is the chance that every single trial is good, a vanishingly small number.\n\nThe formula also shows the diminishing returns. 60 trials give 1 − 0.95⁶⁰ ≈ 0.95, and 100 trials give about 0.99. Each extra trial helps less than the one before.",
+  "deeper": "The 60-trial rule of thumb comes from this calculation. A strong candidate adds two caveats. Top 5% of the search distribution may still be well below the true best if the ranges are badly chosen. And if the good region is narrower, say 1%, about 300 trials are needed for the same 95% odds.",
+  "tags": [
+   "tuning",
+   "probability"
+  ],
+  "concepts": [
+   "hyperparameter-tuning"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0020",
+  "subtopic": "label shift",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A triage model predicts whether a patient with a cough has influenza. It was trained and calibrated in summer, when about 2% of these patients had flu. In winter, lab results show about 20% do. The symptoms and test readings of flu patients look the same as in summer, and so do those of patients without flu. Ward staff say the model's probabilities now look far too low. What is the best fix?",
+  "options": [
+   "Multiply each prediction's odds by the ratio of winter to summer prior odds, then recheck the decision threshold.",
+   "Reweight training rows by the ratio of winter to summer feature densities and retrain, since this is covariate shift.",
+   "Change nothing, because a change in class rates leaves p(y given x) the same, so the scores are still correct.",
+   "Retrain from scratch on winter data only, since any change in class rates makes the old model's features invalid."
+  ],
+  "answer": 0,
+  "explanation": "This is label shift. The class rate p(y) changed, while p(x given y), how each class looks, stayed the same. By Bayes' rule, p(y given x) is proportional to p(x given y) × p(y), so the only thing that moved is the prior. For a calibrated model, that means each prediction's odds get multiplied by a fixed factor. Summer prior odds are 0.02 / 0.98 ≈ 0.0204 and winter prior odds are 0.20 / 0.80 = 0.25, a factor of about 12.25. A summer score of 0.10 has odds 0.111, which becomes about 1.36, a probability of roughly 0.58. Thresholds tuned in summer then need rechecking.\n\nReweighting by feature densities is the fix for covariate shift, which assumes p(y given x) stays fixed. Here that is exactly what changed, so retraining with those weights would relearn the summer posterior. Changing nothing has the two conditionals the wrong way round. Retraining from scratch throws away a model whose features are still valid, and early winter labels are few.",
+  "deeper": "When the new prior is not measured directly, it can be estimated from unlabelled predictions, for example with an EM procedure or black box shift estimation. A strong candidate also checks the assumption: if a new flu strain causes different symptoms, p(x given y) has changed and a prior correction is no longer enough.",
+  "tags": [
+   "label-shift",
+   "calibration"
+  ],
+  "concepts": [
+   "distribution-shift",
+   "calibration",
+   "decision-threshold"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0021",
+  "subtopic": "when rows are not independent",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "For which of these datasets would a random row-level train and test split put closely related rows on both sides, so the test score comes out over-optimistic? Select all that apply.",
+  "options": [
+   "A churn table with one row per customer per month, where most customers appear in 12 monthly rows",
+   "A product photo set where most items were shot several times from nearly the same angle",
+   "Minute-by-minute sensor readings from 20 pumps, used to predict a failure in the coming week",
+   "A loan table with one row per applicant, each person appearing once, all from the same quarter",
+   "One record per patient, sampled at random, with the class rate kept equal in both splits"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "A random split is only honest when rows are independent draws, so that each test row is new to the model.\n\nThe churn table breaks this. A customer's 12 monthly rows share the same identity, habits and often the same label, so the model can recognise the customer instead of learning churn patterns. Split by customer instead. The photo set breaks it too. Near-identical shots of one item land on both sides, and the model scores well by matching a photo it has nearly seen. Group by item. The pump readings break it in two ways. Readings a minute apart are almost the same, and every minute in a week before a failure shares one label. Split by time, and ideally by pump as well.\n\nThe loan table has one row per person from a single period, so a random split is fine. The patient records are also independent. Keeping the class rate equal is stratification, which changes how rows are divided but does not link any two rows together.",
+  "deeper": "In scikit-learn, GroupKFold and GroupShuffleSplit keep a group on one side. A strong candidate asks how the model will be used: if it must work on new customers or new pumps, the test set should contain only unseen ones. Near-duplicate detection, such as perceptual hashing for images, is worth running before any split.",
+  "tags": [
+   "splits",
+   "leakage"
+  ],
+  "concepts": [
+   "train-validation-test-split",
+   "data-leakage",
+   "time-series-split"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0022",
+  "subtopic": "why build a baseline first",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "Your team wants to predict delivery arrival times with a large sequence model trained on GPS traces. Before that work starts, a senior engineer asks for a simple baseline. Which baselines would you build, and what does having one tell the team?",
+  "answer": "I would build a few cheap baselines: the historical median time for each route and hour, distance divided by typical speed for that road type, and a linear or small gradient-boosted model on a handful of features such as distance, hour and weekday. Each takes hours, not weeks. Together they set the bar. The large model is only worth its cost in compute, latency and upkeep if it beats them by a margin the business cares about. Building one also exercises the whole pipeline end to end, from data extraction and labels to the split and the metric, so bugs show up early. A baseline that scores suspiciously well points to leakage. One that already meets the product target may mean the complex model is not needed. Later it serves as a fallback in production and a sanity check when a new model's numbers look odd.",
+  "points": [
+   "Name concrete simple baselines, such as historical medians or a linear model",
+   "Sets the bar the complex model must beat by a meaningful margin",
+   "Tests data, labels, split and metric end to end early",
+   "A suspiciously strong baseline flags leakage or an easy problem",
+   "May already meet the target, saving the complex build",
+   "Serves as a fallback and a sanity check in production"
+  ],
+  "explanation": "Without a baseline, a number like 6 minutes of mean absolute error means nothing. It could be excellent or worse than a lookup table. A baseline turns the complex model's score into a gain, and the gain is what justifies the extra cost.\n\nThe most common weak answer names a single baseline, such as the global average arrival time, and stops there. That is a fair floor, but domain heuristics such as route medians, plus a simple learned model, set a far more useful bar. Another weak answer treats the baseline as a formality. Its biggest value is often finding problems: a broken join, labels that include the wait at the depot, or a time leak in the split. Those bugs are far cheaper to find with a model that trains in seconds than with one that trains for days.\n\nA strong answer also says when the baseline changes the plan. If the route median already gives an error the dispatch team accepts, the sequence model needs a clear business case before it is built.",
+  "deeper": "Interviewers often ask what you would do if the large model beats the baseline by only 2%. A good answer weighs that gain against serving cost, latency and maintenance, and checks whether the gain holds across segments such as rural routes and peak hours, rather than in the overall average alone.",
+  "tags": [
+   "baseline",
+   "process"
+  ],
+  "concepts": [
+   "baseline-model",
+   "data-leakage"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0023",
+  "subtopic": "bias or variance against a target error",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A model reads scanned invoices and extracts the total amount. The product target is at most 4% error. Today the model has 10% error on its training set and 15% on a validation set drawn from the same kind of invoices. Your manager can fund labelling 50,000 more invoices, building better input features, or moving to a larger model. Which would you do first, what comes next, and why in that order?",
+  "answer": "I would split the error into two gaps. Training error is 6 points above the 4% target, which I treat as avoidable bias. Validation error is 5 points above training error, which is variance. Both are large, but I would tackle bias first, because more data does not lower training error. If we label 50,000 invoices now, training error stays near 10%, so validation error cannot fall much below that, and we stay well above 4%. So first I would do error analysis on training mistakes, then try a larger model and better inputs, such as cleaner OCR or layout features, aiming to bring training error close to 4%. A bigger model will probably widen the variance gap, so next I would add the labelled data, plus augmentation and regularization, and use a learning curve to check that more rows are still lowering validation error.",
+  "points": [
+   "Avoidable bias is 6 points (10% against 4%) and variance is 5 points (15% against 10%)",
+   "Fix bias first, because more data does not lower training error",
+   "Use a larger model or better features, guided by error analysis",
+   "Then reduce variance with more data, augmentation or regularization",
+   "Use a learning curve to judge whether extra data is still paying off"
+  ],
+  "explanation": "Training error is roughly a floor for validation error. More data mostly shrinks the gap between the two, it does not pull the floor down. With training error at 10% and a 4% target, even a perfect fix for variance leaves the model near 10%. That is why the bias gap comes first, even though the variance gap is almost as big.\n\nThe most common mistake is to see 15% validation error, call it overfitting, and buy data. Data is often the slowest and most expensive lever, and here it cannot reach the target on its own. The opposite mistake is to fix bias and stop, forgetting that a larger model usually raises variance. A strong answer plans for both steps and says what it will measure between them.\n\nThe order could change. If labelling were nearly free and fast while a model change took months, running both in parallel would be reasonable. And if error analysis showed the training mistakes come from mislabelled invoices, cleaning labels would come before anything else.",
+  "deeper": "Interviewers like candidates who mention error analysis by bucket, such as handwritten, rotated or foreign-currency invoices. Bias and variance can differ a lot between buckets, and the best next step for one bucket, such as more rotated examples, may be cheap and targeted rather than a blanket 50,000 new labels.",
+  "tags": [
+   "bias",
+   "variance",
+   "prioritisation"
+  ],
+  "concepts": [
+   "bias-variance-tradeoff",
+   "learning-curve",
+   "underfitting"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0024",
+  "subtopic": "comparing error decompositions",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "Two house price models were studied by retraining each on many bootstrap samples of the same size. In squared-error units, model A has bias² 0.04 and variance 0.10. Model B has bias² 0.09 and variance 0.02. The irreducible noise is 0.05 for both. Which model has the lower expected test error, and what could change that choice?",
+  "options": [
+   "Model B, at 0.16 against 0.19. A much larger training set could flip this by shrinking A's variance.",
+   "Model A, since its bias² is less than half of B's, and bias is the error that more data cannot fix.",
+   "Model B, at 0.11 against 0.14. Adding the 0.05 noise term to both totals would flip the order to A.",
+   "Model A, since variance falls with training time, so A's 0.10 will drop once it trains for longer."
+  ],
+  "answer": 0,
+  "explanation": "Expected squared test error is bias² + variance + noise. Model A gives 0.04 + 0.10 + 0.05 = 0.19. Model B gives 0.09 + 0.02 + 0.05 = 0.16. So B is better today. Variance usually shrinks as the training set grows, while bias depends mostly on the model family. If much more data cut A's variance to 0.04 and B's to 0.01, A would total 0.13 and B 0.15, and A would win.\n\nChoosing A for its lower bias looks only at one term. Bias is often harder to fix, but the question is which model errs less now, and the totals decide that. The option claiming the noise term flips the order gets the sums without noise right, 0.14 and 0.11, but the same 0.05 is added to both, so the order cannot change. Variance here means how much the fitted model changes from one training sample to another. Training longer does not reduce it and often raises it for flexible models.",
+  "deeper": "In real work you rarely know these terms exactly, but bootstrap retraining or learning curves give rough estimates. An interviewer may ask what else lowers A's variance without new data: bagging, stronger regularization or fewer features. Bagging many copies of A is a classic way to keep its low bias and cut its variance.",
+  "tags": [
+   "bias-variance"
+  ],
+  "concepts": [
+   "bias-variance-tradeoff",
+   "overfitting"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0025",
+  "subtopic": "regularization as a prior",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "An interviewer says: \"L2 regularization is just a Gaussian prior.\" Explain what that means using maximum a posteriori (MAP) estimation, which prior L1 regularization corresponds to, and what the two priors say about why L1 gives sparse weights while L2 does not.",
+  "answer": "MAP picks the weights that maximise p(w given data), which is proportional to p(data given w) × p(w). Taking the negative log turns this into the negative log-likelihood plus −log p(w). The first term is the usual loss, such as log loss or squared error. If each weight has a zero-mean Gaussian prior with variance σ², then −log p(w) is Σw² / (2σ²) plus a constant, which is an L2 penalty. A smaller σ means a stronger belief that weights are near zero, so a larger λ. If the prior is Laplace with scale b, −log p(w) is Σ|w| / b plus a constant, an L1 penalty. The Laplace density has a sharp peak at zero, so the penalty has a kink there. Its pull toward zero stays the same size however small the weight gets, so the MAP solution can sit exactly at zero. The Gaussian is smooth at zero and its pull fades as w shrinks, so weights get small but not zero.",
+  "points": [
+   "MAP maximises likelihood × prior, so the loss becomes negative log-likelihood minus log prior",
+   "A Gaussian prior gives a Σw² penalty, with strength rising as σ falls",
+   "A Laplace prior gives a Σ|w| penalty",
+   "The Laplace peak gives a kink at zero, so MAP weights can be exactly zero",
+   "The Gaussian is smooth at zero, so weights shrink but rarely reach zero"
+  ],
+  "explanation": "The link is just algebra on logs. Maximising a product of likelihood and prior is the same as minimising the sum of their negative logs, and the negative log of each prior is a familiar penalty. For linear regression with Gaussian noise of variance σₙ² and a Gaussian prior of variance σ_w², the penalty strength works out to λ = σₙ² / σ_w². A tight prior or noisy data both mean stronger regularization.\n\nThe most common mistake is to say the Laplace prior believes most weights are exactly zero. It does not. Under any continuous prior the chance of a weight being exactly zero is zero. Sparsity comes from taking the MAP point estimate, the peak of the posterior, which can land on the kink. The posterior mean under a Laplace prior is not sparse. A prior that truly puts mass at zero, such as spike-and-slab, expresses that belief directly.\n\nAnother slip is to forget the likelihood. The prior only adds the penalty. The data term is still the ordinary loss.",
+  "deeper": "Interviewers sometimes push on what full Bayesian treatment adds: instead of one MAP point, you average predictions over the posterior, which gives uncertainty estimates. A strong candidate also notes that weight decay in neural networks is the same Gaussian prior idea, though with adaptive optimisers like Adam, decoupled weight decay behaves differently from an L2 term in the loss.",
+  "tags": [
+   "regularization",
+   "bayesian"
+  ],
+  "concepts": [
+   "l2-regularization",
+   "l1-regularization",
+   "maximum-likelihood-estimation",
+   "bayes-theorem"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0026",
+  "subtopic": "lasso with correlated features",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A taxi fare model has two inputs that are almost copies of each other: trip distance from GPS and trip distance from the odometer, with correlation 0.99. Both are standardised. You fit lasso and ridge with moderate penalties, then refit each on several bootstrap resamples. What should you expect?",
+  "options": [
+   "Lasso tends to favour one input, often zeroing the other, and which one can flip between resamples. Ridge splits it about evenly.",
+   "Lasso splits the weight about evenly between the two, while ridge keeps one of them and pushes the other close to zero.",
+   "Both models split the weight about evenly, because the two penalties only behave differently on uncorrelated inputs.",
+   "Both models drop both inputs, because two nearly identical inputs cancel each other out and leave no signal to use."
+  ],
+  "answer": 0,
+  "explanation": "With near copies, the predictions depend almost only on the sum of the two weights, w₁ + w₂. Fix that sum at s. The L1 penalty |w₁| + |w₂| equals |s| for every split where both weights share a sign, so lasso is nearly indifferent between splits. Tiny quirks of the sample then tip it, so lasso lands on a lopsided split, and with a stronger penalty it often zeros one input outright. A new bootstrap resample can tip it the other way. If the two inputs carry independent noise, a weak penalty may keep both, but the split still jumps around between resamples. The L2 penalty w₁² + w₂² is smallest when the split is even, at s² / 2, so ridge shares the weight. This is often called the grouping effect.\n\nThe swapped option gets the two penalties backwards. The claim that the penalties only differ on uncorrelated inputs is the reverse of the truth. Correlated inputs are where they differ most. Nothing cancels either. The signal is still there through the sum, so neither model drops both inputs.",
+  "deeper": "This instability matters when lasso is used to pick features for a report. A feature that vanishes on one retrain and returns on the next will confuse stakeholders. Elastic net, or grouping correlated features first, gives steadier selections. An interviewer may ask how to measure this: count how often each feature is selected across bootstrap fits.",
+  "tags": [
+   "lasso",
+   "ridge",
+   "correlation"
+  ],
+  "concepts": [
+   "l1-regularization",
+   "l2-regularization",
+   "feature-selection"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0027",
+  "subtopic": "problems that suit learning from rewards",
+  "format": "multi",
+  "difficulty": 1,
+  "prompt": "Which of these product problems are a natural fit for reinforcement learning or a multi-armed bandit, rather than plain supervised learning? Select all that apply.",
+  "options": [
+   "Choosing which of five homepage banners to show each visitor, learning from clicks as they arrive",
+   "Planning a warehouse robot's sequence of moves, rewarded only when an order is finally packed",
+   "Choosing a discount level for each returning shopper and learning from whether they buy",
+   "Predicting next month's electricity demand from five years of hourly meter readings",
+   "Routing support emails to ten queues using 200,000 emails that agents already labelled",
+   "Estimating a used car's price from its make, age and mileage using past sale records"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "Reward-based learning fits when the system makes choices, only sees the outcome of the choice it made, and must balance trying options with using the best one so far.\n\nThe banner problem is a classic bandit. Each banner is an arm, clicks are the reward, and the system never learns how a visitor would have reacted to a banner they were not shown. The warehouse robot is full reinforcement learning. Its moves form a sequence, and the reward comes only at the end, so it must learn which earlier moves led to success. The discount problem is a contextual bandit. The shopper's profile is the context, the discount is the action, and a purchase is the reward for that one discount only.\n\nThe other three have a fixed set of past examples with a known correct answer. Demand forecasting and car pricing are supervised regression, and email routing is supervised classification. The model's predictions do not change which labels it gets to see.",
+  "deeper": "A good interview point is that many bandit problems start as supervised ones. Teams often train a click model on logs first, then notice the logs only cover what the old system chose to show. That is where bandits help, because they keep exploring options the logs never tried.",
+  "tags": [
+   "bandits",
+   "rl"
+  ],
+  "concepts": [
+   "reinforcement-learning",
+   "multi-armed-bandit",
+   "supervised-learning"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0028",
+  "subtopic": "is a validation gain real",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A ticket classifier scores 88% accuracy on a validation set of 2,500 rows. A rival model scores 89% on the same rows, and you want to know how big the noise is. Treat each row as an independent trial. Using SE = √(p(1 − p) / n), compute the half-width of an approximate 95% interval, 1.96 × SE, for the 88% accuracy. Give the half-width in percentage points to 2 decimal places.",
+  "answer": 1.27,
+  "tolerance": 0.005,
+  "check": "import math\np = 0.88\nn = 2500\nse = math.sqrt(p * (1 - p) / n)\nresult = 1.96 * se * 100",
+  "explanation": "Step by step: p(1 − p) = 0.88 × 0.12 = 0.1056. Divide by n: 0.1056 / 2,500 = 0.00004224. The square root gives SE ≈ 0.0065, which is 0.65 percentage points. Multiply by 1.96 to get about 1.27 percentage points. So the interval for 88% runs from roughly 86.7% to 89.3%.\n\nThe rival's 89% sits inside that range, so a 1-point gain is about the size of the noise from 2,500 rows. On these numbers alone it is weak evidence. Common slips are stopping at SE (0.65) without the 1.96, or forgetting the square root, which gives a tiny and wrong figure.\n\nThere is a subtlety a strong candidate raises. Both models were scored on the same rows, so a paired test is sharper than comparing two intervals. It looks only at rows where the models disagree. If the rival fixes 40 rows and breaks 15, that pattern can be convincing even though the intervals overlap.",
+  "deeper": "McNemar's test or a paired bootstrap over rows are the usual tools for this. In interviews, also mention the reverse problem: to detect a 1-point gain reliably you need many more rows, and the required size grows with the square of the precision you want, so halving the SE takes four times the data.",
+  "tags": [
+   "significance",
+   "validation"
+  ],
+  "concepts": [
+   "binomial-distribution",
+   "confidence-interval",
+   "hypothesis-testing"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0029",
+  "subtopic": "stratified k-fold for rare classes",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A clinic has 600 patient records for predicting a rare complication, and only 30 of them are positive. The file is sorted by outcome, with all positives at the end. You plan to use 5-fold cross-validation to estimate recall. Which setup gives the most trustworthy estimate?",
+  "options": [
+   "Stratified 5-fold, so every fold holds about 6 positives and each fold's recall is measured on the rare class.",
+   "Plain 5-fold in file order, since keeping the original order avoids mixing the patient records before splitting.",
+   "Oversample the positives to 300 before splitting, so every fold is guaranteed to hold plenty of positives.",
+   "Plain 20-fold, since more folds means more models to average and the noise in each recall cancels out."
+  ],
+  "answer": 0,
+  "explanation": "Stratified k-fold splits each class separately, so every fold keeps the overall 5% positive rate: about 6 positives and 114 negatives per fold. Every fold can then measure recall, and every training split contains about 24 positives to learn from.\n\nPlain 5-fold in file order is the worst case here. The last fold gets all 30 positives, so the other four folds contain none and their recall is undefined. Worse, the model tested on the last fold was trained with no positives at all. Even shuffled plain k-fold lets the count drift, and can give one fold 2 positives and another 10. Oversampling before splitting puts copies of the same patient in both training and validation folds, so recall looks far better than it will be on new patients. Oversampling belongs inside each training fold only. Twenty folds leave 30 rows per fold, about 1.5 positives on average, so many folds report a recall of 0, 1 or undefined, which adds noise rather than cancelling it.",
+  "deeper": "With only 30 positives, a strong candidate also suggests repeated stratified k-fold to average over several shuffles, and reports the spread of recall, not just the mean. Pooling all out-of-fold predictions and computing recall once is another stable option when folds are this small.",
+  "tags": [
+   "cross-validation",
+   "imbalance"
+  ],
+  "concepts": [
+   "cross-validation",
+   "stratified-sampling",
+   "class-imbalance"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0030",
+  "subtopic": "reading fold scores",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "Two churn models are compared with 5-fold cross-validation, using the same five folds for both. ROC-AUC per fold:\n\n- Model A: 0.81, 0.86, 0.79, 0.84, 0.80 (mean 0.82)\n- Model B: 0.84, 0.82, 0.83, 0.82, 0.84 (mean 0.83)\n\nWhich readings are correct? Select all that apply.",
+  "options": [
+   "A's fold scores span 7 points, so its mean alone hides how much its result depends on the split.",
+   "B's 0.01 lead in mean is small next to the swings between folds, so it is weak evidence that B is better.",
+   "Since both used the same folds, the fold-by-fold differences can be paired, and here they flip sign.",
+   "Rerunning with 20 folds instead of 5 would remove the variation between folds and settle the winner.",
+   "B's higher mean shows that B will score above A when both are run on the untouched test set.",
+   "The five fold scores are independent, so a standard t-test on them gives a trustworthy p-value."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "A's scores run from 0.79 to 0.86, a 7-point spread, so its 0.82 mean comes with a lot of split-to-split variation that a single number hides. B's lead of 0.01 is far smaller than those swings. The paired view says the same thing: fold by fold, B minus A is +0.03, −0.04, +0.04, −0.02, +0.04. B wins three folds and loses two, so the data does not show a clear winner.\n\nMore folds do not remove variance. Each estimate still depends on which rows land where, and with more folds each validation fold gets smaller and noisier. A higher cross-validation mean does not guarantee a higher test score, especially with a gap this small. The t-test claim fails because fold scores are not independent. Any two training sets in 5-fold share three quarters of their rows, so the scores are correlated, and a naive t-test overstates confidence.",
+  "deeper": "Repeated cross-validation with several shuffles, plus a corrected resampled t-test or a paired bootstrap, gives a fairer comparison. In practice, a strong candidate also weighs B's steadier scores, from 0.82 to 0.84, as a mild reason to prefer it if the two cost the same to run.",
+  "tags": [
+   "cross-validation",
+   "model-comparison"
+  ],
+  "concepts": [
+   "cross-validation",
+   "hypothesis-testing"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0031",
+  "subtopic": "asymmetric costs in the loss",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A hospital pharmacy forecasts daily demand for a drug with a short shelf life. Running out costs about $90 per missing dose in emergency couriers and delays, while an unused dose costs about $10 when it expires. The current model is trained with mean squared error. What loss would you use instead, and how would it change the forecasts?",
+  "answer": "I would train with a quantile loss, also called pinball loss. It charges τ × (y − ŷ) when the forecast is too low and (1 − τ) × (ŷ − y) when it is too high. The model that minimises it predicts the τ quantile of demand rather than the mean. The right τ comes from the costs: τ = 90 / (90 + 10) = 0.9. With τ = 0.9, the loss is exactly the dollar cost divided by 100. The model will forecast the 90th percentile of daily demand, so it should run short on about 1 day in 10. Forecasts will sit above the mean, and further above it on days when demand is more uncertain. Mean squared error will look worse, so I would judge the model on total cost and on how often demand exceeds the forecast, which should be close to 10%.",
+  "points": [
+   "Use a quantile (pinball) loss or another asymmetric loss",
+   "Set τ = 90 / (90 + 10) = 0.9 from the two costs",
+   "Forecasts move up to the 90th percentile of demand, not the mean",
+   "The gap above the mean grows on more uncertain days",
+   "Evaluate on total cost and on the shortfall rate, not MSE"
+  ],
+  "explanation": "Mean squared error treats a forecast 5 doses too low the same as one 5 doses too high, and its best answer is the average demand. With these costs that is wrong, because running short costs 9 times as much as overstocking. The pinball loss weights the two directions by τ and 1 − τ. Its best answer is the point where the chance of demand being higher is 1 − τ. Setting τ from the costs is the classic newsvendor result, and here the loss matches the real cost per dose.\n\nThe most common mistake is to keep MSE and add a fixed safety buffer, such as 10% on top. A flat buffer ignores that some days are far more uncertain than others, so it overstocks calm days and still runs short on volatile ones. Another is to weight under-forecasts 9 times inside squared error. That does shift forecasts upward, but its best answer is not a quantile, so the shortfall rate no longer lines up with the cost ratio.\n\nAt τ = 0.5 the pinball loss is half the absolute error, so mean absolute error, which targets the median, is the symmetric special case. If the costs might change, forecasting several quantiles lets the pharmacy pick τ later without retraining.",
+  "deeper": "Gradient boosting libraries support quantile objectives directly, which makes this cheap to try. A strong candidate also checks calibration of the quantile on a holdout: if demand beats the forecast on 25% of days instead of 10%, the model is not giving the 90th percentile it claims.",
+  "tags": [
+   "loss",
+   "forecasting"
+  ],
+  "concepts": [
+   "loss-function",
+   "mae"
+  ]
+ },
+ {
+  "topic": "foundations",
+  "id": "fnd-0032",
+  "subtopic": "combining L1 and L2",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A genomics team predicts drug response from 20,000 gene measurements on 400 patients, and the genes come in tightly correlated groups. They add the penalty λ₁ Σ|w| + λ₂ Σw² to the loss, so the model stays sparse like lasso but tends to keep correlated genes together like ridge. This combined penalty is called ______ regularization.",
+  "answer": "elastic net",
+  "accept": [
+   "elasticnet",
+   "the elastic net",
+   "elastic net penalty",
+   "elastic net regularization"
+  ],
+  "explanation": "Elastic net adds both penalties. The L1 term can push weights to exactly zero, so the model stays sparse and easy to inspect. The L2 term makes correlated features share weight instead of one being picked almost at random, which steadies the selection across retrains. It also lifts a limit of plain lasso: with more features than rows, lasso can keep at most as many nonzero weights as there are rows, here 400. Elastic net can keep a whole correlated group of genes even when that limit would bite.\n\nThe common wrong answers are lasso or ridge alone. Each of those names only one of the two terms in the formula. Some people also write L1-L2 or mixed regularization, which describe the idea but are not the standard name. In scikit-learn, the balance between the terms is set by a mixing parameter, so 1 means pure lasso and 0 means pure ridge.",
+  "deeper": "Interviewers may ask how you tune it: search over both the overall strength and the mixing ratio with cross-validation, usually on a log scale for the strength. In wide data such as genomics or text, elastic net is a common first model because it gives a readable, sparse result without lasso's unstable choices.",
+  "tags": [
+   "regularization",
+   "elastic-net"
+  ],
+  "concepts": [
+   "l1-regularization",
+   "l2-regularization",
+   "regularization"
+  ]
  }
 ]
