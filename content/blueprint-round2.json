@@ -1,0 +1,4800 @@
+[
+ {
+  "id": "fnd-0008",
+  "topic": "foundations",
+  "subtopic": "supervised, unsupervised or reinforcement",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Given short product scenarios (predicting churn from labelled history, grouping shoppers with no labels, a bidding policy learning from rewards), say which learning setup each one is",
+  "concepts": [
+   "supervised-learning",
+   "unsupervised-learning",
+   "reinforcement-learning"
+  ]
+ },
+ {
+  "id": "fnd-0009",
+  "topic": "foundations",
+  "subtopic": "why the test set is touched once",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain why the test set is used only once at the end and what goes wrong when it is reused to pick between models",
+  "concepts": [
+   "train-validation-test-split",
+   "generalization"
+  ]
+ },
+ {
+  "id": "fnd-0010",
+  "topic": "foundations",
+  "subtopic": "majority-class baseline",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute the accuracy of a predict-the-majority-class baseline from class counts and judge a model's reported accuracy against it",
+  "concepts": [
+   "baseline-model",
+   "accuracy"
+  ]
+ },
+ {
+  "id": "fnd-0011",
+  "topic": "foundations",
+  "subtopic": "will more data help",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Read a learning curve where validation error has flattened close to training error and decide whether collecting more data is worth it",
+  "concepts": [
+   "learning-curve",
+   "bias-variance-tradeoff"
+  ]
+ },
+ {
+  "id": "fnd-0012",
+  "topic": "foundations",
+  "subtopic": "sweeping regularization strength",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Predict how training error, validation error and weight size move as the regularization strength goes from near zero to very large",
+  "concepts": [
+   "regularization",
+   "l2-regularization",
+   "bias-variance-tradeoff"
+  ]
+ },
+ {
+  "id": "fnd-0013",
+  "topic": "foundations",
+  "subtopic": "stopping on validation loss",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the technique that halts training once validation loss has not improved for a set number of epochs (early stopping)",
+  "concepts": [
+   "early-stopping"
+  ]
+ },
+ {
+  "id": "fnd-0014",
+  "topic": "foundations",
+  "subtopic": "distance in high dimensions",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the effect where data gets sparse and distances between points become nearly equal as features are added (curse of dimensionality)",
+  "concepts": [
+   "curse-of-dimensionality",
+   "k-nearest-neighbors"
+  ]
+ },
+ {
+  "id": "fnd-0015",
+  "topic": "foundations",
+  "subtopic": "training loss vs business metric",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain why a model is trained on a smooth surrogate loss such as log loss while the team reports a business metric such as recall at a threshold",
+  "concepts": [
+   "loss-function",
+   "log-loss"
+  ]
+ },
+ {
+  "id": "fnd-0016",
+  "topic": "foundations",
+  "subtopic": "generative vs discriminative",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain the difference between modelling p(x, y) and modelling p(y given x), with an example of each, and a practical case where the generative view helps",
+  "concepts": [
+   "generative-vs-discriminative",
+   "naive-bayes",
+   "logistic-regression"
+  ]
+ },
+ {
+  "id": "fnd-0017",
+  "topic": "foundations",
+  "subtopic": "random vs grid search",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain why random search usually beats grid search on the same budget when only a few hyperparameters really matter",
+  "concepts": [
+   "hyperparameter-tuning"
+  ]
+ },
+ {
+  "id": "fnd-0018",
+  "topic": "foundations",
+  "subtopic": "hyperparameters vs parameters",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the settings chosen before training, such as tree depth or learning rate, as opposed to the weights the model learns (hyperparameters)",
+  "concepts": [
+   "hyperparameter-tuning"
+  ]
+ },
+ {
+  "id": "fnd-0019",
+  "topic": "foundations",
+  "subtopic": "random search odds",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute the chance that n random trials include at least one configuration from the top 5% of the search space, using 1 − 0.95ⁿ",
+  "concepts": [
+   "hyperparameter-tuning"
+  ]
+ },
+ {
+  "id": "fnd-0020",
+  "topic": "foundations",
+  "subtopic": "label shift",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Recognise label shift, where class rates change while p(x given y) holds, and know that adjusting priors or the threshold can fix it without full retraining",
+  "concepts": [
+   "distribution-shift",
+   "calibration",
+   "decision-threshold"
+  ]
+ },
+ {
+  "id": "fnd-0021",
+  "topic": "foundations",
+  "subtopic": "when rows are not independent",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick which data setups break the assumption that train and test rows are independent draws (repeat customers, time order, near-duplicate images) and which do not",
+  "concepts": [
+   "train-validation-test-split",
+   "data-leakage",
+   "distribution-shift"
+  ]
+ },
+ {
+  "id": "fnd-0022",
+  "topic": "foundations",
+  "subtopic": "why build a baseline first",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Argue for building a simple baseline (heuristic, majority class, linear model) before a complex model and say what it tells the team",
+  "concepts": [
+   "baseline-model"
+  ]
+ },
+ {
+  "id": "fnd-0023",
+  "topic": "foundations",
+  "subtopic": "bias or variance against a target error",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Given training error, validation error and a target error, decide whether to add data, add features or change the model, and justify the order",
+  "concepts": [
+   "bias-variance-tradeoff",
+   "learning-curve",
+   "underfitting"
+  ]
+ },
+ {
+  "id": "fnd-0024",
+  "topic": "foundations",
+  "subtopic": "comparing error decompositions",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Given bias² and variance figures for two models, pick the one with lower expected test error and say what would change the choice",
+  "concepts": [
+   "bias-variance-tradeoff",
+   "overfitting"
+  ]
+ },
+ {
+  "id": "fnd-0025",
+  "topic": "foundations",
+  "subtopic": "regularization as a prior",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Explain why L2 regularization matches a Gaussian prior on weights and L1 a Laplace prior under maximum a posteriori estimation, and what that says about sparsity",
+  "concepts": [
+   "l2-regularization",
+   "l1-regularization",
+   "maximum-likelihood-estimation"
+  ]
+ },
+ {
+  "id": "fnd-0026",
+  "topic": "foundations",
+  "subtopic": "lasso with correlated features",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Predict how lasso picks one of two highly correlated features almost at random while ridge spreads weight across both",
+  "concepts": [
+   "l1-regularization",
+   "l2-regularization",
+   "feature-selection"
+  ]
+ },
+ {
+  "id": "fnd-0027",
+  "topic": "foundations",
+  "subtopic": "problems that suit learning from rewards",
+  "format": "multi",
+  "difficulty": 1,
+  "skill": "Pick which product problems fit reinforcement learning or bandits (sequential choices with reward feedback) rather than plain supervised learning",
+  "concepts": [
+   "reinforcement-learning",
+   "multi-armed-bandit",
+   "supervised-learning"
+  ]
+ },
+ {
+  "id": "fnd-0028",
+  "topic": "foundations",
+  "subtopic": "is a validation gain real",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Compute the standard error of an accuracy estimate on n validation rows with √(p(1 − p)/n) and judge whether a one-point gain is real",
+  "concepts": [
+   "train-validation-test-split",
+   "confidence-interval"
+  ]
+ },
+ {
+  "id": "fnd-0029",
+  "topic": "foundations",
+  "subtopic": "stratified k-fold for rare classes",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Pick stratified k-fold for a small imbalanced dataset and explain how plain k-fold can leave folds with almost no positives",
+  "concepts": [
+   "cross-validation",
+   "stratified-sampling"
+  ]
+ },
+ {
+  "id": "fnd-0030",
+  "topic": "foundations",
+  "subtopic": "reading fold scores",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick correct readings of cross-validation results: the spread across folds matters as well as the mean, overlapping fold ranges weaken a claimed win, more folds do not remove variance",
+  "concepts": [
+   "cross-validation"
+  ]
+ },
+ {
+  "id": "fnd-0031",
+  "topic": "foundations",
+  "subtopic": "asymmetric costs in the loss",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Choose a loss for a forecast where under-predicting costs far more than over-predicting (quantile or weighted loss) and explain its effect on predictions",
+  "concepts": [
+   "loss-function"
+  ]
+ },
+ {
+  "id": "fnd-0032",
+  "topic": "foundations",
+  "subtopic": "combining L1 and L2",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the penalty that adds both L1 and L2 terms to the loss (elastic net)",
+  "concepts": [
+   "l1-regularization",
+   "l2-regularization",
+   "regularization"
+  ]
+ },
+ {
+  "id": "cls-0008",
+  "topic": "classic",
+  "subtopic": "least squares assumptions",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick the assumptions behind ordinary least squares inference (linearity, independent errors, constant error variance, no perfect collinearity) and reject ones it does not need, such as normally distributed features",
+  "concepts": [
+   "linear-regression"
+  ]
+ },
+ {
+  "id": "cls-0009",
+  "topic": "classic",
+  "subtopic": "reading a regression coefficient",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Interpret a linear regression coefficient as the change in prediction for a one-unit change in a feature with the others held fixed",
+  "concepts": [
+   "linear-regression"
+  ]
+ },
+ {
+  "id": "cls-0010",
+  "topic": "classic",
+  "subtopic": "logit to probability",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Turn a logistic regression score into a probability with the sigmoid, or a coefficient into an odds ratio with exp",
+  "concepts": [
+   "logistic-regression"
+  ]
+ },
+ {
+  "id": "cls-0011",
+  "topic": "classic",
+  "subtopic": "logistic regression boundary",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain why logistic regression draws a linear decision boundary and how feature crosses or polynomial terms let it fit curved ones",
+  "concepts": [
+   "logistic-regression"
+  ]
+ },
+ {
+  "id": "cls-0012",
+  "topic": "classic",
+  "subtopic": "entropy and information gain",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute node entropy in bits and the information gain of a split from class counts",
+  "concepts": [
+   "information-gain",
+   "decision-tree"
+  ]
+ },
+ {
+  "id": "cls-0013",
+  "topic": "classic",
+  "subtopic": "limiting tree overfitting",
+  "format": "multi",
+  "difficulty": 1,
+  "skill": "Pick the settings that limit decision tree overfitting (maximum depth, minimum samples per leaf, pruning) and reject ones that add capacity",
+  "concepts": [
+   "decision-tree",
+   "overfitting"
+  ]
+ },
+ {
+  "id": "cls-0014",
+  "topic": "classic",
+  "subtopic": "trees and feature scaling",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Know why tree models are unaffected by monotonic rescaling of features while distance-based models are not",
+  "concepts": [
+   "decision-tree",
+   "feature-scaling"
+  ]
+ },
+ {
+  "id": "cls-0015",
+  "topic": "classic",
+  "subtopic": "tree models cannot extrapolate",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Predict what a boosted tree model outputs for inputs beyond the training range, such as demand at a never-seen price, and suggest a fix",
+  "concepts": [
+   "gradient-boosting",
+   "decision-tree"
+  ]
+ },
+ {
+  "id": "cls-0016",
+  "topic": "classic",
+  "subtopic": "boosting vs bagging",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain that boosting fits learners in sequence on the remaining errors and mainly cuts bias, while bagging averages independent learners to cut variance",
+  "concepts": [
+   "gradient-boosting",
+   "bagging"
+  ]
+ },
+ {
+  "id": "cls-0017",
+  "topic": "classic",
+  "subtopic": "learning rate and number of trees",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know the trade-off between shrinkage and the number of trees in gradient boosting and why early stopping on a validation set picks the tree count",
+  "concepts": [
+   "gradient-boosting",
+   "early-stopping"
+  ]
+ },
+ {
+  "id": "cls-0018",
+  "topic": "classic",
+  "subtopic": "one boosting step by hand",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute the next prediction in gradient boosting with squared loss: the starting mean plus the learning rate times the new tree's fitted residual",
+  "concepts": [
+   "gradient-boosting"
+  ]
+ },
+ {
+  "id": "cls-0019",
+  "topic": "classic",
+  "subtopic": "out-of-bag estimate",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the error estimate a random forest gets from rows left out of each tree's bootstrap sample (out-of-bag error)",
+  "concepts": [
+   "random-forest",
+   "bagging"
+  ]
+ },
+ {
+  "id": "cls-0020",
+  "topic": "classic",
+  "subtopic": "sampling with replacement",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name drawing a training set of n rows with replacement from n rows, as bagging does for each tree (bootstrap sampling)",
+  "concepts": [
+   "bagging",
+   "random-forest"
+  ]
+ },
+ {
+  "id": "cls-0021",
+  "topic": "classic",
+  "subtopic": "feature importance pitfalls",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know that impurity-based importance favours high-cardinality features, that permutation importance on held-out data is safer, and that correlated features split the credit",
+  "concepts": [
+   "feature-importance",
+   "random-forest"
+  ]
+ },
+ {
+  "id": "cls-0022",
+  "topic": "classic",
+  "subtopic": "choosing k in kNN",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Predict how a small or large k changes kNN's bias and variance, including that k = 1 memorizes the training set",
+  "concepts": [
+   "k-nearest-neighbors",
+   "bias-variance-tradeoff"
+  ]
+ },
+ {
+  "id": "cls-0023",
+  "topic": "classic",
+  "subtopic": "kNN vote by hand",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Classify a new point by majority vote of its k nearest neighbours after computing Euclidean distances to a few 2D points",
+  "concepts": [
+   "k-nearest-neighbors"
+  ]
+ },
+ {
+  "id": "cls-0024",
+  "topic": "classic",
+  "subtopic": "naive Bayes for spam",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Walk through how naive Bayes classifies a short message, why it works well despite its false independence assumption, and why smoothing is needed for unseen words",
+  "concepts": [
+   "naive-bayes",
+   "bayes-theorem"
+  ]
+ },
+ {
+  "id": "cls-0025",
+  "topic": "classic",
+  "subtopic": "the naive assumption",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the assumption naive Bayes makes about features given the class (conditional independence)",
+  "concepts": [
+   "naive-bayes",
+   "conditional-probability"
+  ]
+ },
+ {
+  "id": "cls-0026",
+  "topic": "classic",
+  "subtopic": "SVM margin and C",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain the maximum-margin idea, what support vectors are, and how C trades margin width against training errors",
+  "concepts": [
+   "support-vector-machine"
+  ]
+ },
+ {
+  "id": "cls-0027",
+  "topic": "classic",
+  "subtopic": "non-linear SVMs",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the method that lets an SVM fit non-linear boundaries by computing inner products in a higher-dimensional space without building it (kernel trick)",
+  "concepts": [
+   "support-vector-machine",
+   "kernel-trick"
+  ]
+ },
+ {
+  "id": "cls-0028",
+  "topic": "classic",
+  "subtopic": "one k-means iteration",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Run one k-means assignment step and one centroid update by hand on a few points",
+  "concepts": [
+   "k-means"
+  ]
+ },
+ {
+  "id": "cls-0029",
+  "topic": "classic",
+  "subtopic": "choosing k for k-means",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Choose k with the elbow method and the silhouette score and know where each misleads",
+  "concepts": [
+   "k-means",
+   "silhouette-score"
+  ]
+ },
+ {
+  "id": "cls-0030",
+  "topic": "classic",
+  "subtopic": "scoring cluster separation",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the per-point clustering score (b − a) / max(a, b) that compares the mean distance to its own cluster with the nearest other cluster (silhouette)",
+  "concepts": [
+   "silhouette-score"
+  ]
+ },
+ {
+  "id": "cls-0031",
+  "topic": "classic",
+  "subtopic": "density-based clustering",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Choose DBSCAN for oddly shaped clusters with noise points and know what eps and min_samples control",
+  "concepts": [
+   "dbscan",
+   "k-means"
+  ]
+ },
+ {
+  "id": "cls-0032",
+  "topic": "classic",
+  "subtopic": "mixtures vs k-means",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain how a Gaussian mixture gives soft assignments and fits elongated clusters of different sizes where k-means fails",
+  "concepts": [
+   "gaussian-mixture-model",
+   "k-means"
+  ]
+ },
+ {
+  "id": "cls-0033",
+  "topic": "classic",
+  "subtopic": "how isolation forest scores",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain why isolation forest flags points that random splits isolate in few steps",
+  "concepts": [
+   "isolation-forest",
+   "anomaly-detection"
+  ]
+ },
+ {
+  "id": "cls-0034",
+  "topic": "classic",
+  "subtopic": "reading a t-SNE plot",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick correct readings of a t-SNE or UMAP plot: local neighbours are meaningful, while cluster sizes and gaps between clusters are not, and it is no substitute for a feature pipeline",
+  "concepts": [
+   "t-sne"
+  ]
+ },
+ {
+  "id": "cls-0035",
+  "topic": "classic",
+  "subtopic": "predicting a rating from factors",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Predict a rating as a global mean plus user and item biases plus the dot product of user and item vectors",
+  "concepts": [
+   "matrix-factorization",
+   "collaborative-filtering"
+  ]
+ },
+ {
+  "id": "cls-0036",
+  "topic": "classic",
+  "subtopic": "stacking without leakage",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain stacking and why the meta-model must train on out-of-fold predictions of the base models",
+  "concepts": [
+   "stacking",
+   "cross-validation",
+   "data-leakage"
+  ]
+ },
+ {
+  "id": "cls-0037",
+  "topic": "classic",
+  "subtopic": "explaining gradient boosting",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain how gradient boosting builds its ensemble step by step and which hyperparameters you would tune first and why",
+  "concepts": [
+   "gradient-boosting"
+  ]
+ },
+ {
+  "id": "cls-0038",
+  "topic": "classic",
+  "subtopic": "customer segmentation without labels",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Plan a segmentation with no labels: features, scaling, algorithm, choosing k, and checking that the segments are useful to the business",
+  "concepts": [
+   "k-means",
+   "feature-scaling",
+   "silhouette-score"
+  ]
+ },
+ {
+  "id": "cls-0039",
+  "topic": "classic",
+  "subtopic": "coefficients that swing between retrains",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Explain to a teammate why linear model coefficients flip sign between retrains when features are highly correlated while predictions stay stable, and what to do about it",
+  "concepts": [
+   "linear-regression",
+   "l2-regularization"
+  ]
+ },
+ {
+  "id": "cls-0040",
+  "topic": "classic",
+  "subtopic": "from binary to multiclass",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick valid ways to extend a binary classifier to many classes (one-vs-rest, multinomial softmax) and correct statements about their outputs",
+  "concepts": [
+   "logistic-regression",
+   "softmax"
+  ]
+ },
+ {
+  "id": "eval-0009",
+  "topic": "evaluation",
+  "subtopic": "the accuracy paradox",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain why 99% accuracy says little when 99% of cases are negative",
+  "concepts": [
+   "accuracy",
+   "class-imbalance"
+  ]
+ },
+ {
+  "id": "eval-0010",
+  "topic": "evaluation",
+  "subtopic": "recall and specificity",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute recall and specificity from a confusion matrix",
+  "concepts": [
+   "recall",
+   "specificity",
+   "confusion-matrix"
+  ]
+ },
+ {
+  "id": "eval-0011",
+  "topic": "evaluation",
+  "subtopic": "false positive rate",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the share of actual negatives that the model wrongly flags as positive (false positive rate)",
+  "concepts": [
+   "false-positive-rate",
+   "confusion-matrix"
+  ]
+ },
+ {
+  "id": "eval-0012",
+  "topic": "evaluation",
+  "subtopic": "moving the threshold",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Predict how raising a classifier's threshold moves precision and recall",
+  "concepts": [
+   "decision-threshold",
+   "precision",
+   "recall"
+  ]
+ },
+ {
+  "id": "eval-0013",
+  "topic": "evaluation",
+  "subtopic": "what ROC-AUC means",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Interpret ROC-AUC as the chance a random positive scores above a random negative, and know it does not depend on any one threshold",
+  "concepts": [
+   "roc-auc",
+   "roc-curve"
+  ]
+ },
+ {
+  "id": "eval-0014",
+  "topic": "evaluation",
+  "subtopic": "AUC by counting pairs",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute ROC-AUC by hand from a few scored positives and negatives by counting correctly ordered pairs",
+  "concepts": [
+   "roc-auc"
+  ]
+ },
+ {
+  "id": "eval-0015",
+  "topic": "evaluation",
+  "subtopic": "weighting recall more",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the harmonic-mean metric that weights recall β times as much as precision, used as F2 when misses are costly (F-beta score)",
+  "concepts": [
+   "f1-score",
+   "recall",
+   "precision"
+  ]
+ },
+ {
+  "id": "eval-0016",
+  "topic": "evaluation",
+  "subtopic": "macro vs micro averaging",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute macro and micro averaged precision for a three-class problem with one small class and explain why they differ",
+  "concepts": [
+   "macro-micro-averaging",
+   "precision"
+  ]
+ },
+ {
+  "id": "eval-0017",
+  "topic": "evaluation",
+  "subtopic": "log loss by hand",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute log loss for a few predictions and show how one confident wrong prediction dominates the average",
+  "concepts": [
+   "log-loss",
+   "cross-entropy-loss"
+  ]
+ },
+ {
+  "id": "eval-0018",
+  "topic": "evaluation",
+  "subtopic": "MAE or RMSE",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Choose between MAE and RMSE for reporting forecast error, knowing RMSE punishes large errors more",
+  "concepts": [
+   "mae",
+   "rmse"
+  ]
+ },
+ {
+  "id": "eval-0019",
+  "topic": "evaluation",
+  "subtopic": "MAE and RMSE from errors",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute MAE and RMSE from a short list of forecast errors",
+  "concepts": [
+   "mae",
+   "rmse"
+  ]
+ },
+ {
+  "id": "eval-0020",
+  "topic": "evaluation",
+  "subtopic": "what R-squared tells you",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know that R² compares the model with predicting the mean, can be negative on test data, and never falls when features are added in-sample",
+  "concepts": [
+   "r-squared"
+  ]
+ },
+ {
+  "id": "eval-0021",
+  "topic": "evaluation",
+  "subtopic": "percentage error pitfalls",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know why mean absolute percentage error breaks near zero actuals and treats over- and under-forecasts unevenly, and pick an alternative",
+  "concepts": [
+   "mae",
+   "rmse"
+  ]
+ },
+ {
+  "id": "eval-0022",
+  "topic": "evaluation",
+  "subtopic": "precision@k and recall@k",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute precision@k and recall@k for one ranked list against a set of relevant items",
+  "concepts": [
+   "precision-at-k"
+  ]
+ },
+ {
+  "id": "eval-0023",
+  "topic": "evaluation",
+  "subtopic": "mean reciprocal rank",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute mean reciprocal rank across a few queries from the rank of the first relevant result",
+  "concepts": [
+   "mean-reciprocal-rank"
+  ]
+ },
+ {
+  "id": "eval-0024",
+  "topic": "evaluation",
+  "subtopic": "NDCG by hand",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Compute DCG and NDCG@3 for a ranked list with graded relevance labels",
+  "concepts": [
+   "ndcg"
+  ]
+ },
+ {
+  "id": "eval-0025",
+  "topic": "evaluation",
+  "subtopic": "choosing a ranking metric",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Choose MRR, precision@k or NDCG for a search product depending on whether one right answer or graded relevance matters",
+  "concepts": [
+   "ndcg",
+   "mean-reciprocal-rank",
+   "precision-at-k"
+  ]
+ },
+ {
+  "id": "eval-0026",
+  "topic": "evaluation",
+  "subtopic": "reading a reliability diagram",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick correct readings of a reliability diagram and expected calibration error: points below the diagonal mean overconfidence, bins are weighted by size, a perfect ECE does not mean high accuracy",
+  "concepts": [
+   "calibration"
+  ]
+ },
+ {
+  "id": "eval-0027",
+  "topic": "evaluation",
+  "subtopic": "recalibrating scores",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the recalibration method that fits a one-feature logistic regression on a model's held-out scores (Platt scaling)",
+  "concepts": [
+   "calibration"
+  ]
+ },
+ {
+  "id": "eval-0028",
+  "topic": "evaluation",
+  "subtopic": "PR-AUC of a random model",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Know that a random classifier's PR-AUC equals the positive rate while its ROC-AUC is 0.5, and use that as the baseline when reading PR-AUC",
+  "concepts": [
+   "pr-curve",
+   "roc-auc"
+  ]
+ },
+ {
+  "id": "eval-0029",
+  "topic": "evaluation",
+  "subtopic": "A/B test sample size",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Estimate users needed per arm from the baseline rate, minimum detectable effect, significance level and power with the standard formula",
+  "concepts": [
+   "ab-testing",
+   "statistical-power"
+  ]
+ },
+ {
+  "id": "eval-0030",
+  "topic": "evaluation",
+  "subtopic": "peeking at an A/B test",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain why stopping an A/B test the first time p < 0.05 inflates false positives and name sound alternatives",
+  "concepts": [
+   "ab-testing",
+   "multiple-comparisons",
+   "p-value"
+  ]
+ },
+ {
+  "id": "eval-0031",
+  "topic": "evaluation",
+  "subtopic": "threats to A/B validity",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick real threats to an A/B test (novelty effect, interference between users, sample ratio mismatch, many metrics) and reject non-issues",
+  "concepts": [
+   "ab-testing"
+  ]
+ },
+ {
+  "id": "eval-0032",
+  "topic": "evaluation",
+  "subtopic": "offline gains that vanish online",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain why an offline metric gain on logged data may not show up online: feedback loops, position bias, proxy labels",
+  "concepts": [
+   "offline-online-evaluation",
+   "position-bias"
+  ]
+ },
+ {
+  "id": "eval-0033",
+  "topic": "evaluation",
+  "subtopic": "slice-based error analysis",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick good practice for evaluating by segment: report per-slice metrics, check slice sample sizes, compare with the overall figure",
+  "concepts": [
+   "slice-based-evaluation"
+  ]
+ },
+ {
+  "id": "eval-0034",
+  "topic": "evaluation",
+  "subtopic": "Simpson's paradox in model comparison",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Explain how a model can win in every segment yet lose overall because the segment mix differs, and decide which comparison should drive the launch",
+  "concepts": [
+   "slice-based-evaluation"
+  ]
+ },
+ {
+  "id": "eval-0035",
+  "topic": "evaluation",
+  "subtopic": "naming a confusion matrix cell",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the cell where the model predicts positive but the truth is negative (false positive)",
+  "concepts": [
+   "confusion-matrix"
+  ]
+ },
+ {
+  "id": "eval-0036",
+  "topic": "evaluation",
+  "subtopic": "limits of BLEU and ROUGE",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know that n-gram overlap metrics miss paraphrases and factual errors, so they are rough signals for translation and summaries",
+  "concepts": [
+   "bleu-rouge"
+  ]
+ },
+ {
+  "id": "eval-0037",
+  "topic": "evaluation",
+  "subtopic": "evaluating with delayed, shifting labels",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Plan evaluation for a fraud model whose labels arrive 60 days late and whose patterns shift: time-based holdouts, label maturity, business metrics",
+  "concepts": [
+   "offline-online-evaluation",
+   "time-series-split",
+   "label-delay"
+  ]
+ },
+ {
+  "id": "eval-0038",
+  "topic": "evaluation",
+  "subtopic": "explaining precision and recall",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain precision and recall to a product manager for their spam filter and say which one they should watch and why",
+  "concepts": [
+   "precision",
+   "recall"
+  ]
+ },
+ {
+  "id": "eval-0039",
+  "topic": "evaluation",
+  "subtopic": "facts about the ROC curve",
+  "format": "multi",
+  "difficulty": 1,
+  "skill": "Pick true statements about the ROC curve: the diagonal is random guessing, each point is a threshold, monotonic score changes leave it unchanged",
+  "concepts": [
+   "roc-curve"
+  ]
+ },
+ {
+  "id": "eval-0040",
+  "topic": "evaluation",
+  "subtopic": "precision when prevalence changes",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Recompute precision when the positive rate changes while TPR and FPR stay fixed, and explain why precision moved",
+  "concepts": [
+   "precision",
+   "false-positive-rate",
+   "distribution-shift"
+  ]
+ },
+ {
+  "id": "eval-0041",
+  "topic": "evaluation",
+  "subtopic": "checking the traffic split",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the A/B test check that compares the observed split of users between arms with the planned split (sample ratio mismatch)",
+  "concepts": [
+   "ab-testing"
+  ]
+ },
+ {
+  "id": "eval-0042",
+  "topic": "evaluation",
+  "subtopic": "launch criteria for a ranking model",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Choose offline metrics, online success metrics and guardrail metrics for launching a new ranker, and decide whether a small online lift is worth shipping",
+  "concepts": [
+   "ab-testing",
+   "ndcg",
+   "offline-online-evaluation"
+  ]
+ },
+ {
+  "id": "data-0007",
+  "topic": "data",
+  "subtopic": "leakage across a user's rows",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Spot leakage when the same patient or user appears in both train and test and fix it with a group-based split",
+  "concepts": [
+   "data-leakage",
+   "train-validation-test-split"
+  ]
+ },
+ {
+  "id": "data-0008",
+  "topic": "data",
+  "subtopic": "point-in-time joins",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Build training features with a point-in-time join so each row only sees data that existed before its label time",
+  "concepts": [
+   "point-in-time-correctness",
+   "data-leakage"
+  ]
+ },
+ {
+  "id": "data-0009",
+  "topic": "data",
+  "subtopic": "near-duplicates across the split",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain how near-duplicate rows across train and test inflate scores and why deduplication happens before the split",
+  "concepts": [
+   "deduplication",
+   "data-leakage"
+  ]
+ },
+ {
+  "id": "data-0010",
+  "topic": "data",
+  "subtopic": "MCAR, MAR and MNAR",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Tell the three missing-data mechanisms apart in a scenario and know when dropping rows biases the model",
+  "concepts": [
+   "missing-data-mechanisms",
+   "imputation"
+  ]
+ },
+ {
+  "id": "data-0011",
+  "topic": "data",
+  "subtopic": "missing-value indicators",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Know when to add a missing-value indicator because the fact that a value is missing carries signal",
+  "concepts": [
+   "imputation",
+   "missing-data-mechanisms"
+  ]
+ },
+ {
+  "id": "data-0012",
+  "topic": "data",
+  "subtopic": "mean vs median imputation",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Choose median over mean imputation for a skewed column with large outliers and say what the mean fill would do",
+  "concepts": [
+   "imputation",
+   "outliers"
+  ]
+ },
+ {
+  "id": "data-0013",
+  "topic": "data",
+  "subtopic": "standardizing a value",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Standardize a value with the training mean and standard deviation (z-score)",
+  "concepts": [
+   "feature-scaling"
+  ]
+ },
+ {
+  "id": "data-0014",
+  "topic": "data",
+  "subtopic": "squeezing values into 0 to 1",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the scaling that maps each feature to the range 0 to 1 using its minimum and maximum (min-max scaling)",
+  "concepts": [
+   "feature-scaling"
+  ]
+ },
+ {
+  "id": "data-0015",
+  "topic": "data",
+  "subtopic": "skewed features and targets",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know when to log-transform a right-skewed feature or target such as income and how to turn predictions back into the original units",
+  "concepts": [
+   "outliers",
+   "feature-scaling"
+  ]
+ },
+ {
+  "id": "data-0016",
+  "topic": "data",
+  "subtopic": "one column per category",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the encoding that turns a categorical feature into one binary column per category (one-hot encoding)",
+  "concepts": [
+   "one-hot-encoding"
+  ]
+ },
+ {
+  "id": "data-0017",
+  "topic": "data",
+  "subtopic": "the dummy variable trap",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the perfect collinearity created when every one-hot column and an intercept are kept in a linear model (dummy variable trap)",
+  "concepts": [
+   "one-hot-encoding",
+   "linear-regression"
+  ]
+ },
+ {
+  "id": "data-0018",
+  "topic": "data",
+  "subtopic": "smoothed target encoding",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute a smoothed target encoding for a rare category from its count, its own mean and the global mean",
+  "concepts": [
+   "target-encoding"
+  ]
+ },
+ {
+  "id": "data-0019",
+  "topic": "data",
+  "subtopic": "the hashing trick",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain feature hashing, its fixed memory use and what collisions do as the bucket count shrinks",
+  "concepts": [
+   "feature-hashing"
+  ]
+ },
+ {
+  "id": "data-0020",
+  "topic": "data",
+  "subtopic": "finding outliers",
+  "format": "multi",
+  "difficulty": 1,
+  "skill": "Pick sensible ways to find outliers (IQR rule, z-scores, domain range checks) and reject dropping them without looking",
+  "concepts": [
+   "outliers"
+  ]
+ },
+ {
+  "id": "data-0021",
+  "topic": "data",
+  "subtopic": "the 1.5 IQR rule",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the outlier rule that flags values more than 1.5 interquartile ranges beyond the quartiles (Tukey's fences, the IQR rule)",
+  "concepts": [
+   "outliers"
+  ]
+ },
+ {
+  "id": "data-0022",
+  "topic": "data",
+  "subtopic": "SMOTE inside cross-validation",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know how SMOTE makes synthetic minority rows by interpolating neighbours and why it runs only on the training fold",
+  "concepts": [
+   "resampling",
+   "preprocessing-leakage"
+  ]
+ },
+ {
+  "id": "data-0023",
+  "topic": "data",
+  "subtopic": "balanced class weights",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute balanced class weights n / (k × n_c) for an imbalanced dataset",
+  "concepts": [
+   "class-weights",
+   "class-imbalance"
+  ]
+ },
+ {
+  "id": "data-0024",
+  "topic": "data",
+  "subtopic": "undersampling shifts probabilities",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know that undersampling negatives inflates predicted probabilities and how to correct them back to the true base rate",
+  "concepts": [
+   "resampling",
+   "calibration",
+   "class-imbalance"
+  ]
+ },
+ {
+  "id": "data-0025",
+  "topic": "data",
+  "subtopic": "keeping class proportions",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the split that keeps class proportions the same in every part (stratified split)",
+  "concepts": [
+   "stratified-sampling"
+  ]
+ },
+ {
+  "id": "data-0026",
+  "topic": "data",
+  "subtopic": "training only on approved loans",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain how training a default model only on approved applicants biases it, and describe ways to reduce the bias",
+  "concepts": [
+   "selection-bias"
+  ]
+ },
+ {
+  "id": "data-0027",
+  "topic": "data",
+  "subtopic": "finding and handling mislabeled rows",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick sound ways to find and handle mislabeled rows (out-of-fold disagreement, targeted relabel review, noise-robust losses) and reject dropping every hard example",
+  "concepts": [
+   "label-noise",
+   "cross-validation"
+  ]
+ },
+ {
+  "id": "data-0028",
+  "topic": "data",
+  "subtopic": "Cohen's kappa",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute Cohen's kappa from two annotators' agreement table",
+  "concepts": [
+   "inter-annotator-agreement"
+  ]
+ },
+ {
+  "id": "data-0029",
+  "topic": "data",
+  "subtopic": "asking about the unsure cases",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the active learning strategy that sends the examples the model is least sure about to labelers (uncertainty sampling)",
+  "concepts": [
+   "active-learning"
+  ]
+ },
+ {
+  "id": "data-0030",
+  "topic": "data",
+  "subtopic": "checks on a new training batch",
+  "format": "multi",
+  "difficulty": 1,
+  "skill": "Pick checks a data validation step should run on a new batch: schema, value ranges, null rates, distribution against a reference, freshness",
+  "concepts": [
+   "data-validation"
+  ]
+ },
+ {
+  "id": "data-0031",
+  "topic": "data",
+  "subtopic": "selecting features without leaking",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Compare filter, wrapper and embedded feature selection and know that selecting on the full data before cross-validation leaks",
+  "concepts": [
+   "feature-selection",
+   "preprocessing-leakage"
+  ]
+ },
+ {
+  "id": "data-0032",
+  "topic": "data",
+  "subtopic": "an upstream data change breaks the model",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Debug a sudden accuracy drop traced to an upstream change (unit change, new category, null spike) and design guards so it is caught next time",
+  "concepts": [
+   "data-validation",
+   "training-serving-skew"
+  ]
+ },
+ {
+  "id": "data-0033",
+  "topic": "data",
+  "subtopic": "features from raw event logs",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Plan features for a delivery-time model from raw order and courier logs: time features, rolling aggregates, encodings and what must be avoided",
+  "concepts": [
+   "point-in-time-correctness",
+   "target-encoding"
+  ]
+ },
+ {
+  "id": "data-0034",
+  "topic": "data",
+  "subtopic": "labeling on a tight budget",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Plan how to get labels for a new classifier cheaply: active learning, rule-based weak labels, model pre-labeling with human review, and quality checks",
+  "concepts": [
+   "active-learning",
+   "label-noise",
+   "inter-annotator-agreement"
+  ]
+ },
+ {
+  "id": "dl-0007",
+  "topic": "deep",
+  "subtopic": "output layer and loss pairing",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Pick the output activation and loss for binary, multiclass and multi-label tasks (sigmoid or softmax with the matching cross-entropy)",
+  "concepts": [
+   "activation-function",
+   "softmax",
+   "cross-entropy-loss"
+  ]
+ },
+ {
+  "id": "dl-0008",
+  "topic": "deep",
+  "subtopic": "softmax by hand",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute softmax probabilities for three logits",
+  "concepts": [
+   "softmax"
+  ]
+ },
+ {
+  "id": "dl-0009",
+  "topic": "deep",
+  "subtopic": "numerically stable softmax",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain why softmax subtracts the largest logit before exponentiating and why frameworks fuse log-softmax with cross-entropy",
+  "concepts": [
+   "softmax",
+   "cross-entropy-loss"
+  ]
+ },
+ {
+  "id": "dl-0010",
+  "topic": "deep",
+  "subtopic": "cross-entropy for one example",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute the cross-entropy loss for one example from the predicted probability of the true class",
+  "concepts": [
+   "cross-entropy-loss"
+  ]
+ },
+ {
+  "id": "dl-0011",
+  "topic": "deep",
+  "subtopic": "backprop through a tiny graph",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Backpropagate through a small expression such as (wx + b − y)² to get the gradient for w at given values",
+  "concepts": [
+   "backpropagation",
+   "chain-rule"
+  ]
+ },
+ {
+  "id": "dl-0012",
+  "topic": "deep",
+  "subtopic": "units stuck at zero",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name ReLU units whose input stays negative so they output zero and stop learning (dead ReLUs)",
+  "concepts": [
+   "activation-function",
+   "learning-rate"
+  ]
+ },
+ {
+  "id": "dl-0013",
+  "topic": "deep",
+  "subtopic": "why initialization matters",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain why all-zero weights fail through symmetry and how He or Xavier scaling keeps activations stable across layers",
+  "concepts": [
+   "weight-initialization"
+  ]
+ },
+ {
+  "id": "dl-0014",
+  "topic": "deep",
+  "subtopic": "batch norm in training vs inference",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know that batch norm uses batch statistics in training and running averages at inference, and why tiny batches hurt it",
+  "concepts": [
+   "batch-normalization"
+  ]
+ },
+ {
+  "id": "dl-0015",
+  "topic": "deep",
+  "subtopic": "what dropout does",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain what dropout does during training, why it regularizes, and that it is switched off at inference",
+  "concepts": [
+   "dropout"
+  ]
+ },
+ {
+  "id": "dl-0016",
+  "topic": "deep",
+  "subtopic": "inverted dropout scaling",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute the scaled activation under inverted dropout with a given keep probability and show the expected value is unchanged",
+  "concepts": [
+   "dropout"
+  ]
+ },
+ {
+  "id": "dl-0017",
+  "topic": "deep",
+  "subtopic": "why residual connections help",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain how skip connections let very deep networks train by giving gradients a direct path",
+  "concepts": [
+   "residual-connection",
+   "vanishing-gradients"
+  ]
+ },
+ {
+  "id": "dl-0018",
+  "topic": "deep",
+  "subtopic": "convolution output size",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute a convolution's output size from input size, kernel size, stride and padding",
+  "concepts": [
+   "convolutional-neural-network"
+  ]
+ },
+ {
+  "id": "dl-0019",
+  "topic": "deep",
+  "subtopic": "one filter everywhere",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the CNN property where one filter's weights are reused at every position of the image (weight sharing)",
+  "concepts": [
+   "convolutional-neural-network"
+  ]
+ },
+ {
+  "id": "dl-0020",
+  "topic": "deep",
+  "subtopic": "limits of RNNs",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain why RNNs struggle with long-range dependencies and cannot parallelize over time steps, and what LSTMs and transformers changed",
+  "concepts": [
+   "recurrent-neural-network",
+   "vanishing-gradients",
+   "self-attention"
+  ]
+ },
+ {
+  "id": "dl-0021",
+  "topic": "deep",
+  "subtopic": "what Adam adds",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain what Adam adds over plain SGD: a momentum term plus per-parameter step sizes from squared gradients",
+  "concepts": [
+   "adam-optimizer"
+  ]
+ },
+ {
+  "id": "dl-0022",
+  "topic": "deep",
+  "subtopic": "AdamW vs L2 in the loss",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know why decoupled weight decay in AdamW behaves differently from adding an L2 term to the loss under Adam",
+  "concepts": [
+   "weight-decay",
+   "adam-optimizer",
+   "l2-regularization"
+  ]
+ },
+ {
+  "id": "dl-0023",
+  "topic": "deep",
+  "subtopic": "warmup and decay",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain why large models use learning rate warmup followed by decay, and what warmup protects against early in training",
+  "concepts": [
+   "learning-rate-schedule",
+   "learning-rate"
+  ]
+ },
+ {
+  "id": "dl-0024",
+  "topic": "deep",
+  "subtopic": "steps per epoch",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute steps per epoch and total optimizer steps from dataset size, batch size and epochs",
+  "concepts": [
+   "batch-size"
+  ]
+ },
+ {
+  "id": "dl-0025",
+  "topic": "deep",
+  "subtopic": "scaling batch size",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know the linear scaling rule for learning rate with batch size and why very large batches can generalize worse",
+  "concepts": [
+   "batch-size",
+   "learning-rate"
+  ]
+ },
+ {
+  "id": "dl-0026",
+  "topic": "deep",
+  "subtopic": "freeze or fine-tune",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Choose between freezing a pretrained backbone and fine-tuning all of it, given data size and how close the domain is",
+  "concepts": [
+   "transfer-learning"
+  ]
+ },
+ {
+  "id": "dl-0027",
+  "topic": "deep",
+  "subtopic": "fine-tuning a vision model on little data",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick sound practices for fine-tuning a pretrained model on a small dataset: a lower learning rate for the backbone, unfreezing gradually, matching the original preprocessing",
+  "concepts": [
+   "transfer-learning",
+   "learning-rate"
+  ]
+ },
+ {
+  "id": "dl-0028",
+  "topic": "deep",
+  "subtopic": "label-preserving augmentation",
+  "format": "multi",
+  "difficulty": 1,
+  "skill": "Pick augmentations that keep the label true for a task and reject ones that change it, such as flips on digit images",
+  "concepts": [
+   "data-augmentation"
+  ]
+ },
+ {
+  "id": "dl-0029",
+  "topic": "deep",
+  "subtopic": "capping gradient norms",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the technique that rescales gradients when their norm goes above a limit (gradient clipping)",
+  "concepts": [
+   "gradient-clipping"
+  ]
+ },
+ {
+  "id": "dl-0030",
+  "topic": "deep",
+  "subtopic": "lookup table of learned vectors",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the learned table that maps token or category ids to dense vectors (embedding)",
+  "concepts": [
+   "embedding"
+  ]
+ },
+ {
+  "id": "dl-0031",
+  "topic": "deep",
+  "subtopic": "contrastive learning",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain contrastive learning (pull matching pairs together, push others apart) and why in-batch negatives make batch size matter",
+  "concepts": [
+   "contrastive-learning",
+   "embedding"
+  ]
+ },
+ {
+  "id": "dl-0032",
+  "topic": "deep",
+  "subtopic": "sanity checks before a long run",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Describe checks before a long training run: overfit one small batch, compare the first loss with ln(number of classes), view a few inputs with labels",
+  "concepts": [
+   "cross-entropy-loss",
+   "learning-rate"
+  ]
+ },
+ {
+  "id": "dl-0033",
+  "topic": "deep",
+  "subtopic": "picking an architecture",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Choose an architecture for a new problem (tabular, image, text or sequence data) and justify it by inductive bias, data size and serving cost",
+  "concepts": [
+   "convolutional-neural-network",
+   "transfer-learning",
+   "recurrent-neural-network"
+  ]
+ },
+ {
+  "id": "dl-0034",
+  "topic": "deep",
+  "subtopic": "reusing pretrained embeddings",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain how to use a pretrained encoder's embeddings for a new similarity or classification task and how to tell whether they are good enough",
+  "concepts": [
+   "embedding",
+   "transfer-learning"
+  ]
+ },
+ {
+  "id": "dl-0035",
+  "topic": "deep",
+  "subtopic": "train vs inference mismatches",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick causes of a deep model behaving differently at inference than in validation: dropout left on, batch norm in training mode, different preprocessing",
+  "concepts": [
+   "batch-normalization",
+   "dropout",
+   "training-serving-skew"
+  ]
+ },
+ {
+  "id": "dl-0036",
+  "topic": "deep",
+  "subtopic": "validation loss up, accuracy up",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick valid reasons validation loss can rise while validation accuracy still improves, such as growing overconfidence on the examples it gets wrong",
+  "concepts": [
+   "cross-entropy-loss",
+   "calibration",
+   "overfitting"
+  ]
+ },
+ {
+  "id": "llm-0007",
+  "topic": "llm",
+  "subtopic": "queries, keys and values",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain what the query, key and value projections each do in self-attention",
+  "concepts": [
+   "self-attention"
+  ]
+ },
+ {
+  "id": "llm-0008",
+  "topic": "llm",
+  "subtopic": "attention weights by hand",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute attention weights for one query over two or three keys with softmax of dot products, then the weighted value output",
+  "concepts": [
+   "self-attention",
+   "softmax"
+  ]
+ },
+ {
+  "id": "llm-0009",
+  "topic": "llm",
+  "subtopic": "why several heads",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain why multi-head attention splits the model width into heads and what that gains over one wide head",
+  "concepts": [
+   "multi-head-attention",
+   "self-attention"
+  ]
+ },
+ {
+  "id": "llm-0010",
+  "topic": "llm",
+  "subtopic": "blocking future tokens",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the mask that stops a decoder token from attending to later positions (causal mask)",
+  "concepts": [
+   "causal-mask"
+  ]
+ },
+ {
+  "id": "llm-0011",
+  "topic": "llm",
+  "subtopic": "position information",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain why attention alone ignores word order and how rotary position embeddings encode relative position",
+  "concepts": [
+   "positional-encoding"
+  ]
+ },
+ {
+  "id": "llm-0012",
+  "topic": "llm",
+  "subtopic": "encoder, decoder or both",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Choose encoder-only, decoder-only or encoder-decoder models for classification, open generation and translation",
+  "concepts": [
+   "encoder-decoder-architectures"
+  ]
+ },
+ {
+  "id": "llm-0013",
+  "topic": "llm",
+  "subtopic": "parameters in a transformer",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Estimate a transformer's parameters as about 12 × d² per layer (4d² attention, 8d² MLP with 4× width) times the layer count",
+  "concepts": [
+   "transformer-block"
+  ]
+ },
+ {
+  "id": "llm-0014",
+  "topic": "llm",
+  "subtopic": "merging frequent pairs",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the subword method that builds a vocabulary by repeatedly merging the most frequent adjacent pair of symbols (byte-pair encoding)",
+  "concepts": [
+   "tokenization"
+  ]
+ },
+ {
+  "id": "llm-0015",
+  "topic": "llm",
+  "subtopic": "vocabulary size trade-off",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Weigh a larger vocabulary (shorter sequences) against bigger embedding and output layers and rarely trained tokens",
+  "concepts": [
+   "tokenization"
+  ]
+ },
+ {
+  "id": "llm-0016",
+  "topic": "llm",
+  "subtopic": "perplexity from loss",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute perplexity from average per-token cross-entropy as exp of the loss",
+  "concepts": [
+   "perplexity",
+   "cross-entropy-loss"
+  ]
+ },
+ {
+  "id": "llm-0017",
+  "topic": "llm",
+  "subtopic": "what perplexity does and does not show",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick valid statements about perplexity: lower is better on the same tokenizer and data, it is not comparable across tokenizers, it says little about helpfulness or truth",
+  "concepts": [
+   "perplexity",
+   "tokenization"
+  ]
+ },
+ {
+  "id": "llm-0018",
+  "topic": "llm",
+  "subtopic": "from base model to assistant",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Walk through how a base model becomes a chat assistant (pretraining, supervised fine-tuning, preference tuning) and what each stage changes",
+  "concepts": [
+   "pretraining",
+   "supervised-fine-tuning",
+   "rlhf"
+  ]
+ },
+ {
+  "id": "llm-0019",
+  "topic": "llm",
+  "subtopic": "the pretraining objective",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the training objective of GPT-style models (next-token prediction)",
+  "concepts": [
+   "next-token-prediction",
+   "pretraining"
+  ]
+ },
+ {
+  "id": "llm-0020",
+  "topic": "llm",
+  "subtopic": "loss masking in SFT",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know that supervised fine-tuning loss is usually computed on response tokens only, not the prompt, and why",
+  "concepts": [
+   "supervised-fine-tuning"
+  ]
+ },
+ {
+  "id": "llm-0021",
+  "topic": "llm",
+  "subtopic": "forgetting after fine-tuning",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Recognise catastrophic forgetting after narrow fine-tuning and mitigations such as mixing in general data, LoRA or a lower learning rate",
+  "concepts": [
+   "catastrophic-forgetting",
+   "lora"
+  ]
+ },
+ {
+  "id": "llm-0022",
+  "topic": "llm",
+  "subtopic": "LoRA trainable parameters",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute LoRA trainable parameters r × (d_in + d_out) for given matrices and compare with full fine-tuning",
+  "concepts": [
+   "lora"
+  ]
+ },
+ {
+  "id": "llm-0023",
+  "topic": "llm",
+  "subtopic": "LoRA rank, alpha and merging",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know what LoRA rank and alpha control, which modules to adapt, and that adapters can be merged into the weights for no added latency",
+  "concepts": [
+   "lora"
+  ]
+ },
+ {
+  "id": "llm-0024",
+  "topic": "llm",
+  "subtopic": "reward hacking and the KL penalty",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain reward hacking in RLHF and why a KL penalty keeps the policy close to the reference model",
+  "concepts": [
+   "rlhf",
+   "kl-divergence"
+  ]
+ },
+ {
+  "id": "llm-0025",
+  "topic": "llm",
+  "subtopic": "temperature on logits",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Divide logits by a temperature and compute the new softmax probabilities",
+  "concepts": [
+   "temperature",
+   "softmax"
+  ]
+ },
+ {
+  "id": "llm-0026",
+  "topic": "llm",
+  "subtopic": "which tokens survive top-p",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Find which tokens remain after top-p filtering for a given sorted probability list and p",
+  "concepts": [
+   "top-p-sampling"
+  ]
+ },
+ {
+  "id": "llm-0027",
+  "topic": "llm",
+  "subtopic": "few-shot as in-context learning",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain few-shot prompting as in-context learning with no weight updates and its sensitivity to example order and format",
+  "concepts": [
+   "in-context-learning"
+  ]
+ },
+ {
+  "id": "llm-0028",
+  "topic": "llm",
+  "subtopic": "when to pay for reasoning",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Decide when a product feature should use chain-of-thought or a reasoning model, weighing accuracy on multi-step problems against latency and token cost",
+  "concepts": [
+   "chain-of-thought"
+  ]
+ },
+ {
+  "id": "llm-0029",
+  "topic": "llm",
+  "subtopic": "why models hallucinate",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick real causes of hallucination (a training objective that rewards fluent guesses, missing knowledge, sampling randomness) and real mitigations such as grounding and allowing abstention",
+  "concepts": [
+   "hallucination"
+  ]
+ },
+ {
+  "id": "llm-0030",
+  "topic": "llm",
+  "subtopic": "position of facts in long context",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know that models use facts at the start and end of a long context better than in the middle, and how to order retrieved passages",
+  "concepts": [
+   "context-window"
+  ]
+ },
+ {
+  "id": "llm-0031",
+  "topic": "llm",
+  "subtopic": "compute-optimal scaling",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain compute-optimal scaling: for a fixed compute budget, grow parameters and training tokens together (roughly 20 tokens per parameter)",
+  "concepts": [
+   "scaling-laws"
+  ]
+ },
+ {
+  "id": "llm-0032",
+  "topic": "llm",
+  "subtopic": "training compute estimate",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Estimate training compute as 6 × parameters × tokens FLOPs and turn it into GPU-days at a given sustained throughput",
+  "concepts": [
+   "scaling-laws",
+   "pretraining"
+  ]
+ },
+ {
+  "id": "llm-0033",
+  "topic": "llm",
+  "subtopic": "how mixture of experts saves compute",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain that a router sends each token to a few experts, so active parameters are far fewer than total while memory still holds all experts",
+  "concepts": [
+   "mixture-of-experts"
+  ]
+ },
+ {
+  "id": "llm-0034",
+  "topic": "llm",
+  "subtopic": "choosing experts per token",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the small learned component in a mixture-of-experts layer that picks which experts process each token (router)",
+  "concepts": [
+   "mixture-of-experts"
+  ]
+ },
+ {
+  "id": "llm-0035",
+  "topic": "llm",
+  "subtopic": "prompting or fine-tuning",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Decide whether a task needs better prompting, few-shot examples or fine-tuning, given data, budget and the behaviour wanted",
+  "concepts": [
+   "supervised-fine-tuning",
+   "in-context-learning"
+  ]
+ },
+ {
+  "id": "llm-0036",
+  "topic": "llm",
+  "subtopic": "planning a domain fine-tune",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Plan a fine-tuning run for a domain assistant: data collection and cleaning, SFT, held-out evals, guarding against forgetting, optional preference tuning",
+  "concepts": [
+   "supervised-fine-tuning",
+   "dpo",
+   "catastrophic-forgetting"
+  ]
+ },
+ {
+  "id": "llm-0037",
+  "topic": "llm",
+  "subtopic": "majority vote over samples",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name sampling several reasoning paths and taking the most common final answer (self-consistency)",
+  "concepts": [
+   "chain-of-thought",
+   "temperature"
+  ]
+ },
+ {
+  "id": "llm-0038",
+  "topic": "llm",
+  "subtopic": "the preference scorer in RLHF",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the model trained on human preference comparisons that scores responses during RLHF (reward model)",
+  "concepts": [
+   "rlhf"
+  ]
+ },
+ {
+  "id": "llm-0039",
+  "topic": "llm",
+  "subtopic": "nondeterminism at temperature zero",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick true statements about why LLM outputs can still vary at temperature 0 (batching and floating-point order, provider-side changes) and how to make tests robust",
+  "concepts": [
+   "temperature"
+  ]
+ },
+ {
+  "id": "llm-0040",
+  "topic": "llm",
+  "subtopic": "stretching the context window",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Explain why a model trained on short contexts degrades on much longer inputs and how context extension (position scaling plus long-context fine-tuning) addresses it",
+  "concepts": [
+   "positional-encoding",
+   "context-window"
+  ]
+ },
+ {
+  "id": "int-0009",
+  "topic": "integration",
+  "subtopic": "what RAG adds",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain what retrieval adds over a bare LLM: fresh and private knowledge and citations, without retraining",
+  "concepts": [
+   "retrieval-augmented-generation"
+  ]
+ },
+ {
+  "id": "int-0010",
+  "topic": "integration",
+  "subtopic": "RAG or fine-tuning",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Choose RAG for changing facts and fine-tuning for style, format or narrow skills, and know when to combine them",
+  "concepts": [
+   "rag-vs-fine-tuning"
+  ]
+ },
+ {
+  "id": "int-0011",
+  "topic": "integration",
+  "subtopic": "keyword vs vector retrieval",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know where keyword search beats embeddings (product codes, names, rare terms) and why hybrid search helps",
+  "concepts": [
+   "hybrid-search",
+   "bm25"
+  ]
+ },
+ {
+  "id": "int-0012",
+  "topic": "integration",
+  "subtopic": "reciprocal rank fusion",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute reciprocal rank fusion scores to merge a keyword ranking and a vector ranking",
+  "concepts": [
+   "hybrid-search"
+  ]
+ },
+ {
+  "id": "int-0013",
+  "topic": "integration",
+  "subtopic": "approximate vector search",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain why vector search uses approximate indexes such as HNSW or IVF and the recall vs latency trade-off they expose",
+  "concepts": [
+   "approximate-nearest-neighbor",
+   "vector-database"
+  ]
+ },
+ {
+  "id": "int-0014",
+  "topic": "integration",
+  "subtopic": "embedding storage",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute memory to store N embeddings of dimension d in float32 and in int8",
+  "concepts": [
+   "vector-database",
+   "embedding"
+  ]
+ },
+ {
+  "id": "int-0015",
+  "topic": "integration",
+  "subtopic": "dot product vs cosine",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know that cosine similarity equals the dot product on normalized vectors and when unnormalized dot products change the ranking",
+  "concepts": [
+   "cosine-similarity"
+  ]
+ },
+ {
+  "id": "int-0016",
+  "topic": "integration",
+  "subtopic": "migrating to a new embedding model",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Plan the switch of a live RAG index to a new embedding model, knowing vectors from two models are not comparable: re-embedding, dual indexes, evaluation and cut-over",
+  "concepts": [
+   "embedding",
+   "vector-database",
+   "golden-dataset"
+  ]
+ },
+ {
+  "id": "int-0017",
+  "topic": "integration",
+  "subtopic": "retrieval hit rate",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute retrieval recall@k (hit rate) over a set of test questions with known relevant chunks",
+  "concepts": [
+   "precision-at-k",
+   "retrieval-augmented-generation"
+  ]
+ },
+ {
+  "id": "int-0018",
+  "topic": "integration",
+  "subtopic": "retrieval or generation failure",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Tell a retrieval failure from a generation failure in a wrong RAG answer by checking whether the right chunk reached the context",
+  "concepts": [
+   "retrieval-augmented-generation",
+   "groundedness"
+  ]
+ },
+ {
+  "id": "int-0019",
+  "topic": "integration",
+  "subtopic": "standalone search queries",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the step that turns a follow-up such as \"what about the second one\" into a standalone search query before retrieval (query rewriting)",
+  "concepts": [
+   "retrieval-augmented-generation"
+  ]
+ },
+ {
+  "id": "int-0020",
+  "topic": "integration",
+  "subtopic": "metadata filters",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Use metadata filters (tenant, date, access rights) with vector search and know how filtering before or after the search affects recall",
+  "concepts": [
+   "vector-database"
+  ]
+ },
+ {
+  "id": "int-0021",
+  "topic": "integration",
+  "subtopic": "permission-aware RAG",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design RAG over a company knowledge base so users never see content from documents they cannot open",
+  "concepts": [
+   "retrieval-augmented-generation",
+   "vector-database",
+   "least-privilege"
+  ]
+ },
+ {
+  "id": "int-0022",
+  "topic": "integration",
+  "subtopic": "structure of a good prompt",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Write a clear prompt: task, context, constraints, output format and examples, with untrusted data set apart in delimiters",
+  "concepts": [
+   "prompt-engineering"
+  ]
+ },
+ {
+  "id": "int-0023",
+  "topic": "integration",
+  "subtopic": "layered defence against injection",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick effective defences against prompt injection (least-privilege tools, isolating untrusted content, output checks, approval for risky actions) and reject weak ones such as asking the model to ignore attacks",
+  "concepts": [
+   "prompt-injection",
+   "guardrails",
+   "least-privilege"
+  ]
+ },
+ {
+  "id": "int-0024",
+  "topic": "integration",
+  "subtopic": "getting around the policy",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the attack where a user crafts input to make a model ignore its safety rules (jailbreak)",
+  "concepts": [
+   "jailbreak",
+   "prompt-injection"
+  ]
+ },
+ {
+  "id": "int-0025",
+  "topic": "integration",
+  "subtopic": "where guardrails sit",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick what input and output guardrails (moderation, PII filters, schema validation, topic limits) each catch and weigh their latency cost",
+  "concepts": [
+   "guardrails"
+  ]
+ },
+ {
+  "id": "int-0026",
+  "topic": "integration",
+  "subtopic": "biases of LLM judges",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick known LLM-as-judge biases (position, verbosity, self-preference) and the mitigations, such as swapping answer order",
+  "concepts": [
+   "llm-as-judge"
+  ]
+ },
+ {
+  "id": "int-0027",
+  "topic": "integration",
+  "subtopic": "validating a judge before trusting it",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick sound steps to validate an LLM judge: compare with human labels on a sample, measure agreement, check for bias, re-check when the judge model changes",
+  "concepts": [
+   "llm-as-judge",
+   "golden-dataset"
+  ]
+ },
+ {
+  "id": "int-0028",
+  "topic": "integration",
+  "subtopic": "claims backed by context",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the property that every claim in an answer is supported by the retrieved context (groundedness, also called faithfulness)",
+  "concepts": [
+   "groundedness"
+  ]
+ },
+ {
+  "id": "int-0029",
+  "topic": "integration",
+  "subtopic": "regression evals on every change",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain why a versioned golden set runs on every prompt or model change and what belongs in it",
+  "concepts": [
+   "golden-dataset"
+  ]
+ },
+ {
+  "id": "int-0030",
+  "topic": "integration",
+  "subtopic": "pairwise vs absolute scoring",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Choose pairwise comparison over 1 to 10 scores for LLM evaluation and explain why it is more reliable",
+  "concepts": [
+   "llm-as-judge"
+  ]
+ },
+ {
+  "id": "int-0031",
+  "topic": "integration",
+  "subtopic": "how prompt caching works",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know how prefix caching works and why stable content must come first in the prompt",
+  "concepts": [
+   "prompt-caching"
+  ]
+ },
+ {
+  "id": "int-0032",
+  "topic": "integration",
+  "subtopic": "savings from prompt caching",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Compute monthly savings from prompt caching given the cached prefix share, the hit rate and hypothetical cached and uncached prices",
+  "concepts": [
+   "prompt-caching"
+  ]
+ },
+ {
+  "id": "int-0033",
+  "topic": "integration",
+  "subtopic": "risks of semantic caching",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know the risks of semantic caching (similar questions with different answers, stale or personal responses) and how the threshold is set",
+  "concepts": [
+   "semantic-caching"
+  ]
+ },
+ {
+  "id": "int-0034",
+  "topic": "integration",
+  "subtopic": "blended cost with routing",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute the average cost per request when a router sends a share of traffic to a small model and escalates the rest",
+  "concepts": [
+   "model-routing"
+  ]
+ },
+ {
+  "id": "int-0035",
+  "topic": "integration",
+  "subtopic": "showing tokens as they arrive",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name sending tokens to the user as they are generated to cut perceived latency (streaming)",
+  "concepts": [
+   "streaming-responses",
+   "time-to-first-token"
+  ]
+ },
+ {
+  "id": "int-0036",
+  "topic": "integration",
+  "subtopic": "handling rate limits",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Handle provider rate limits and transient errors with exponential backoff with jitter, timeouts and a fallback model",
+  "concepts": [
+   "rate-limits-and-backoff",
+   "graceful-degradation"
+  ]
+ },
+ {
+  "id": "int-0037",
+  "topic": "integration",
+  "subtopic": "hosted API or self-hosted model",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Weigh a hosted LLM API against a self-hosted open-weight model for a feature: cost at the expected volume, latency, data control and operating burden",
+  "concepts": [
+   "capacity-estimation",
+   "pii-handling",
+   "model-routing"
+  ]
+ },
+ {
+  "id": "int-0038",
+  "topic": "integration",
+  "subtopic": "PII sent to an external API",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Redact or pseudonymize personal data before calling a third-party LLM API and know the retention questions to ask",
+  "concepts": [
+   "pii-handling",
+   "guardrails"
+  ]
+ },
+ {
+  "id": "int-0039",
+  "topic": "integration",
+  "subtopic": "explaining a RAG bot end to end",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain to a stakeholder how a RAG chatbot answers a question, step by step, and where each step can go wrong",
+  "concepts": [
+   "retrieval-augmented-generation",
+   "chunking"
+  ]
+ },
+ {
+  "id": "int-0040",
+  "topic": "integration",
+  "subtopic": "Q&A over a large document archive",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design question answering over a million mixed PDFs with tables: parsing, chunking, indexing, hybrid retrieval, citations, freshness and cost",
+  "concepts": [
+   "retrieval-augmented-generation",
+   "chunking",
+   "hybrid-search",
+   "vector-database"
+  ]
+ },
+ {
+  "id": "int-0041",
+  "topic": "integration",
+  "subtopic": "rolling out a prompt or model change",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Plan a safe rollout of a new prompt or model version: offline evals, shadow traffic, canary, online metrics and rollback",
+  "concepts": [
+   "golden-dataset",
+   "canary-release",
+   "llm-as-judge"
+  ]
+ },
+ {
+  "id": "int-0042",
+  "topic": "integration",
+  "subtopic": "encoding query and document apart",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the retrieval model that encodes query and document separately so documents can be embedded ahead of time (bi-encoder)",
+  "concepts": [
+   "cross-encoder-reranking",
+   "embedding"
+  ]
+ },
+ {
+  "id": "int-0043",
+  "topic": "integration",
+  "subtopic": "a bot that cites outdated policy",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick likely causes when a RAG bot quotes an old policy: a stale index, old versions never removed, no date filter or boost",
+  "concepts": [
+   "vector-database",
+   "deduplication",
+   "retrieval-augmented-generation"
+  ]
+ },
+ {
+  "id": "int-0044",
+  "topic": "integration",
+  "subtopic": "classic keyword ranking",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the keyword ranking function that rewards term frequency with saturation and normalizes for document length (BM25)",
+  "concepts": [
+   "bm25"
+  ]
+ },
+ {
+  "id": "agt-0009",
+  "topic": "agents",
+  "subtopic": "the agent loop",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Describe the core loop: the model picks an action, the runtime runs the tool, the result goes back into context, and it repeats until done",
+  "concepts": [
+   "agent-loop",
+   "tool-calling"
+  ]
+ },
+ {
+  "id": "agt-0010",
+  "topic": "agents",
+  "subtopic": "structured requests to run functions",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the model capability of emitting a structured request that the application executes and answers with the result (tool calling, also called function calling)",
+  "concepts": [
+   "tool-calling"
+  ]
+ },
+ {
+  "id": "agt-0011",
+  "topic": "agents",
+  "subtopic": "parallel tool calls",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know when an agent can issue independent tool calls in one turn and how results are matched back to each call",
+  "concepts": [
+   "tool-calling"
+  ]
+ },
+ {
+  "id": "agt-0012",
+  "topic": "agents",
+  "subtopic": "too many tools",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Judge the cost of giving an agent dozens of overlapping tools (wrong picks, context spent on definitions) and the fixes, such as grouping or loading tools on demand",
+  "concepts": [
+   "tool-design",
+   "context-engineering"
+  ]
+ },
+ {
+  "id": "agt-0013",
+  "topic": "agents",
+  "subtopic": "safe retries for side effects",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the key sent with a request so a retried call is carried out only once (idempotency key)",
+  "concepts": [
+   "idempotency",
+   "tool-design"
+  ]
+ },
+ {
+  "id": "agt-0014",
+  "topic": "agents",
+  "subtopic": "retries and long chains",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Compute end-to-end success for a multi-step task when each step may be retried up to r times, from the per-attempt success rate",
+  "concepts": [
+   "compounding-errors"
+  ]
+ },
+ {
+  "id": "agt-0015",
+  "topic": "agents",
+  "subtopic": "tokens across a growing context",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute total input tokens over an agent run that resends the growing history every step, and its cost at a hypothetical price",
+  "concepts": [
+   "context-engineering",
+   "agent-loop"
+  ]
+ },
+ {
+  "id": "agt-0016",
+  "topic": "agents",
+  "subtopic": "trimming old tool results",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain context engineering in practice: keep what the next step needs, compact old tool outputs and load detail just in time",
+  "concepts": [
+   "context-engineering"
+  ]
+ },
+ {
+  "id": "agt-0017",
+  "topic": "agents",
+  "subtopic": "plan first or step by step",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Compare plan-and-execute with step-by-step ReAct and say when an upfront plan helps or hurts",
+  "concepts": [
+   "plan-and-execute",
+   "react-pattern"
+  ]
+ },
+ {
+  "id": "agt-0018",
+  "topic": "agents",
+  "subtopic": "where a verifier step pays off",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick tasks where a critique or verifier step reliably improves results (code with tests, answers that can be checked against a schema or source) and ones where it mostly adds cost",
+  "concepts": [
+   "reflection"
+  ]
+ },
+ {
+  "id": "agt-0019",
+  "topic": "agents",
+  "subtopic": "one agent or many",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Judge when an orchestrator with sub-agents beats a single agent (parallel independent subtasks) and what it costs in tokens and lost context",
+  "concepts": [
+   "multi-agent-system"
+  ]
+ },
+ {
+  "id": "agt-0020",
+  "topic": "agents",
+  "subtopic": "approvals that are not rubber stamps",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Design human approval steps that reviewers actually read: show the exact change, batch low-risk items, escalate by risk",
+  "concepts": [
+   "human-in-the-loop"
+  ]
+ },
+ {
+  "id": "agt-0021",
+  "topic": "agents",
+  "subtopic": "sandboxing code execution",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Run code-executing agents in a sandbox with no network or secrets by default and know what a sandbox does not protect",
+  "concepts": [
+   "sandboxing",
+   "least-privilege"
+  ]
+ },
+ {
+  "id": "agt-0022",
+  "topic": "agents",
+  "subtopic": "only the access a task needs",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the security principle of giving an agent only the permissions its task requires (least privilege)",
+  "concepts": [
+   "least-privilege"
+  ]
+ },
+ {
+  "id": "agt-0023",
+  "topic": "agents",
+  "subtopic": "MCP hosts, clients and servers",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain MCP roles: the host app, its clients, and servers that expose tools, resources and prompts, locally or remotely",
+  "concepts": [
+   "model-context-protocol"
+  ]
+ },
+ {
+  "id": "agt-0024",
+  "topic": "agents",
+  "subtopic": "risks of third-party MCP servers",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick real risks of connecting outside MCP servers (poisoned tool descriptions, broad scopes, data exfiltration) and sound mitigations",
+  "concepts": [
+   "model-context-protocol",
+   "prompt-injection",
+   "least-privilege"
+  ]
+ },
+ {
+  "id": "agt-0025",
+  "topic": "agents",
+  "subtopic": "private data, untrusted input, an outbound channel",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Recognise the dangerous mix of private data access, untrusted content and a way to send data out, and remove one leg to break the attack",
+  "concepts": [
+   "prompt-injection",
+   "least-privilege"
+  ]
+ },
+ {
+  "id": "agt-0026",
+  "topic": "agents",
+  "subtopic": "outcome vs trajectory grading",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Tell grading the final outcome from grading the trajectory (tool choice, order, arguments) and say when each one fits",
+  "concepts": [
+   "trajectory-evaluation"
+  ]
+ },
+ {
+  "id": "agt-0027",
+  "topic": "agents",
+  "subtopic": "pass@k vs pass^k",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute the chance at least one of k trials succeeds and the chance all k succeed from a per-trial rate, and say which one matters for a customer-facing agent",
+  "concepts": [
+   "trajectory-evaluation",
+   "compounding-errors"
+  ]
+ },
+ {
+  "id": "agt-0028",
+  "topic": "agents",
+  "subtopic": "sending requests to a specialist",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the workflow pattern where a classifier step picks which specialized prompt or model handles a request (routing)",
+  "concepts": [
+   "workflow-vs-agent",
+   "model-routing"
+  ]
+ },
+ {
+  "id": "agt-0029",
+  "topic": "agents",
+  "subtopic": "common workflow patterns",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Match workflow patterns (prompt chaining, routing, parallelization, orchestrator-workers, evaluator-optimizer) to the problems they suit",
+  "concepts": [
+   "workflow-vs-agent",
+   "multi-agent-system"
+  ]
+ },
+ {
+  "id": "agt-0030",
+  "topic": "agents",
+  "subtopic": "generate, critique, repeat",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the pattern where one model call produces output and another grades it in a loop until it passes (evaluator-optimizer)",
+  "concepts": [
+   "reflection"
+  ]
+ },
+ {
+  "id": "agt-0031",
+  "topic": "agents",
+  "subtopic": "an agent stuck in a loop",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Debug an agent that keeps calling the same tool with the same arguments: read traces, check tool result clarity, stop conditions and prompt fixes",
+  "concepts": [
+   "agent-loop",
+   "tool-design",
+   "trajectory-evaluation"
+  ]
+ },
+ {
+  "id": "agt-0032",
+  "topic": "agents",
+  "subtopic": "designing a coding agent",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design an agent that edits a code repository and runs tests: sandbox, tool set, context management, verification, and when to ask the human",
+  "concepts": [
+   "sandboxing",
+   "context-engineering",
+   "reflection"
+  ]
+ },
+ {
+  "id": "agt-0033",
+  "topic": "agents",
+  "subtopic": "observability for agents",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain what to trace in an agent (each step, tool inputs and outputs, tokens, cost, errors) and how you would use the traces",
+  "concepts": [
+   "llm-observability",
+   "agent-loop"
+  ]
+ },
+ {
+  "id": "agt-0034",
+  "topic": "agents",
+  "subtopic": "latency of an agent run",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute total latency of an agent run from per-step model latency, tool latency and the number of steps",
+  "concepts": [
+   "agent-loop"
+  ]
+ },
+ {
+  "id": "agt-0035",
+  "topic": "agents",
+  "subtopic": "claims vs verified state",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Know that an agent saying an action succeeded is not proof, and verify through tool results or the real system state",
+  "concepts": [
+   "tool-calling",
+   "hallucination"
+  ]
+ },
+ {
+  "id": "agt-0036",
+  "topic": "agents",
+  "subtopic": "what a good tool result contains",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick what a tool result should return to the model (concise relevant fields, ids for follow-up calls, a truncation notice) and reject raw page dumps",
+  "concepts": [
+   "tool-design",
+   "context-engineering"
+  ]
+ },
+ {
+  "id": "agt-0037",
+  "topic": "agents",
+  "subtopic": "the system prompt is not a security boundary",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain what an agent's system prompt is for (role, rules, tool guidance) and why it cannot by itself stop a determined injection",
+  "concepts": [
+   "prompt-engineering",
+   "prompt-injection"
+  ]
+ },
+ {
+  "id": "agt-0038",
+  "topic": "agents",
+  "subtopic": "review policy for a refund agent",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Set a human review policy for an agent that issues refunds: what gets escalated, review cost against error cost, and how thresholds change as evidence builds",
+  "concepts": [
+   "human-in-the-loop",
+   "expected-value"
+  ]
+ },
+ {
+  "id": "agt-0039",
+  "topic": "agents",
+  "subtopic": "resuming a long task after a crash",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick ways to make a long agent task resumable: checkpointed state, a durable progress log, idempotent tools, notes kept outside the context",
+  "concepts": [
+   "agent-memory",
+   "idempotency"
+  ]
+ },
+ {
+  "id": "agt-0040",
+  "topic": "agents",
+  "subtopic": "a shell tool or narrow tools",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Choose between a general shell or code tool and many narrow API tools, weighing flexibility against safety and reliability",
+  "concepts": [
+   "tool-design",
+   "sandboxing",
+   "least-privilege"
+  ]
+ },
+ {
+  "id": "agt-0041",
+  "topic": "agents",
+  "subtopic": "gaming the grader",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Recognise an agent that passes by weakening the check (editing tests, hard-coding outputs) and how to prevent it",
+  "concepts": [
+   "trajectory-evaluation",
+   "reflection"
+  ]
+ },
+ {
+  "id": "agt-0042",
+  "topic": "agents",
+  "subtopic": "from pilot to customers",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Plan how an agent moves from internal pilot to customers: shadow mode, narrow permissions, staged autonomy tied to measured success, rollback",
+  "concepts": [
+   "human-in-the-loop",
+   "trajectory-evaluation",
+   "least-privilege"
+  ]
+ },
+ {
+  "id": "opt-0008",
+  "topic": "optimization",
+  "subtopic": "quantizing one value",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute the int8 value of a float from a scale and zero point, then the dequantized value and its rounding error",
+  "concepts": [
+   "quantization"
+  ]
+ },
+ {
+  "id": "opt-0009",
+  "topic": "optimization",
+  "subtopic": "outliers and LLM quantization",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know why activation outliers make int8 LLM quantization hard and how per-channel scales or weight-only quantization help",
+  "concepts": [
+   "quantization"
+  ]
+ },
+ {
+  "id": "opt-0010",
+  "topic": "optimization",
+  "subtopic": "memory for full fine-tuning",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Estimate GPU memory to fully fine-tune with Adam in mixed precision at about 16 bytes per parameter (weights, gradients, master copy, two moments)",
+  "concepts": [
+   "adam-optimizer",
+   "mixed-precision-training"
+  ]
+ },
+ {
+  "id": "opt-0011",
+  "topic": "optimization",
+  "subtopic": "effective batch size",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute the effective batch size from per-device batch, gradient accumulation steps and GPU count",
+  "concepts": [
+   "gradient-accumulation",
+   "data-parallelism",
+   "batch-size"
+  ]
+ },
+ {
+  "id": "opt-0012",
+  "topic": "optimization",
+  "subtopic": "16 bits with fp32's range",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the 16-bit float format that keeps fp32's exponent range with fewer mantissa bits, so it rarely needs loss scaling (bfloat16)",
+  "concepts": [
+   "mixed-precision-training"
+  ]
+ },
+ {
+  "id": "opt-0013",
+  "topic": "optimization",
+  "subtopic": "data parallel training",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain data parallelism: every GPU holds the full model and a slice of the batch, and gradients are averaged with all-reduce",
+  "concepts": [
+   "data-parallelism"
+  ]
+ },
+ {
+  "id": "opt-0014",
+  "topic": "optimization",
+  "subtopic": "splitting optimizer state across GPUs",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the data-parallel approach that shards optimizer state, gradients and weights across GPUs instead of copying them (ZeRO or fully sharded data parallel)",
+  "concepts": [
+   "sharded-data-parallel"
+  ]
+ },
+ {
+  "id": "opt-0015",
+  "topic": "optimization",
+  "subtopic": "tensor vs pipeline parallelism",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Tell tensor parallelism (splits each layer, needs fast links) from pipeline parallelism (splits layers into stages, leaves idle bubbles) and when to use each",
+  "concepts": [
+   "model-parallelism"
+  ]
+ },
+ {
+  "id": "opt-0016",
+  "topic": "optimization",
+  "subtopic": "why decoding is memory-bound",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain why small-batch LLM decoding is limited by memory bandwidth, since every token reads all the weights",
+  "concepts": [
+   "memory-bound-decoding"
+  ]
+ },
+ {
+  "id": "opt-0017",
+  "topic": "optimization",
+  "subtopic": "decode speed ceiling",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Estimate the upper bound on single-stream tokens per second from model size in bytes and GPU memory bandwidth",
+  "concepts": [
+   "memory-bound-decoding",
+   "quantization"
+  ]
+ },
+ {
+  "id": "opt-0018",
+  "topic": "optimization",
+  "subtopic": "prefill vs decode",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Tell prefill (compute-bound, sets time to first token) from decode (memory-bound, sets time per output token)",
+  "concepts": [
+   "time-to-first-token",
+   "memory-bound-decoding"
+  ]
+ },
+ {
+  "id": "opt-0019",
+  "topic": "optimization",
+  "subtopic": "what continuous batching improves",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick what continuous batching improves (throughput, GPU utilization, queue wait) and what it does not (the decode speed of a single request)",
+  "concepts": [
+   "continuous-batching",
+   "throughput-vs-latency"
+  ]
+ },
+ {
+  "id": "opt-0020",
+  "topic": "optimization",
+  "subtopic": "continuous batching",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain continuous batching: new requests join at each decode step instead of waiting for the whole batch to finish",
+  "concepts": [
+   "continuous-batching"
+  ]
+ },
+ {
+  "id": "opt-0021",
+  "topic": "optimization",
+  "subtopic": "paging the KV cache",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the technique that stores the KV cache in fixed-size blocks, like virtual memory pages, to avoid fragmentation (PagedAttention)",
+  "concepts": [
+   "kv-cache",
+   "continuous-batching"
+  ]
+ },
+ {
+  "id": "opt-0022",
+  "topic": "optimization",
+  "subtopic": "concurrency limited by KV cache",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Compute how many sequences fit at once in the GPU memory left after weights, from KV cache bytes per token and sequence length",
+  "concepts": [
+   "kv-cache"
+  ]
+ },
+ {
+  "id": "opt-0023",
+  "topic": "optimization",
+  "subtopic": "sharing key and value heads",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain how grouped-query and multi-query attention shrink the KV cache by sharing key and value heads across query heads",
+  "concepts": [
+   "grouped-query-attention",
+   "kv-cache"
+  ]
+ },
+ {
+  "id": "opt-0024",
+  "topic": "optimization",
+  "subtopic": "draft and verify",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain speculative decoding: a small draft model proposes tokens and the large model checks them in one pass, keeping the large model's output distribution",
+  "concepts": [
+   "speculative-decoding"
+  ]
+ },
+ {
+  "id": "opt-0025",
+  "topic": "optimization",
+  "subtopic": "speculative decoding speed-up",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Compute expected tokens per verification step from draft length k and acceptance rate α with (1 − α^(k+1)) / (1 − α)",
+  "concepts": [
+   "speculative-decoding"
+  ]
+ },
+ {
+  "id": "opt-0026",
+  "topic": "optimization",
+  "subtopic": "what FlashAttention changes",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain that FlashAttention computes exact attention in tiles without storing the full n × n matrix, cutting memory traffic rather than FLOPs",
+  "concepts": [
+   "flash-attention",
+   "self-attention"
+  ]
+ },
+ {
+  "id": "opt-0027",
+  "topic": "optimization",
+  "subtopic": "soft targets in distillation",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know why distillation trains on the teacher's softened probabilities and what they carry beyond hard labels",
+  "concepts": [
+   "knowledge-distillation",
+   "temperature"
+  ]
+ },
+ {
+  "id": "opt-0028",
+  "topic": "optimization",
+  "subtopic": "structured vs unstructured pruning",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Compare unstructured pruning (sparse weights, little GPU speed-up) with structured pruning (removing heads or channels, real speed-up)",
+  "concepts": [
+   "pruning"
+  ]
+ },
+ {
+  "id": "opt-0029",
+  "topic": "optimization",
+  "subtopic": "wait before the first token",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the delay from sending a request until the first output token arrives (time to first token)",
+  "concepts": [
+   "time-to-first-token"
+  ]
+ },
+ {
+  "id": "opt-0030",
+  "topic": "optimization",
+  "subtopic": "starved GPUs in training",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Diagnose low GPU utilization in a training job: profile the input pipeline, then fix it with more loader workers, prefetching or caching decoded data",
+  "concepts": [
+   "throughput-vs-latency"
+  ]
+ },
+ {
+  "id": "opt-0031",
+  "topic": "optimization",
+  "subtopic": "tail latency",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute p50 and p95 latency from a list of request times and explain why the tail matters more to users",
+  "concepts": [
+   "throughput-vs-latency",
+   "service-level-objective"
+  ]
+ },
+ {
+  "id": "opt-0032",
+  "topic": "optimization",
+  "subtopic": "batch size under a latency target",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Choose the batch size and maximum queue wait for a model server that must meet a p95 latency target while maximizing throughput",
+  "concepts": [
+   "continuous-batching",
+   "throughput-vs-latency",
+   "service-level-objective"
+  ]
+ },
+ {
+  "id": "opt-0033",
+  "topic": "optimization",
+  "subtopic": "fitting a model onto a smaller GPU",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Make a 13B model serve on one smaller GPU: quantization level, KV cache and context limits, and checking quality after compression",
+  "concepts": [
+   "quantization",
+   "kv-cache",
+   "knowledge-distillation"
+  ]
+ },
+ {
+  "id": "opt-0034",
+  "topic": "optimization",
+  "subtopic": "lossy vs exact speed-ups",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick which optimizations can change model outputs (quantization, pruning, distillation) and which keep them the same (exact speculative decoding, FlashAttention, KV caching)",
+  "concepts": [
+   "quantization",
+   "speculative-decoding",
+   "flash-attention",
+   "kv-cache"
+  ]
+ },
+ {
+  "id": "opt-0035",
+  "topic": "optimization",
+  "subtopic": "what the KV cache holds",
+  "format": "multi",
+  "difficulty": 1,
+  "skill": "Pick what the KV cache stores (keys and values of past tokens at every layer) and what it does not (queries, weights, logits)",
+  "concepts": [
+   "kv-cache"
+  ]
+ },
+ {
+  "id": "opt-0036",
+  "topic": "optimization",
+  "subtopic": "shrinking KV cache memory",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick changes that cut KV cache memory per request (grouped-query attention, a quantized cache, a shorter maximum context) and reject ones that do not",
+  "concepts": [
+   "kv-cache",
+   "grouped-query-attention"
+  ]
+ },
+ {
+  "id": "opt-0037",
+  "topic": "optimization",
+  "subtopic": "summing gradients across GPUs",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the collective operation that sums gradients across GPUs and gives every GPU the result (all-reduce)",
+  "concepts": [
+   "data-parallelism"
+  ]
+ },
+ {
+  "id": "opt-0038",
+  "topic": "optimization",
+  "subtopic": "fine-tuning a 7B model on few GPUs",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Choose between full fine-tuning with sharding, LoRA and quantized LoRA for a 7B model on limited GPUs, with rough memory estimates for each",
+  "concepts": [
+   "sharded-data-parallel",
+   "lora",
+   "quantization",
+   "gradient-checkpointing"
+  ]
+ },
+ {
+  "id": "ops-0008",
+  "topic": "mlops",
+  "subtopic": "drift tests on huge samples",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know that with millions of rows a drift test flags tiny harmless shifts, so pair the p-value with an effect size such as PSI or a distance",
+  "concepts": [
+   "data-drift",
+   "hypothesis-testing",
+   "population-stability-index"
+  ]
+ },
+ {
+  "id": "ops-0009",
+  "topic": "mlops",
+  "subtopic": "largest gap between two CDFs",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the two-sample drift test for a numeric feature whose statistic is the largest gap between two empirical CDFs (Kolmogorov-Smirnov test)",
+  "concepts": [
+   "data-drift"
+  ]
+ },
+ {
+  "id": "ops-0010",
+  "topic": "mlops",
+  "subtopic": "drift alerts that matter",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design drift alerting for a model with 200 features that on-call people will act on: weight by importance, require persistence, tie alerts to model performance",
+  "concepts": [
+   "model-monitoring",
+   "data-drift"
+  ]
+ },
+ {
+  "id": "ops-0011",
+  "topic": "mlops",
+  "subtopic": "exposure during a canary",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute how many requests a faulty canary affects at a given traffic share, duration and error rate",
+  "concepts": [
+   "canary-release"
+  ]
+ },
+ {
+  "id": "ops-0012",
+  "topic": "mlops",
+  "subtopic": "fast rollback",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Know why every deploy needs a fast path back to the previous model version and where that version is kept",
+  "concepts": [
+   "model-registry",
+   "canary-release"
+  ]
+ },
+ {
+  "id": "ops-0013",
+  "topic": "mlops",
+  "subtopic": "where model versions live",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the system that stores model versions with metadata and stage, such as staging or production (model registry)",
+  "concepts": [
+   "model-registry"
+  ]
+ },
+ {
+  "id": "ops-0014",
+  "topic": "mlops",
+  "subtopic": "one feature definition, two stores",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain how a feature store's offline and online stores share one feature definition to prevent training-serving skew",
+  "concepts": [
+   "feature-store",
+   "training-serving-skew"
+  ]
+ },
+ {
+  "id": "ops-0015",
+  "topic": "mlops",
+  "subtopic": "feature freshness",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Choose batch, streaming or request-time computation for a feature from its freshness need, cost and consistency",
+  "concepts": [
+   "feature-store",
+   "batch-vs-online-inference"
+  ]
+ },
+ {
+  "id": "ops-0016",
+  "topic": "mlops",
+  "subtopic": "batch or online scoring",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Choose batch scoring or online serving for a use case, such as nightly churn scores against fraud checks at checkout",
+  "concepts": [
+   "batch-vs-online-inference"
+  ]
+ },
+ {
+  "id": "ops-0017",
+  "topic": "mlops",
+  "subtopic": "nightly batch job time",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute how long a nightly scoring job takes from row count, rows per second per worker and worker count",
+  "concepts": [
+   "batch-vs-online-inference"
+  ]
+ },
+ {
+  "id": "ops-0018",
+  "topic": "mlops",
+  "subtopic": "pre-deploy checks in CI",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick checks an ML pipeline should run before deploy: feature unit tests, data validation, evaluation against the current model, size and latency limits",
+  "concepts": [
+   "ci-cd-for-ml",
+   "data-validation"
+  ]
+ },
+ {
+  "id": "ops-0019",
+  "topic": "mlops",
+  "subtopic": "champion and challenger",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Gate a retrained model with a champion-challenger comparison on the same recent holdout before promotion",
+  "concepts": [
+   "retraining-policy",
+   "model-registry"
+  ]
+ },
+ {
+  "id": "ops-0020",
+  "topic": "mlops",
+  "subtopic": "how much history to train on",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Choose the training window (all history, a recent window, or weighted rows) when patterns change, and test the choice by backtesting",
+  "concepts": [
+   "retraining-policy",
+   "concept-drift",
+   "time-series-split"
+  ]
+ },
+ {
+  "id": "ops-0021",
+  "topic": "mlops",
+  "subtopic": "replaying the past",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name evaluating a model on a sequence of past time windows as if it had been deployed then (backtesting)",
+  "concepts": [
+   "time-series-split",
+   "retraining-policy"
+  ]
+ },
+ {
+  "id": "ops-0022",
+  "topic": "mlops",
+  "subtopic": "a reliability target",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the target a service commits to, such as 99% of requests under 200 ms (service level objective)",
+  "concepts": [
+   "service-level-objective"
+  ]
+ },
+ {
+  "id": "ops-0023",
+  "topic": "mlops",
+  "subtopic": "error budget",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute the allowed downtime or failed requests per month from an availability target",
+  "concepts": [
+   "service-level-objective"
+  ]
+ },
+ {
+  "id": "ops-0024",
+  "topic": "mlops",
+  "subtopic": "operational health of a model service",
+  "format": "multi",
+  "difficulty": 1,
+  "skill": "Pick operational metrics for a model service: latency percentiles, error rate, throughput, input null rates, prediction distribution",
+  "concepts": [
+   "model-monitoring"
+  ]
+ },
+ {
+  "id": "ops-0025",
+  "topic": "mlops",
+  "subtopic": "tracing an LLM app",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know what to trace for each LLM call: prompt version, retrieved context, tool calls, tokens, latency, cost and user feedback",
+  "concepts": [
+   "llm-observability"
+  ]
+ },
+ {
+  "id": "ops-0026",
+  "topic": "mlops",
+  "subtopic": "online quality signals for LLM features",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick useful online signals with no labels: ratings, regenerate and copy rates, hand-offs to humans, sampled judge scores",
+  "concepts": [
+   "llm-observability",
+   "llm-as-judge"
+  ]
+ },
+ {
+  "id": "ops-0027",
+  "topic": "mlops",
+  "subtopic": "pinned environments",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Know why models ship in containers with pinned dependencies and what breaks when training and serving library versions differ",
+  "concepts": [
+   "reproducibility",
+   "training-serving-skew"
+  ]
+ },
+ {
+  "id": "ops-0028",
+  "topic": "mlops",
+  "subtopic": "online and offline predictions disagree",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Debug a model whose online predictions differ from offline predictions on the same inputs: feature logic, missing-value defaults, time zones, library versions",
+  "concepts": [
+   "training-serving-skew",
+   "feature-store"
+  ]
+ },
+ {
+  "id": "ops-0029",
+  "topic": "mlops",
+  "subtopic": "a model that shapes its own labels",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Recognise when a deployed model changes its own future labels, as when blocked transactions never show fraud, and keep an unbiased holdout",
+  "concepts": [
+   "feedback-loop"
+  ]
+ },
+ {
+  "id": "ops-0030",
+  "topic": "mlops",
+  "subtopic": "lineage during an audit",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain how a model registry with lineage answers an auditor: which data snapshot, code commit and config produced the model now in production",
+  "concepts": [
+   "model-registry",
+   "reproducibility"
+  ]
+ },
+ {
+  "id": "ops-0031",
+  "topic": "mlops",
+  "subtopic": "serving cost per prediction",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute monthly serving cost and cost per 1,000 predictions from instance price, throughput and average utilization",
+  "concepts": [
+   "batch-vs-online-inference"
+  ]
+ },
+ {
+  "id": "ops-0032",
+  "topic": "mlops",
+  "subtopic": "autoscaling a GPU service",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Choose an autoscaling signal for a GPU model server (queue depth or concurrency rather than CPU) and plan for slow cold starts",
+  "concepts": [
+   "throughput-vs-latency",
+   "service-level-objective"
+  ]
+ },
+ {
+  "id": "ops-0033",
+  "topic": "mlops",
+  "subtopic": "a deploy that predicts a constant",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Run an incident for a model that returns the same score for everyone after a deploy: detect, roll back, find the root cause, add a guard",
+  "concepts": [
+   "model-monitoring",
+   "canary-release",
+   "model-registry"
+  ]
+ },
+ {
+  "id": "ops-0034",
+  "topic": "mlops",
+  "subtopic": "from notebook to production",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain the steps from a notebook model to a production service: packaging, training pipeline, registry, serving and monitoring",
+  "concepts": [
+   "ci-cd-for-ml",
+   "model-registry",
+   "model-monitoring"
+  ]
+ },
+ {
+  "id": "ops-0035",
+  "topic": "mlops",
+  "subtopic": "monitoring an LLM support assistant",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design monitoring for an LLM support assistant: sampled quality review by judges and people, safety incidents, cost, latency, and shifts in what users ask",
+  "concepts": [
+   "llm-observability",
+   "llm-as-judge",
+   "model-monitoring"
+  ]
+ },
+ {
+  "id": "ops-0036",
+  "topic": "mlops",
+  "subtopic": "switching between two environments",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the release that runs two full environments and moves all traffic at once, keeping the old one for instant fallback (blue-green deployment)",
+  "concepts": [
+   "canary-release"
+  ]
+ },
+ {
+  "id": "ops-0037",
+  "topic": "mlops",
+  "subtopic": "a retrained model that is worse",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick plausible reasons a newly retrained model does worse despite better offline numbers: leakage in new data, changed label definitions, a stale evaluation set, a feedback loop",
+  "concepts": [
+   "retraining-policy",
+   "data-leakage",
+   "feedback-loop"
+  ]
+ },
+ {
+  "id": "ops-0038",
+  "topic": "mlops",
+  "subtopic": "silent pipeline failures",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Catch a silent pipeline failure, such as a stale or all-null feature, with freshness and completeness checks",
+  "concepts": [
+   "data-validation",
+   "model-monitoring"
+  ]
+ },
+ {
+  "id": "ops-0039",
+  "topic": "mlops",
+  "subtopic": "false alarms across many features",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Compute expected false drift alerts per month from the per-test false alarm rate, the number of monitored features and daily checks",
+  "concepts": [
+   "data-drift",
+   "multiple-comparisons"
+  ]
+ },
+ {
+  "id": "ops-0040",
+  "topic": "mlops",
+  "subtopic": "downstream thresholds after a model swap",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know that a new model's score distribution can break thresholds set for the old one, and recalibrate or remap scores before switching",
+  "concepts": [
+   "calibration",
+   "decision-threshold",
+   "canary-release"
+  ]
+ },
+ {
+  "id": "sysd-0006",
+  "topic": "design",
+  "subtopic": "collaborative vs content-based",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Tell collaborative filtering from content-based recommendation and the strength of each",
+  "concepts": [
+   "collaborative-filtering",
+   "content-based-filtering"
+  ]
+ },
+ {
+  "id": "sysd-0007",
+  "topic": "design",
+  "subtopic": "two-tower retrieval",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain a two-tower model: separate user and item encoders, item vectors computed ahead of time and served from a nearest-neighbour index",
+  "concepts": [
+   "two-tower-model",
+   "approximate-nearest-neighbor"
+  ]
+ },
+ {
+  "id": "sysd-0008",
+  "topic": "design",
+  "subtopic": "position bias in click logs",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Correct for position bias when training a ranker on clicks (position as a feature, some randomization, propensity weighting)",
+  "concepts": [
+   "position-bias",
+   "learning-to-rank"
+  ]
+ },
+ {
+  "id": "sysd-0009",
+  "topic": "design",
+  "subtopic": "pointwise, pairwise, listwise",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Compare pointwise, pairwise and listwise learning-to-rank losses and say when each one fits",
+  "concepts": [
+   "learning-to-rank"
+  ]
+ },
+ {
+  "id": "sysd-0010",
+  "topic": "design",
+  "subtopic": "bandits vs fixed A/B tests",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Use a multi-armed bandit to balance exploration and exploitation and know when it beats a fixed-split A/B test",
+  "concepts": [
+   "multi-armed-bandit",
+   "ab-testing"
+  ]
+ },
+ {
+  "id": "sysd-0011",
+  "topic": "design",
+  "subtopic": "epsilon-greedy odds",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute the chance a given arm is shown under epsilon-greedy with a stated number of arms",
+  "concepts": [
+   "multi-armed-bandit"
+  ]
+ },
+ {
+  "id": "sysd-0012",
+  "topic": "design",
+  "subtopic": "storage for a year of events",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Estimate storage for a year of event logs from events per day and bytes per event",
+  "concepts": [
+   "capacity-estimation"
+  ]
+ },
+ {
+  "id": "sysd-0013",
+  "topic": "design",
+  "subtopic": "GPUs for peak LLM traffic",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Estimate GPUs needed at peak from requests per second, tokens per request, per-GPU throughput and headroom",
+  "concepts": [
+   "capacity-estimation",
+   "throughput-vs-latency"
+  ]
+ },
+ {
+  "id": "sysd-0014",
+  "topic": "design",
+  "subtopic": "splitting a latency budget",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Split an end-to-end latency budget across network, feature lookup and retrieval to find what is left for the model",
+  "concepts": [
+   "latency-budget"
+  ]
+ },
+ {
+  "id": "sysd-0015",
+  "topic": "design",
+  "subtopic": "cheap model first",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain why a cascade sends confident cases to a cheap model and the rest to a costly model or a person, and what the routing threshold controls",
+  "concepts": [
+   "model-cascade"
+  ]
+ },
+ {
+  "id": "sysd-0016",
+  "topic": "design",
+  "subtopic": "cost of a cascade",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute average cost and latency per request for a two-stage cascade from the share escalated",
+  "concepts": [
+   "model-cascade"
+  ]
+ },
+ {
+  "id": "sysd-0017",
+  "topic": "design",
+  "subtopic": "fallbacks when a dependency fails",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick sound fallbacks when a model or feature service fails (cached results, popular items, simple rules) and reject ones that hide the failure",
+  "concepts": [
+   "graceful-degradation"
+  ]
+ },
+ {
+  "id": "sysd-0018",
+  "topic": "design",
+  "subtopic": "fail open or fail closed",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Decide fail-open vs fail-closed for a fraud model outage by weighing fraud losses against blocked good customers",
+  "concepts": [
+   "graceful-degradation",
+   "latency-budget"
+  ]
+ },
+ {
+  "id": "sysd-0019",
+  "topic": "design",
+  "subtopic": "rich-get-richer recommendations",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain how a recommender's own exposure creates a rich-get-richer loop and how exploration counters it",
+  "concepts": [
+   "feedback-loop",
+   "multi-armed-bandit"
+  ]
+ },
+ {
+  "id": "sysd-0020",
+  "topic": "design",
+  "subtopic": "product search ranking",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design product search ranking: candidate retrieval, ranking features, learning from clicks, and offline and online evaluation",
+  "concepts": [
+   "learning-to-rank",
+   "position-bias",
+   "two-stage-recommender"
+  ]
+ },
+ {
+  "id": "sysd-0021",
+  "topic": "design",
+  "subtopic": "delivery time estimates",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design delivery time estimation: features, real-time inputs, a loss for asymmetric lateness costs, and monitoring",
+  "concepts": [
+   "feature-store",
+   "loss-function",
+   "latency-budget"
+  ]
+ },
+ {
+  "id": "sysd-0022",
+  "topic": "design",
+  "subtopic": "ad click prediction",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design click prediction for ads: calibration for the auction, hashed sparse features, delayed clicks and conversions, frequent updates",
+  "concepts": [
+   "calibration",
+   "feature-hashing",
+   "label-delay"
+  ]
+ },
+ {
+  "id": "sysd-0023",
+  "topic": "design",
+  "subtopic": "LLM support assistant with hand-off",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design an LLM support assistant that hands off to people: retrieval, routing, guardrails, evaluation and cost per conversation",
+  "concepts": [
+   "retrieval-augmented-generation",
+   "model-cascade",
+   "guardrails"
+  ]
+ },
+ {
+  "id": "sysd-0024",
+  "topic": "design",
+  "subtopic": "clarifying requirements first",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain what to pin down at the start of an ML design interview: business goal, success metric, scale, latency, label source, constraints",
+  "concepts": [
+   "latency-budget",
+   "capacity-estimation",
+   "baseline-model"
+  ]
+ },
+ {
+  "id": "sysd-0025",
+  "topic": "design",
+  "subtopic": "sampling from the posterior",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the bandit method that samples from each arm's posterior and plays the arm with the highest draw (Thompson sampling)",
+  "concepts": [
+   "multi-armed-bandit"
+  ]
+ },
+ {
+  "id": "sysd-0026",
+  "topic": "design",
+  "subtopic": "feedback from behaviour",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name feedback inferred from behaviour such as clicks, purchases and watch time rather than explicit ratings (implicit feedback)",
+  "concepts": [
+   "collaborative-filtering",
+   "selection-bias"
+  ]
+ },
+ {
+  "id": "sysd-0027",
+  "topic": "design",
+  "subtopic": "diversity and rules in re-ranking",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick sound ways to add diversity, freshness and business rules in the re-ranking stage without retraining the ranker",
+  "concepts": [
+   "two-stage-recommender"
+  ]
+ },
+ {
+  "id": "sysd-0028",
+  "topic": "design",
+  "subtopic": "online metrics for a recommender launch",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick sound success and guardrail metrics for a recommender launch (retention, diversity, complaint rate) over click-through alone",
+  "concepts": [
+   "offline-online-evaluation",
+   "ab-testing"
+  ]
+ },
+ {
+  "id": "sysd-0029",
+  "topic": "design",
+  "subtopic": "cache hits and backend load",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute the requests that reach the model per second given total traffic and the cache hit rate",
+  "concepts": [
+   "capacity-estimation"
+  ]
+ },
+ {
+  "id": "sysd-0030",
+  "topic": "design",
+  "subtopic": "one global model or many",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Decide between one global model and per-region models given data per region, maintenance cost and how differently regions behave",
+  "concepts": [
+   "bias-variance-tradeoff",
+   "retraining-policy"
+  ]
+ },
+ {
+  "id": "math-0007",
+  "topic": "math",
+  "subtopic": "conditional probability from a table",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute P(A given B) from a small 2 × 2 table of counts",
+  "concepts": [
+   "conditional-probability"
+  ]
+ },
+ {
+  "id": "math-0008",
+  "topic": "math",
+  "subtopic": "expected value of a decision",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute the expected profit of an action, such as calling a customer, from probabilities and payoffs",
+  "concepts": [
+   "expected-value"
+  ]
+ },
+ {
+  "id": "math-0009",
+  "topic": "math",
+  "subtopic": "averaging shrinks error",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know that the standard error of a mean of n independent values is σ/√n, so four times the data halves the error",
+  "concepts": [
+   "variance",
+   "central-limit-theorem"
+  ]
+ },
+ {
+  "id": "math-0010",
+  "topic": "math",
+  "subtopic": "binomial probability",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute a binomial probability, such as exactly 2 defects in 10 items",
+  "concepts": [
+   "binomial-distribution"
+  ]
+ },
+ {
+  "id": "math-0011",
+  "topic": "math",
+  "subtopic": "normal tail share",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Use a z-score or the 68-95-99.7 rule to find the share of values above a cutoff",
+  "concepts": [
+   "normal-distribution"
+  ]
+ },
+ {
+  "id": "math-0012",
+  "topic": "math",
+  "subtopic": "the central limit theorem",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain the central limit theorem and why it allows normal-based tests on averages of skewed data",
+  "concepts": [
+   "central-limit-theorem"
+  ]
+ },
+ {
+  "id": "math-0013",
+  "topic": "math",
+  "subtopic": "losses and their noise models",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick correct pairings of training losses with the likelihood they maximize (MSE with Gaussian noise, MAE with Laplace noise, cross-entropy with a categorical outcome)",
+  "concepts": [
+   "maximum-likelihood-estimation",
+   "cross-entropy-loss"
+  ]
+ },
+ {
+  "id": "math-0014",
+  "topic": "math",
+  "subtopic": "most probable parameters",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the method that picks parameters making the observed data most probable (maximum likelihood estimation)",
+  "concepts": [
+   "maximum-likelihood-estimation"
+  ]
+ },
+ {
+  "id": "math-0015",
+  "topic": "math",
+  "subtopic": "type I vs type II errors",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Tell type I from type II errors in a testing scenario and tie them to false positives and false negatives",
+  "concepts": [
+   "hypothesis-testing"
+  ]
+ },
+ {
+  "id": "math-0016",
+  "topic": "math",
+  "subtopic": "what raises power",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know what raises statistical power: larger samples, larger effects, a higher significance level, less noise",
+  "concepts": [
+   "statistical-power"
+  ]
+ },
+ {
+  "id": "math-0017",
+  "topic": "math",
+  "subtopic": "many tests at once",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute the chance of at least one false positive across m independent tests at a given level, and the Bonferroni threshold",
+  "concepts": [
+   "multiple-comparisons",
+   "p-value"
+  ]
+ },
+ {
+  "id": "math-0018",
+  "topic": "math",
+  "subtopic": "interval for a proportion",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute a 95% confidence interval for a proportion from n and the observed rate",
+  "concepts": [
+   "confidence-interval"
+  ]
+ },
+ {
+  "id": "math-0019",
+  "topic": "math",
+  "subtopic": "correlation and confounders",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Spot a confounder behind a correlation and know why experiments establish causation where observational data may not",
+  "concepts": [
+   "correlation"
+  ]
+ },
+ {
+  "id": "math-0020",
+  "topic": "math",
+  "subtopic": "independence vs mutual exclusivity",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick valid statements about independent and mutually exclusive events, including that P(A and B) = P(A) × P(B) only under independence",
+  "concepts": [
+   "conditional-probability"
+  ]
+ },
+ {
+  "id": "math-0021",
+  "topic": "math",
+  "subtopic": "correlation facts",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick true statements: zero correlation does not mean independence, positive linear rescaling leaves correlation unchanged, a single outlier can drive it",
+  "concepts": [
+   "correlation"
+  ]
+ },
+ {
+  "id": "math-0022",
+  "topic": "math",
+  "subtopic": "derivative through a composition",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute a derivative with the chain rule, such as the sigmoid's derivative σ(1 − σ) at a point",
+  "concepts": [
+   "chain-rule"
+  ]
+ },
+ {
+  "id": "math-0023",
+  "topic": "math",
+  "subtopic": "batch, mini-batch or stochastic",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Compare full-batch, mini-batch and stochastic gradient descent on noise, speed per step and memory",
+  "concepts": [
+   "gradient-descent",
+   "batch-size"
+  ]
+ },
+ {
+  "id": "math-0024",
+  "topic": "math",
+  "subtopic": "convex and non-convex losses",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know which losses are convex (linear and logistic regression) and why neural nets are not, and what that means for initialization",
+  "concepts": [
+   "convexity",
+   "gradient-descent"
+  ]
+ },
+ {
+  "id": "math-0025",
+  "topic": "math",
+  "subtopic": "when gradient descent diverges",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Find the learning rates for which gradient descent converges on f(x) = a x² (η < 2/a), or iterate two steps from a start point",
+  "concepts": [
+   "gradient-descent",
+   "learning-rate"
+  ]
+ },
+ {
+  "id": "math-0026",
+  "topic": "math",
+  "subtopic": "shape of a matrix product",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Give the shape of the product of an m × n matrix and an n × p matrix for stated sizes",
+  "concepts": [
+   "matrix-multiplication"
+  ]
+ },
+ {
+  "id": "math-0027",
+  "topic": "math",
+  "subtopic": "explained variance",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute the share of variance explained by top principal components from eigenvalues and how many to keep for 95%",
+  "concepts": [
+   "pca",
+   "variance"
+  ]
+ },
+ {
+  "id": "math-0028",
+  "topic": "math",
+  "subtopic": "measuring vector alignment",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the operation Σ aᵢbᵢ that measures how aligned two vectors are (dot product)",
+  "concepts": [
+   "matrix-multiplication",
+   "cosine-similarity"
+  ]
+ },
+ {
+  "id": "math-0029",
+  "topic": "math",
+  "subtopic": "uncertainty of a distribution",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the quantity −Σ p log p that measures the uncertainty of a distribution (entropy)",
+  "concepts": [
+   "entropy"
+  ]
+ },
+ {
+  "id": "math-0030",
+  "topic": "math",
+  "subtopic": "reading KL divergence",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain KL divergence as the extra cost of using Q when data follows P, that it is asymmetric, and where it appears in ML",
+  "concepts": [
+   "kl-divergence",
+   "entropy"
+  ]
+ },
+ {
+  "id": "math-0031",
+  "topic": "math",
+  "subtopic": "the matrix PCA decomposes",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the matrix of pairwise feature covariances whose eigenvectors are the principal components (covariance matrix)",
+  "concepts": [
+   "pca",
+   "variance"
+  ]
+ },
+ {
+  "id": "math-0032",
+  "topic": "math",
+  "subtopic": "testing counts against expectations",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the test whose statistic sums (observed − expected)² / expected over categories (chi-square test)",
+  "concepts": [
+   "hypothesis-testing"
+  ]
+ },
+ {
+  "id": "math-0033",
+  "topic": "math",
+  "subtopic": "why log probabilities",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain why ML code works with log probabilities: underflow, sums instead of products, and the link to cross-entropy",
+  "concepts": [
+   "maximum-likelihood-estimation",
+   "entropy"
+  ]
+ },
+ {
+  "id": "math-0034",
+  "topic": "math",
+  "subtopic": "a biased estimator can win",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Explain estimator bias vs variance with a concrete case (the n − 1 in sample variance, shrinkage) and why a biased estimator can be better",
+  "concepts": [
+   "variance",
+   "bias-variance-tradeoff"
+  ]
+ },
+ {
+  "id": "rai-0005",
+  "topic": "responsible",
+  "subtopic": "checking equalized odds",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute TPR and FPR per group from confusion counts and say whether equalized odds holds",
+  "concepts": [
+   "equal-opportunity"
+  ]
+ },
+ {
+  "id": "rai-0006",
+  "topic": "responsible",
+  "subtopic": "dropping the protected attribute",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Know that removing a protected attribute does not remove bias because proxies such as postcode carry it",
+  "concepts": [
+   "proxy-discrimination"
+  ]
+ },
+ {
+  "id": "rai-0007",
+  "topic": "responsible",
+  "subtopic": "fairness definitions that conflict",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know that calibration within groups and equal error rates cannot generally hold together when base rates differ",
+  "concepts": [
+   "demographic-parity",
+   "equal-opportunity",
+   "calibration"
+  ]
+ },
+ {
+  "id": "rai-0008",
+  "topic": "responsible",
+  "subtopic": "where to intervene for fairness",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Match fairness interventions to pre-processing, in-training and post-processing stages (reweighing, constrained training, per-group thresholds)",
+  "concepts": [
+   "demographic-parity",
+   "equal-opportunity"
+  ]
+ },
+ {
+  "id": "rai-0009",
+  "topic": "responsible",
+  "subtopic": "reading a SHAP explanation",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Read a SHAP explanation: the base value plus contributions sum to the prediction, and attributions are not causal effects",
+  "concepts": [
+   "shap-values"
+  ]
+ },
+ {
+  "id": "rai-0010",
+  "topic": "responsible",
+  "subtopic": "SHAP values add up",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute a model output from the base value and per-feature SHAP values, or find a missing contribution",
+  "concepts": [
+   "shap-values"
+  ]
+ },
+ {
+  "id": "rai-0011",
+  "topic": "responsible",
+  "subtopic": "counterfactual explanations",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain counterfactual explanations (what would need to change for approval) and why they must be actionable and plausible",
+  "concepts": [
+   "counterfactual-explanation"
+  ]
+ },
+ {
+  "id": "rai-0012",
+  "topic": "responsible",
+  "subtopic": "documenting a model",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the short document that reports a model's intended use, data, metrics by group and limits (model card)",
+  "concepts": [
+   "model-card"
+  ]
+ },
+ {
+  "id": "rai-0013",
+  "topic": "responsible",
+  "subtopic": "bounding one record's influence",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the guarantee that any single record changes a model's output distribution only by a bounded amount set by ε (differential privacy)",
+  "concepts": [
+   "differential-privacy"
+  ]
+ },
+ {
+  "id": "rai-0014",
+  "topic": "responsible",
+  "subtopic": "LLMs repeating training data",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know that language models can reproduce training text verbatim and the mitigations: deduplication, PII filtering, output filters",
+  "concepts": [
+   "pii-handling",
+   "deduplication",
+   "differential-privacy"
+  ]
+ },
+ {
+  "id": "rai-0015",
+  "topic": "responsible",
+  "subtopic": "handling personal data",
+  "format": "multi",
+  "difficulty": 1,
+  "skill": "Pick sound practices for personal data in ML pipelines: data minimization, pseudonymization, access control, retention limits",
+  "concepts": [
+   "pii-handling"
+  ]
+ },
+ {
+  "id": "rai-0016",
+  "topic": "responsible",
+  "subtopic": "federated learning",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain federated learning (training on devices and sharing updates, not raw data) and the privacy risks that remain",
+  "concepts": [
+   "federated-learning"
+  ]
+ },
+ {
+  "id": "rai-0017",
+  "topic": "responsible",
+  "subtopic": "EU AI Act risk tiers",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Place example systems into EU AI Act risk tiers: prohibited, high-risk, limited risk with transparency duties, minimal risk",
+  "concepts": [
+   "eu-ai-act"
+  ]
+ },
+ {
+  "id": "rai-0018",
+  "topic": "responsible",
+  "subtopic": "red teaming an LLM product",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Plan red teaming for an LLM product (harmful content, jailbreaks, data leaks, bias) and turn findings into regression tests",
+  "concepts": [
+   "red-teaming",
+   "golden-dataset"
+  ]
+ },
+ {
+  "id": "rai-0019",
+  "topic": "responsible",
+  "subtopic": "a credit model approves one group less",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Respond to a report that a credit model approves one group far less often: audit metrics, check data and proxies, choose a fix, document it",
+  "concepts": [
+   "disparate-impact",
+   "proxy-discrimination",
+   "model-card"
+  ]
+ },
+ {
+  "id": "rai-0020",
+  "topic": "responsible",
+  "subtopic": "global vs local explanations",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Explain the difference between global and local explanations to a stakeholder and when each one is needed",
+  "concepts": [
+   "shap-values",
+   "feature-importance"
+  ]
+ },
+ {
+  "id": "rai-0021",
+  "topic": "responsible",
+  "subtopic": "closing a selection-rate gap",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Weigh per-group thresholds against constrained retraining to close a selection-rate gap, covering the accuracy cost, legal limits and how to monitor the result",
+  "concepts": [
+   "demographic-parity",
+   "decision-threshold"
+  ]
+ },
+ {
+  "id": "rai-0022",
+  "topic": "responsible",
+  "subtopic": "was this record in training",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the attack that infers whether a specific record was in the training set (membership inference)",
+  "concepts": [
+   "differential-privacy"
+  ]
+ },
+ {
+  "id": "py-0006",
+  "topic": "python",
+  "subtopic": "slices vs fancy indexing",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Predict whether changing a NumPy slice changes the original array (basic slicing gives a view, fancy indexing gives a copy)",
+  "concepts": [
+   "views-vs-copies"
+  ]
+ },
+ {
+  "id": "py-0007",
+  "topic": "python",
+  "subtopic": "boolean mask arithmetic",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Predict the sum or count from a NumPy boolean mask expression",
+  "concepts": [
+   "boolean-indexing"
+  ]
+ },
+ {
+  "id": "py-0008",
+  "topic": "python",
+  "subtopic": "small integer overflow",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Predict the result of a NumPy operation that overflows a small integer dtype such as int8 or uint8",
+  "concepts": [
+   "numpy-dtypes"
+  ]
+ },
+ {
+  "id": "py-0009",
+  "topic": "python",
+  "subtopic": "float equality",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Predict the printed result of comparing 0.1 + 0.2 with 0.3 using == and say why np.isclose is used instead",
+  "concepts": [
+   "numpy-dtypes"
+  ]
+ },
+ {
+  "id": "py-0010",
+  "topic": "python",
+  "subtopic": "dtype after true division",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Predict the dtype of an integer NumPy array divided by an integer with / (float64)",
+  "concepts": [
+   "numpy-dtypes"
+  ]
+ },
+ {
+  "id": "py-0011",
+  "topic": "python",
+  "subtopic": "replacing a loop",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Replace a Python loop over rows with a vectorized NumPy expression and know why it is faster",
+  "concepts": [
+   "vectorization"
+  ]
+ },
+ {
+  "id": "py-0012",
+  "topic": "python",
+  "subtopic": "values after broadcasting",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Predict one element of the result when a column vector is combined with a row vector by broadcasting",
+  "concepts": [
+   "numpy-broadcasting"
+  ]
+ },
+ {
+  "id": "py-0013",
+  "topic": "python",
+  "subtopic": "np.where output",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Predict the output of a short np.where expression on a small array",
+  "concepts": [
+   "boolean-indexing"
+  ]
+ },
+ {
+  "id": "py-0014",
+  "topic": "python",
+  "subtopic": "agg vs transform",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Tell groupby agg from groupby transform, predict the output shapes, and pick the right one for per-row user features",
+  "concepts": [
+   "pandas-groupby"
+  ]
+ },
+ {
+  "id": "py-0015",
+  "topic": "python",
+  "subtopic": "rows after a merge",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Predict the row count after a merge with duplicate keys (many-to-many) or a left join with unmatched keys",
+  "concepts": [
+   "pandas-merge"
+  ]
+ },
+ {
+  "id": "py-0016",
+  "topic": "python",
+  "subtopic": "Series alignment",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Predict a value from adding two Series with different indexes, where alignment introduces NaN",
+  "concepts": [
+   "pandas-indexing"
+  ]
+ },
+ {
+  "id": "py-0017",
+  "topic": "python",
+  "subtopic": "loc vs iloc",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Predict which rows loc (labels, end included) and iloc (positions, end excluded) return",
+  "concepts": [
+   "pandas-indexing"
+  ]
+ },
+ {
+  "id": "py-0018",
+  "topic": "python",
+  "subtopic": "rolling features that leak",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Spot a pandas rolling or expanding feature that includes the current row's target and fix it with shift(1) inside the group",
+  "concepts": [
+   "pandas-groupby",
+   "target-leakage"
+  ]
+ },
+ {
+  "id": "py-0019",
+  "topic": "python",
+  "subtopic": "features out of a ColumnTransformer",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Predict the number of output features from a ColumnTransformer that one-hot encodes some columns and scales others",
+  "concepts": [
+   "sklearn-pipeline",
+   "one-hot-encoding"
+  ]
+ },
+ {
+  "id": "py-0020",
+  "topic": "python",
+  "subtopic": "estimator API details",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know the estimator API: fit returns the estimator, and predict_proba columns follow the order in classes_",
+  "concepts": [
+   "estimator-api"
+  ]
+ },
+ {
+  "id": "py-0021",
+  "topic": "python",
+  "subtopic": "where randomness enters scikit-learn",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick the places random_state matters (data splits, shuffled folds, model initialization, bootstrap sampling) and where it does not",
+  "concepts": [
+   "reproducibility",
+   "random-forest"
+  ]
+ },
+ {
+  "id": "py-0022",
+  "topic": "python",
+  "subtopic": "stratified split counts",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Predict class counts in the test part of train_test_split with stratify for a given test size",
+  "concepts": [
+   "stratified-sampling"
+  ]
+ },
+ {
+  "id": "py-0023",
+  "topic": "python",
+  "subtopic": "PyTorch autograd basics",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know that PyTorch records the graph in the forward pass, backward() adds into .grad, and detach() stops gradients flowing",
+  "concepts": [
+   "pytorch-autograd"
+  ]
+ },
+ {
+  "id": "py-0024",
+  "topic": "python",
+  "subtopic": "common PyTorch mistakes",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick real bugs at concept level: tensors on different devices, softmax applied before CrossEntropyLoss, a stray extra dimension in targets, and reject harmless patterns",
+  "concepts": [
+   "pytorch-autograd",
+   "cross-entropy-loss"
+  ]
+ },
+ {
+  "id": "py-0025",
+  "topic": "python",
+  "subtopic": "speeding up a pandas pipeline",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Review a slow pandas feature step that uses row-by-row apply and propose vectorized or groupby rewrites",
+  "concepts": [
+   "vectorization",
+   "pandas-groupby"
+  ]
+ },
+ {
+  "id": "py-0026",
+  "topic": "python",
+  "subtopic": "a reusable scikit-learn pipeline",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Structure a reusable preprocessing and model pipeline in scikit-learn (ColumnTransformer, custom transformers, cross-validated search on the whole pipeline) and explain why it prevents leakage",
+  "concepts": [
+   "sklearn-pipeline",
+   "estimator-api"
+  ]
+ }
+]

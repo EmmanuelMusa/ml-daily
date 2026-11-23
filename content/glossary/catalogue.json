@@ -1,0 +1,1604 @@
+[
+ {
+  "id": "supervised-learning",
+  "name": "Supervised learning",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "unsupervised-learning",
+  "name": "Unsupervised learning",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "reinforcement-learning",
+  "name": "Reinforcement learning",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "generalization",
+  "name": "Generalization",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "overfitting",
+  "name": "Overfitting",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "underfitting",
+  "name": "Underfitting",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "bias-variance-tradeoff",
+  "name": "Bias-variance tradeoff",
+  "topic": "foundations",
+  "diagram": true
+ },
+ {
+  "id": "learning-curve",
+  "name": "Learning curve",
+  "topic": "foundations",
+  "diagram": true
+ },
+ {
+  "id": "train-validation-test-split",
+  "name": "Train, validation and test split",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "cross-validation",
+  "name": "Cross-validation",
+  "topic": "foundations",
+  "diagram": true
+ },
+ {
+  "id": "time-series-split",
+  "name": "Time-based validation split",
+  "topic": "foundations",
+  "diagram": true
+ },
+ {
+  "id": "hyperparameter-tuning",
+  "name": "Hyperparameter tuning",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "regularization",
+  "name": "Regularization",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "l1-regularization",
+  "name": "L1 regularization (lasso)",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "l2-regularization",
+  "name": "L2 regularization (ridge)",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "early-stopping",
+  "name": "Early stopping",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "loss-function",
+  "name": "Loss function",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "baseline-model",
+  "name": "Baseline model",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "curse-of-dimensionality",
+  "name": "Curse of dimensionality",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "distribution-shift",
+  "name": "Distribution shift",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "generative-vs-discriminative",
+  "name": "Generative vs discriminative models",
+  "topic": "foundations",
+  "diagram": false
+ },
+ {
+  "id": "linear-regression",
+  "name": "Linear regression",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "logistic-regression",
+  "name": "Logistic regression",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "decision-tree",
+  "name": "Decision tree",
+  "topic": "classic",
+  "diagram": true
+ },
+ {
+  "id": "gini-impurity",
+  "name": "Gini impurity",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "information-gain",
+  "name": "Entropy and information gain",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "bagging",
+  "name": "Bagging",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "random-forest",
+  "name": "Random forest",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "gradient-boosting",
+  "name": "Gradient boosting",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "stacking",
+  "name": "Stacking",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "k-nearest-neighbors",
+  "name": "k-nearest neighbours",
+  "topic": "classic",
+  "diagram": true
+ },
+ {
+  "id": "naive-bayes",
+  "name": "Naive Bayes",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "support-vector-machine",
+  "name": "Support vector machine",
+  "topic": "classic",
+  "diagram": true
+ },
+ {
+  "id": "kernel-trick",
+  "name": "Kernel trick",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "k-means",
+  "name": "k-means clustering",
+  "topic": "classic",
+  "diagram": true
+ },
+ {
+  "id": "dbscan",
+  "name": "DBSCAN",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "gaussian-mixture-model",
+  "name": "Gaussian mixture model",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "silhouette-score",
+  "name": "Silhouette score",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "anomaly-detection",
+  "name": "Anomaly detection",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "isolation-forest",
+  "name": "Isolation forest",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "matrix-factorization",
+  "name": "Matrix factorization",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "feature-importance",
+  "name": "Feature importance",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "t-sne",
+  "name": "t-SNE and UMAP",
+  "topic": "classic",
+  "diagram": false
+ },
+ {
+  "id": "confusion-matrix",
+  "name": "Confusion matrix",
+  "topic": "evaluation",
+  "diagram": true
+ },
+ {
+  "id": "accuracy",
+  "name": "Accuracy",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "precision",
+  "name": "Precision",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "recall",
+  "name": "Recall",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "f1-score",
+  "name": "F1 score",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "specificity",
+  "name": "Specificity",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "false-positive-rate",
+  "name": "False positive rate",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "decision-threshold",
+  "name": "Decision threshold",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "roc-curve",
+  "name": "ROC curve",
+  "topic": "evaluation",
+  "diagram": true
+ },
+ {
+  "id": "roc-auc",
+  "name": "ROC-AUC",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "pr-curve",
+  "name": "Precision-recall curve",
+  "topic": "evaluation",
+  "diagram": true
+ },
+ {
+  "id": "calibration",
+  "name": "Calibration",
+  "topic": "evaluation",
+  "diagram": true
+ },
+ {
+  "id": "log-loss",
+  "name": "Log loss",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "mae",
+  "name": "Mean absolute error",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "rmse",
+  "name": "Root mean squared error",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "r-squared",
+  "name": "R-squared",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "macro-micro-averaging",
+  "name": "Macro and micro averaging",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "ndcg",
+  "name": "NDCG",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "precision-at-k",
+  "name": "Precision@k and recall@k",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "mean-reciprocal-rank",
+  "name": "Mean reciprocal rank",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "ab-testing",
+  "name": "A/B testing",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "offline-online-evaluation",
+  "name": "Offline vs online evaluation",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "slice-based-evaluation",
+  "name": "Slice-based evaluation",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "bleu-rouge",
+  "name": "BLEU and ROUGE",
+  "topic": "evaluation",
+  "diagram": false
+ },
+ {
+  "id": "data-leakage",
+  "name": "Data leakage",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "target-leakage",
+  "name": "Target leakage",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "preprocessing-leakage",
+  "name": "Preprocessing leakage",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "point-in-time-correctness",
+  "name": "Point-in-time correctness",
+  "topic": "data",
+  "diagram": true
+ },
+ {
+  "id": "deduplication",
+  "name": "Deduplication",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "class-imbalance",
+  "name": "Class imbalance",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "resampling",
+  "name": "Oversampling and undersampling",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "class-weights",
+  "name": "Class weights",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "imputation",
+  "name": "Imputation",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "missing-data-mechanisms",
+  "name": "Missing data mechanisms",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "feature-scaling",
+  "name": "Feature scaling",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "one-hot-encoding",
+  "name": "One-hot encoding",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "target-encoding",
+  "name": "Target encoding",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "feature-hashing",
+  "name": "Feature hashing",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "feature-selection",
+  "name": "Feature selection",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "outliers",
+  "name": "Outliers",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "label-noise",
+  "name": "Label noise",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "inter-annotator-agreement",
+  "name": "Inter-annotator agreement",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "active-learning",
+  "name": "Active learning",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "stratified-sampling",
+  "name": "Stratified sampling",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "selection-bias",
+  "name": "Selection bias",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "data-validation",
+  "name": "Data validation",
+  "topic": "data",
+  "diagram": false
+ },
+ {
+  "id": "multilayer-perceptron",
+  "name": "Multilayer perceptron",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "activation-function",
+  "name": "Activation function",
+  "topic": "deep",
+  "diagram": true
+ },
+ {
+  "id": "softmax",
+  "name": "Softmax",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "cross-entropy-loss",
+  "name": "Cross-entropy loss",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "backpropagation",
+  "name": "Backpropagation",
+  "topic": "deep",
+  "diagram": true
+ },
+ {
+  "id": "vanishing-gradients",
+  "name": "Vanishing gradients",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "gradient-clipping",
+  "name": "Gradient clipping",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "weight-initialization",
+  "name": "Weight initialization",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "batch-normalization",
+  "name": "Batch normalization",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "layer-normalization",
+  "name": "Layer normalization",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "dropout",
+  "name": "Dropout",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "residual-connection",
+  "name": "Residual connection",
+  "topic": "deep",
+  "diagram": true
+ },
+ {
+  "id": "convolutional-neural-network",
+  "name": "Convolutional neural network",
+  "topic": "deep",
+  "diagram": true
+ },
+ {
+  "id": "recurrent-neural-network",
+  "name": "Recurrent neural network",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "learning-rate",
+  "name": "Learning rate",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "adam-optimizer",
+  "name": "Adam optimizer",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "weight-decay",
+  "name": "Weight decay",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "learning-rate-schedule",
+  "name": "Learning rate schedule",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "batch-size",
+  "name": "Batch size",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "transfer-learning",
+  "name": "Transfer learning",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "data-augmentation",
+  "name": "Data augmentation",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "embedding",
+  "name": "Embedding",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "contrastive-learning",
+  "name": "Contrastive learning",
+  "topic": "deep",
+  "diagram": false
+ },
+ {
+  "id": "tokenization",
+  "name": "Tokenization",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "self-attention",
+  "name": "Self-attention",
+  "topic": "llm",
+  "diagram": true
+ },
+ {
+  "id": "multi-head-attention",
+  "name": "Multi-head attention",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "causal-mask",
+  "name": "Causal mask",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "positional-encoding",
+  "name": "Positional encoding",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "transformer-block",
+  "name": "Transformer block",
+  "topic": "llm",
+  "diagram": true
+ },
+ {
+  "id": "encoder-decoder-architectures",
+  "name": "Encoder-only, decoder-only and encoder-decoder models",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "next-token-prediction",
+  "name": "Next-token prediction",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "perplexity",
+  "name": "Perplexity",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "pretraining",
+  "name": "Pretraining",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "supervised-fine-tuning",
+  "name": "Supervised fine-tuning",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "rlhf",
+  "name": "RLHF",
+  "topic": "llm",
+  "diagram": true
+ },
+ {
+  "id": "dpo",
+  "name": "Direct preference optimization",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "lora",
+  "name": "LoRA",
+  "topic": "llm",
+  "diagram": true
+ },
+ {
+  "id": "catastrophic-forgetting",
+  "name": "Catastrophic forgetting",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "temperature",
+  "name": "Temperature",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "top-p-sampling",
+  "name": "Top-p sampling",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "context-window",
+  "name": "Context window",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "in-context-learning",
+  "name": "In-context learning",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "chain-of-thought",
+  "name": "Chain of thought",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "hallucination",
+  "name": "Hallucination",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "scaling-laws",
+  "name": "Scaling laws",
+  "topic": "llm",
+  "diagram": false
+ },
+ {
+  "id": "mixture-of-experts",
+  "name": "Mixture of experts",
+  "topic": "llm",
+  "diagram": true
+ },
+ {
+  "id": "retrieval-augmented-generation",
+  "name": "Retrieval-augmented generation",
+  "topic": "integration",
+  "diagram": true
+ },
+ {
+  "id": "chunking",
+  "name": "Chunking",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "vector-database",
+  "name": "Vector database",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "approximate-nearest-neighbor",
+  "name": "Approximate nearest neighbour search",
+  "topic": "integration",
+  "diagram": true
+ },
+ {
+  "id": "cosine-similarity",
+  "name": "Cosine similarity",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "bm25",
+  "name": "BM25",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "hybrid-search",
+  "name": "Hybrid search",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "cross-encoder-reranking",
+  "name": "Cross-encoder reranking",
+  "topic": "integration",
+  "diagram": true
+ },
+ {
+  "id": "rag-vs-fine-tuning",
+  "name": "RAG vs fine-tuning",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "prompt-engineering",
+  "name": "Prompt engineering",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "structured-output",
+  "name": "Structured output",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "prompt-injection",
+  "name": "Prompt injection",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "jailbreak",
+  "name": "Jailbreak",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "guardrails",
+  "name": "Guardrails",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "llm-as-judge",
+  "name": "LLM as a judge",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "groundedness",
+  "name": "Groundedness",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "golden-dataset",
+  "name": "Golden dataset",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "prompt-caching",
+  "name": "Prompt caching",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "semantic-caching",
+  "name": "Semantic caching",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "model-routing",
+  "name": "Model routing",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "streaming-responses",
+  "name": "Streaming responses",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "rate-limits-and-backoff",
+  "name": "Rate limits and backoff",
+  "topic": "integration",
+  "diagram": false
+ },
+ {
+  "id": "agent-loop",
+  "name": "Agent loop",
+  "topic": "agents",
+  "diagram": true
+ },
+ {
+  "id": "workflow-vs-agent",
+  "name": "Workflow vs agent",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "tool-calling",
+  "name": "Tool calling",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "tool-design",
+  "name": "Tool design",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "react-pattern",
+  "name": "ReAct pattern",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "plan-and-execute",
+  "name": "Plan and execute",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "reflection",
+  "name": "Reflection and self-critique",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "multi-agent-system",
+  "name": "Multi-agent system",
+  "topic": "agents",
+  "diagram": true
+ },
+ {
+  "id": "model-context-protocol",
+  "name": "Model Context Protocol",
+  "topic": "agents",
+  "diagram": true
+ },
+ {
+  "id": "agent-memory",
+  "name": "Agent memory",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "context-engineering",
+  "name": "Context engineering",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "human-in-the-loop",
+  "name": "Human in the loop",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "least-privilege",
+  "name": "Least privilege",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "sandboxing",
+  "name": "Sandboxing",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "idempotency",
+  "name": "Idempotency",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "trajectory-evaluation",
+  "name": "Trajectory evaluation",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "compounding-errors",
+  "name": "Compounding errors",
+  "topic": "agents",
+  "diagram": false
+ },
+ {
+  "id": "quantization",
+  "name": "Quantization",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "knowledge-distillation",
+  "name": "Knowledge distillation",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "pruning",
+  "name": "Pruning",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "mixed-precision-training",
+  "name": "Mixed precision training",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "gradient-checkpointing",
+  "name": "Gradient checkpointing",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "gradient-accumulation",
+  "name": "Gradient accumulation",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "kv-cache",
+  "name": "KV cache",
+  "topic": "optimization",
+  "diagram": true
+ },
+ {
+  "id": "continuous-batching",
+  "name": "Continuous batching",
+  "topic": "optimization",
+  "diagram": true
+ },
+ {
+  "id": "speculative-decoding",
+  "name": "Speculative decoding",
+  "topic": "optimization",
+  "diagram": true
+ },
+ {
+  "id": "flash-attention",
+  "name": "FlashAttention",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "grouped-query-attention",
+  "name": "Grouped-query attention",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "data-parallelism",
+  "name": "Data parallelism",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "model-parallelism",
+  "name": "Model parallelism",
+  "topic": "optimization",
+  "diagram": true
+ },
+ {
+  "id": "sharded-data-parallel",
+  "name": "Sharded data parallelism",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "throughput-vs-latency",
+  "name": "Throughput vs latency",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "time-to-first-token",
+  "name": "Time to first token",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "memory-bound-decoding",
+  "name": "Memory-bound decoding",
+  "topic": "optimization",
+  "diagram": false
+ },
+ {
+  "id": "data-drift",
+  "name": "Data drift",
+  "topic": "mlops",
+  "diagram": true
+ },
+ {
+  "id": "concept-drift",
+  "name": "Concept drift",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "training-serving-skew",
+  "name": "Training-serving skew",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "feature-store",
+  "name": "Feature store",
+  "topic": "mlops",
+  "diagram": true
+ },
+ {
+  "id": "model-registry",
+  "name": "Model registry",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "reproducibility",
+  "name": "Reproducibility",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "shadow-deployment",
+  "name": "Shadow deployment",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "canary-release",
+  "name": "Canary release",
+  "topic": "mlops",
+  "diagram": true
+ },
+ {
+  "id": "model-monitoring",
+  "name": "Model monitoring",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "population-stability-index",
+  "name": "Population stability index",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "retraining-policy",
+  "name": "Retraining policy",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "ci-cd-for-ml",
+  "name": "CI/CD for ML",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "batch-vs-online-inference",
+  "name": "Batch vs online inference",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "label-delay",
+  "name": "Label delay",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "llm-observability",
+  "name": "LLM observability",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "service-level-objective",
+  "name": "Service level objective",
+  "topic": "mlops",
+  "diagram": false
+ },
+ {
+  "id": "two-stage-recommender",
+  "name": "Two-stage recommender",
+  "topic": "design",
+  "diagram": true
+ },
+ {
+  "id": "collaborative-filtering",
+  "name": "Collaborative filtering",
+  "topic": "design",
+  "diagram": false
+ },
+ {
+  "id": "content-based-filtering",
+  "name": "Content-based filtering",
+  "topic": "design",
+  "diagram": false
+ },
+ {
+  "id": "two-tower-model",
+  "name": "Two-tower model",
+  "topic": "design",
+  "diagram": false
+ },
+ {
+  "id": "cold-start",
+  "name": "Cold start",
+  "topic": "design",
+  "diagram": false
+ },
+ {
+  "id": "learning-to-rank",
+  "name": "Learning to rank",
+  "topic": "design",
+  "diagram": false
+ },
+ {
+  "id": "position-bias",
+  "name": "Position bias",
+  "topic": "design",
+  "diagram": false
+ },
+ {
+  "id": "multi-armed-bandit",
+  "name": "Multi-armed bandit",
+  "topic": "design",
+  "diagram": false
+ },
+ {
+  "id": "feedback-loop",
+  "name": "Feedback loop",
+  "topic": "design",
+  "diagram": false
+ },
+ {
+  "id": "capacity-estimation",
+  "name": "Capacity estimation",
+  "topic": "design",
+  "diagram": false
+ },
+ {
+  "id": "latency-budget",
+  "name": "Latency budget",
+  "topic": "design",
+  "diagram": false
+ },
+ {
+  "id": "model-cascade",
+  "name": "Model cascade",
+  "topic": "design",
+  "diagram": true
+ },
+ {
+  "id": "graceful-degradation",
+  "name": "Graceful degradation",
+  "topic": "design",
+  "diagram": false
+ },
+ {
+  "id": "conditional-probability",
+  "name": "Conditional probability",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "bayes-theorem",
+  "name": "Bayes' theorem",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "expected-value",
+  "name": "Expected value",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "variance",
+  "name": "Variance and standard deviation",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "normal-distribution",
+  "name": "Normal distribution",
+  "topic": "math",
+  "diagram": true
+ },
+ {
+  "id": "binomial-distribution",
+  "name": "Binomial distribution",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "central-limit-theorem",
+  "name": "Central limit theorem",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "maximum-likelihood-estimation",
+  "name": "Maximum likelihood estimation",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "hypothesis-testing",
+  "name": "Hypothesis testing",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "p-value",
+  "name": "p-value",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "confidence-interval",
+  "name": "Confidence interval",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "statistical-power",
+  "name": "Statistical power",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "multiple-comparisons",
+  "name": "Multiple comparisons",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "correlation",
+  "name": "Correlation",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "gradient-descent",
+  "name": "Gradient descent",
+  "topic": "math",
+  "diagram": true
+ },
+ {
+  "id": "chain-rule",
+  "name": "Chain rule",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "convexity",
+  "name": "Convexity",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "matrix-multiplication",
+  "name": "Matrix multiplication",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "pca",
+  "name": "Principal component analysis",
+  "topic": "math",
+  "diagram": true
+ },
+ {
+  "id": "entropy",
+  "name": "Entropy",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "kl-divergence",
+  "name": "KL divergence",
+  "topic": "math",
+  "diagram": false
+ },
+ {
+  "id": "demographic-parity",
+  "name": "Demographic parity",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "equal-opportunity",
+  "name": "Equal opportunity and equalized odds",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "disparate-impact",
+  "name": "Disparate impact",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "proxy-discrimination",
+  "name": "Proxy discrimination",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "shap-values",
+  "name": "SHAP values",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "counterfactual-explanation",
+  "name": "Counterfactual explanation",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "model-card",
+  "name": "Model card",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "differential-privacy",
+  "name": "Differential privacy",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "pii-handling",
+  "name": "PII handling",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "federated-learning",
+  "name": "Federated learning",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "eu-ai-act",
+  "name": "EU AI Act",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "red-teaming",
+  "name": "Red teaming",
+  "topic": "responsible",
+  "diagram": false
+ },
+ {
+  "id": "numpy-broadcasting",
+  "name": "NumPy broadcasting",
+  "topic": "python",
+  "diagram": true
+ },
+ {
+  "id": "numpy-axis",
+  "name": "NumPy axis",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "vectorization",
+  "name": "Vectorization",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "views-vs-copies",
+  "name": "Views vs copies",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "boolean-indexing",
+  "name": "Boolean indexing",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "numpy-dtypes",
+  "name": "NumPy dtypes",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "pandas-indexing",
+  "name": "Pandas indexing and alignment",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "pandas-copy-on-write",
+  "name": "Pandas copy-on-write",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "pandas-groupby",
+  "name": "Pandas groupby",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "pandas-merge",
+  "name": "Pandas merge",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "sklearn-pipeline",
+  "name": "scikit-learn Pipeline",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "estimator-api",
+  "name": "scikit-learn estimator API",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "pytorch-autograd",
+  "name": "PyTorch autograd",
+  "topic": "python",
+  "diagram": false
+ },
+ {
+  "id": "eval-mode",
+  "name": "Eval mode and no_grad",
+  "topic": "python",
+  "diagram": false
+ }
+]
