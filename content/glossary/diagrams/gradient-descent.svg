@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 192" role="img">
+<title>Gradient descent steps downhill across loss contours toward the minimum</title>
+<defs><marker id="gradient-descent-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-ink s-none"/></marker></defs>
+<ellipse cx="166" cy="86" rx="28.3" ry="14.1" class="s-line s-thin"/>
+<ellipse cx="166" cy="86" rx="56.6" ry="28.3" class="s-line s-thin"/>
+<ellipse cx="166" cy="86" rx="84.9" ry="42.4" class="s-line s-thin"/>
+<ellipse cx="166" cy="86" rx="113.1" ry="56.6" class="s-line s-thin"/>
+<ellipse cx="166" cy="86" rx="141.4" ry="70.7" class="s-line s-thin"/>
+<path d="M62,50 L103.6,107.6 L128.6,73 L143.5,93.8 L152.5,81.3 L157.9,88.8" class="s-ink" marker-end="url(#gradient-descent-ink)"/>
+<circle cx="62" cy="50" r="2.5" class="f-ink s-none"/>
+<circle cx="103.6" cy="107.6" r="2.5" class="f-ink s-none"/>
+<circle cx="128.6" cy="73" r="2.5" class="f-ink s-none"/>
+<circle cx="143.5" cy="93.8" r="2.5" class="f-ink s-none"/>
+<circle cx="152.5" cy="81.3" r="2.5" class="f-ink s-none"/>
+<circle cx="166" cy="86" r="3.5" class="f-right s-right"/>
+<text x="58" y="42" text-anchor="middle" class="t-small t-bold">start</text>
+<text x="178" y="116" class="t-small t-bold">minimum</text>
+<line x1="169" y1="89" x2="178" y2="106" class="s-muted s-thin"/>
+<text x="160" y="172" text-anchor="middle" class="t-small">Each step: w ← w − η · gradient.</text>
+<text x="160" y="186" text-anchor="middle" class="t-small t-muted">Steps cross contours at right angles.</text>
+</svg>

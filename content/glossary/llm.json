@@ -1,0 +1,507 @@
+[
+ {
+  "id": "tokenization",
+  "name": "Tokenization",
+  "topic": "llm",
+  "aka": [
+   "tokenizer",
+   "tokens",
+   "BPE",
+   "byte-pair encoding",
+   "subword tokenization",
+   "WordPiece",
+   "SentencePiece",
+   "token count"
+  ],
+  "summary": "Splitting text into the units a language model actually reads, usually subword pieces from a fixed vocabulary, each mapped to an integer ID.",
+  "body": "Models do not see characters or words. A tokenizer maps text to a list of token IDs from a vocabulary of tens of thousands to a few hundred thousand entries. Most use subword methods such as byte-pair encoding (BPE), which starts from bytes or characters and repeatedly merges the most frequent adjacent pair. Common words become one token and rare words split into pieces, so no input is ever out of vocabulary.\n\nTokens are the unit of cost, latency and context limits. In English a token averages roughly three quarters of a word, but code, numbers and many non-English languages need more tokens for the same content. Tokenization also explains odd failures such as miscounting the letters in a word, since the model sees chunks rather than letters.\n\nExample: 'unbelievable' might become 'un', 'believ' and 'able'. A tokenizer must match its model exactly, since the IDs mean nothing to any other model.",
+  "mixup": "Token counts are not word counts. In English, tokens usually run about a third higher than words, and far higher for code or languages the tokenizer was not built around. Budgeting context or cost by words underestimates both.",
+  "related": [
+   "embedding",
+   "context-window",
+   "next-token-prediction",
+   "perplexity"
+  ]
+ },
+ {
+  "id": "self-attention",
+  "name": "Self-attention",
+  "topic": "llm",
+  "aka": [
+   "attention",
+   "scaled dot-product attention",
+   "attention mechanism",
+   "QKV attention",
+   "query key value"
+  ],
+  "summary": "A layer where each token builds its new representation as a weighted mix of all tokens' values, with weights set by query-key similarity.",
+  "body": "Each token's vector is projected into a query q, a key k and a value v using learned matrices. Stacked for all tokens:\n\nAttention(Q, K, V) = softmax(QKᵀ / √d_k) V\n\nRow i of QKᵀ scores how relevant every token is to token i. Softmax turns the scores into weights that sum to 1, and the output is the weighted sum of value vectors. Dividing by √d_k stops the scores growing with dimension, which would push softmax toward a near one-hot output with tiny gradients.\n\nAny token can draw information directly from any other in one step, unlike an RNN, and all positions are computed in parallel. The cost is that the score matrix is n × n, so compute and memory grow with the square of sequence length.\n\nExample: in 'the trophy did not fit in the case because it was too big', attention lets 'it' put a high weight on 'trophy'.",
+  "mixup": "Self-attention on its own has no sense of order. Shuffle the input tokens and the outputs are simply shuffled the same way. Position information has to be added separately, through positional encodings.",
+  "related": [
+   "multi-head-attention",
+   "positional-encoding",
+   "causal-mask",
+   "softmax",
+   "flash-attention"
+  ],
+  "diagram": "self-attention"
+ },
+ {
+  "id": "multi-head-attention",
+  "name": "Multi-head attention",
+  "topic": "llm",
+  "aka": [
+   "MHA",
+   "attention heads",
+   "multi-headed attention"
+  ],
+  "summary": "Running several attention operations in parallel on smaller projections, so each head can focus on a different kind of relationship.",
+  "body": "Instead of one attention over the full model width d, the model splits it into h heads of size d / h. Each head has its own query, key and value projections and computes attention independently. The head outputs are concatenated back to width d and passed through an output projection.\n\nThe total compute is about the same as one full-width attention, but the model gets h separate attention patterns. In trained models some heads track nearby tokens, some follow syntax and some copy earlier text, although many heads are redundant and can be pruned.\n\nExample: with d = 768 and 12 heads, each head works in 64 dimensions. The query, key, value and output projections are each 768 × 768, so one attention layer has about 4 × 768² ≈ 2.4 million weights, plus biases if used.\n\nAt inference every head's keys and values must be cached, which is why variants such as grouped-query attention share keys and values across heads.",
+  "mixup": "More heads do not mean more parameters. The width is split across heads, so 8 or 16 heads at the same model width cost about the same. What changes is how many separate attention patterns the layer can form.",
+  "related": [
+   "self-attention",
+   "grouped-query-attention",
+   "kv-cache",
+   "transformer-block"
+  ]
+ },
+ {
+  "id": "causal-mask",
+  "name": "Causal mask",
+  "topic": "llm",
+  "aka": [
+   "causal attention",
+   "look-ahead mask",
+   "autoregressive mask",
+   "masked self-attention",
+   "triangular mask"
+  ],
+  "summary": "A mask that stops each token from attending to later tokens, so a model learning to predict the next token cannot peek at it.",
+  "body": "Before the softmax in self-attention, every score where the key position comes after the query position is set to −∞. After softmax those weights become exactly zero. The allowed region is the lower triangle of the n × n score matrix, so token i sees only tokens 1 to i.\n\nThis makes decoder-only training efficient. One forward pass over a sequence of length n gives n next-token predictions at once, each using only the past, which matches what the model will have at generation time. Without the mask the model would learn to copy the next token and fail when generating.\n\nIt also makes caching possible. Earlier tokens never depend on later ones, so their keys and values can be stored and reused as new tokens are added.\n\nExample: for 'the cat sat', the prediction made at 'cat' can use 'the' and 'cat' but never 'sat'.",
+  "mixup": "A causal mask and a padding mask do different jobs. The padding mask hides filler tokens added to make sequences in a batch the same length. The causal mask hides the future. Batched decoder training usually applies both.",
+  "related": [
+   "self-attention",
+   "next-token-prediction",
+   "kv-cache",
+   "encoder-decoder-architectures"
+  ]
+ },
+ {
+  "id": "positional-encoding",
+  "name": "Positional encoding",
+  "topic": "llm",
+  "aka": [
+   "positional embedding",
+   "position embedding",
+   "RoPE",
+   "rotary position embedding",
+   "rotary embeddings",
+   "sinusoidal positional encoding",
+   "ALiBi"
+  ],
+  "summary": "Information about each token's position added to a transformer, because attention by itself ignores word order.",
+  "body": "Attention treats its input as a set, so 'dog bites man' and 'man bites dog' would look the same without a position signal. The main approaches:\n\n- Sinusoidal: add fixed sine and cosine waves of different frequencies to each token embedding. Used in the original transformer.\n- Learned absolute: add a trained vector per position. Simple, but it cannot handle positions beyond the trained maximum.\n- Rotary (RoPE): rotate the query and key vectors by an angle that depends on position, so their dot product depends on the distance between the tokens. Widely used in modern LLMs.\n- ALiBi: add a penalty to attention scores that grows with distance.\n\nPosition handling is central to long-context work. Extending a model beyond its training length usually means rescaling RoPE frequencies and then fine-tuning on longer sequences.\n\nExample: with RoPE, the positional effect between tokens 5 and 8 is the same as between tokens 105 and 108, since only the gap of 3 matters.",
+  "mixup": "Absolute encodings tell the model where a token sits. Relative methods such as RoPE tell attention how far apart two tokens are. Relative methods cope better when the same text appears at different positions, which is why they now dominate.",
+  "related": [
+   "self-attention",
+   "context-window",
+   "transformer-block",
+   "embedding"
+  ]
+ },
+ {
+  "id": "transformer-block",
+  "name": "Transformer block",
+  "topic": "llm",
+  "aka": [
+   "transformer layer",
+   "transformer",
+   "decoder block",
+   "encoder block",
+   "feed-forward sublayer"
+  ],
+  "summary": "The repeated unit of a transformer: self-attention then a feed-forward network, each wrapped in normalization and a residual connection.",
+  "body": "A transformer is a stack of identical blocks. In the common pre-norm form, each block computes:\n\n- h = x + Attention(Norm(x))\n- out = h + FFN(Norm(h))\n\nAttention mixes information across tokens. The feed-forward network (FFN) is an MLP applied to each token separately, usually expanding the width about 4× and projecting back, often with a gated activation such as SwiGLU. The residual connections keep gradients flowing through dozens of layers, and the norms keep activations stable.\n\nIn a standard design the attention weights take about 4d² and the FFN about 8d², so the FFN holds about two thirds of each block.\n\nExample: with d = 1,024, one block has about 4 × 1,024² ≈ 4.2 million attention weights and 8 × 1,024² ≈ 8.4 million FFN weights, about 12.6 million in total. A 24-layer model then has roughly 300 million block parameters, before embeddings.",
+  "mixup": "Attention gets the attention, but it is not where most of the weights are. The feed-forward layers hold most of the parameters, and they are where mixture-of-experts designs add capacity.",
+  "related": [
+   "self-attention",
+   "residual-connection",
+   "layer-normalization",
+   "multilayer-perceptron",
+   "mixture-of-experts"
+  ],
+  "diagram": "transformer-block"
+ },
+ {
+  "id": "encoder-decoder-architectures",
+  "name": "Encoder-only, decoder-only and encoder-decoder models",
+  "topic": "llm",
+  "aka": [
+   "encoder-only",
+   "decoder-only",
+   "encoder-decoder",
+   "seq2seq",
+   "sequence-to-sequence",
+   "BERT-style",
+   "GPT-style",
+   "cross-attention"
+  ],
+  "summary": "The three transformer layouts: encoders read text with full attention, decoders generate left to right, and encoder-decoders read an input then generate an output.",
+  "body": "- Encoder-only: every token attends to every other token in both directions. Trained with objectives such as masked-token prediction. Produces strong representations for classification, tagging and embeddings, but does not generate text naturally.\n- Decoder-only: causal attention, trained on next-token prediction. One stack handles prompt and answer as one sequence. This is the layout of almost all general-purpose chat LLMs, because it scales simply and turns every task into continuing text.\n- Encoder-decoder: an encoder reads the input in both directions, and a decoder generates the output while attending to the encoder through cross-attention. A natural fit for translation and summarization, where input and output are distinct.\n\nIn practice, a small encoder is cheap and strong for a spam classifier or for sentence embeddings. For open-ended generation, a decoder-only model is the default.\n\nExample: translating support tickets from French to English fits an encoder-decoder, while a chat assistant is decoder-only.",
+  "mixup": "Decoder-only models do read the whole prompt, just causally, so each prompt token sees only earlier tokens. The label describes the attention pattern, not a weaker grasp of the input.",
+  "related": [
+   "causal-mask",
+   "self-attention",
+   "next-token-prediction",
+   "embedding",
+   "transformer-block"
+  ]
+ },
+ {
+  "id": "next-token-prediction",
+  "name": "Next-token prediction",
+  "topic": "llm",
+  "aka": [
+   "language modeling",
+   "causal language modeling",
+   "CLM",
+   "autoregressive generation",
+   "autoregressive modeling",
+   "teacher forcing",
+   "next-word prediction"
+  ],
+  "summary": "The training objective of most LLMs: given the text so far, output a probability distribution over the next token.",
+  "body": "The model learns P(xₜ | x₁, …, xₜ₋₁). Training minimizes the cross-entropy between that distribution and the token that really came next, summed over every position. During training the model always sees the real previous tokens, called teacher forcing, and with a causal mask one sequence of n tokens gives n targets in a single pass.\n\nAt generation time the model runs in a loop. It predicts a distribution, a decoding rule picks a token (greedy, temperature or top-p sampling), the token is appended, and the process repeats until a stop token or a length limit. This is why output streams token by token and why latency grows with output length.\n\nThe objective is simple, but predicting text well across a huge corpus forces the model to pick up grammar, facts and reasoning patterns.\n\nExample: after 'The capital of France is', a well-trained model puts most of its probability on ' Paris'.",
+  "mixup": "The model does not output a word. It outputs a probability for every token in the vocabulary, and a separate decoding rule picks one. Changing the decoding rule changes the text without touching the model.",
+  "related": [
+   "causal-mask",
+   "cross-entropy-loss",
+   "perplexity",
+   "temperature",
+   "pretraining"
+  ]
+ },
+ {
+  "id": "perplexity",
+  "name": "Perplexity",
+  "topic": "llm",
+  "aka": [
+   "PPL",
+   "perplexity score"
+  ],
+  "summary": "The exponential of a language model's average per-token cross-entropy, roughly how many tokens it is choosing between at each step.",
+  "body": "Perplexity = exp(−(1/N) Σᵢ ln p(xᵢ | x₁, …, xᵢ₋₁)) over N tokens of held-out text. Lower is better. A perplexity of k means the model is, on average, as uncertain as if it were picking uniformly from k tokens.\n\nIt is the standard intrinsic metric during pretraining and for comparing checkpoints of the same model. It is cheap, needs no labels and moves smoothly as training progresses.\n\nExample: if the average loss on a validation set is 2.3 nats per token, perplexity is e^2.3 ≈ 10.\n\nIts limits matter. Perplexity depends on the tokenizer, so models with different vocabularies cannot be compared directly. It measures fit to a text distribution, not helpfulness, safety or task accuracy. A chat-tuned model often has higher perplexity on raw web text than its base model while being far more useful.",
+  "mixup": "Lower perplexity does not mean a better assistant. It is only comparable between models that share a tokenizer and are scored on the same text, and it says nothing about following instructions or factual accuracy.",
+  "related": [
+   "cross-entropy-loss",
+   "next-token-prediction",
+   "tokenization",
+   "entropy"
+  ]
+ },
+ {
+  "id": "pretraining",
+  "name": "Pretraining",
+  "topic": "llm",
+  "aka": [
+   "pre-training",
+   "base model",
+   "foundation model",
+   "self-supervised pretraining",
+   "pretrained model"
+  ],
+  "summary": "The first and largest stage of training, where a model learns general knowledge from huge amounts of unlabelled data with a self-supervised objective.",
+  "body": "For an LLM, pretraining means next-token prediction over trillions of tokens of web text, books, code and other sources. No human labels are needed, since the text supplies its own targets. This stage uses the vast majority of the total training compute.\n\nThe result is a base model. It continues text well and holds broad knowledge, but it does not reliably follow instructions or hold a conversation. Post-training stages such as supervised fine-tuning and preference tuning shape that raw ability into an assistant.\n\nData quality matters as much as size. Pipelines filter low-quality pages, remove duplicates, strip personal data and balance the mix of domains. Deduplication also reduces memorization and helps keep benchmark test sets out of the training data.\n\nExample: asked 'What is the capital of Peru?', a base model may carry on with more quiz questions instead of answering, because that is what similar text on the web looks like.",
+  "mixup": "Applied teams rarely pretrain their own LLM. In most jobs, training a model means fine-tuning or prompting an existing pretrained one. Pretraining from scratch needs data and compute far beyond most projects.",
+  "related": [
+   "next-token-prediction",
+   "supervised-fine-tuning",
+   "scaling-laws",
+   "transfer-learning",
+   "deduplication"
+  ]
+ },
+ {
+  "id": "supervised-fine-tuning",
+  "name": "Supervised fine-tuning",
+  "topic": "llm",
+  "aka": [
+   "SFT",
+   "instruction tuning",
+   "instruction fine-tuning",
+   "fine-tuning",
+   "full fine-tuning"
+  ],
+  "summary": "Further training a pretrained model on example prompts paired with good responses, so it learns to follow instructions or a specific task format.",
+  "body": "SFT uses the same next-token loss as pretraining, but on a curated set of (prompt, response) pairs. Usually the loss is computed only on the response tokens, so the model learns to produce answers rather than to imitate prompts.\n\nIt is the step that turns a base model into an assistant. In applied work it is how teams teach a model a narrow skill: a house writing style, a fixed output schema, a domain's jargon, or a small model copying a larger one's outputs.\n\nQuality beats quantity. A few thousand clean, varied, correct examples often do more than a large noisy set. A low learning rate and few epochs are typical, which also limits forgetting of general skills. Parameter-efficient methods such as LoRA make it affordable on a single GPU.\n\nExample: 3,000 support tickets paired with the best agent replies, formatted in the model's chat template, used to train a model to answer in the team's tone.",
+  "mixup": "Fine-tuning teaches behaviour and format well but is a poor way to add facts that change. For knowledge that must stay current or be cited, retrieval is usually the better tool.",
+  "related": [
+   "pretraining",
+   "lora",
+   "rlhf",
+   "catastrophic-forgetting",
+   "rag-vs-fine-tuning"
+  ]
+ },
+ {
+  "id": "rlhf",
+  "name": "RLHF",
+  "topic": "llm",
+  "aka": [
+   "reinforcement learning from human feedback",
+   "reward model",
+   "reward modeling",
+   "PPO",
+   "preference tuning",
+   "RLAIF"
+  ],
+  "summary": "Training a model to produce answers people prefer, by learning a reward model from human comparisons and then optimizing the model against it.",
+  "body": "The classic pipeline has three stages after pretraining:\n\n- SFT: fine-tune on good demonstrations.\n- Reward model: show labellers two responses to the same prompt, record which they prefer, and train a model to score responses so preferred ones score higher.\n- RL: generate responses, score them with the reward model, and update the policy with an algorithm such as PPO. A KL penalty keeps the policy close to the SFT model.\n\nIt matters because qualities such as helpfulness, tone and refusing the right requests are easier to judge than to write examples of.\n\nThe KL penalty is there because of reward hacking. The policy will exploit any weakness in the reward model, for example writing longer answers if length happens to correlate with reward, and drift into odd text.\n\nExample: for 'explain recursion', labellers keep preferring a short answer with an example over a long one with none, and the reward model learns that pattern.",
+  "mixup": "The reward model is not the human. It is a learned, imperfect stand-in, and optimizing too hard against it gives answers that score well but read badly. Methods like DPO skip the separate reward model entirely.",
+  "related": [
+   "dpo",
+   "supervised-fine-tuning",
+   "reinforcement-learning",
+   "kl-divergence",
+   "llm-as-judge"
+  ],
+  "diagram": "rlhf"
+ },
+ {
+  "id": "dpo",
+  "name": "Direct preference optimization",
+  "topic": "llm",
+  "aka": [
+   "DPO",
+   "direct preference optimisation",
+   "preference optimization",
+   "preference pairs"
+  ],
+  "summary": "A way to tune a model on preference pairs directly with a classification-style loss, without training a separate reward model or running reinforcement learning.",
+  "body": "DPO uses the same data as RLHF: prompts x, each with a chosen answer y_w and a rejected answer y_l. It also keeps a frozen reference model π_ref, usually the SFT model. The loss is\n\nL = −log σ( β [ log(π(y_w|x) / π_ref(y_w|x)) − log(π(y_l|x) / π_ref(y_l|x)) ] )\n\nHere σ is the sigmoid. In words, raise the probability of the chosen answer relative to the reference, lower the rejected one, and let β control how far the model may move from the reference.\n\nThe derivation shows this targets the same KL-constrained objective as RLHF, with the reward folded into the policy's own log-probabilities. In practice it is simpler and more stable: ordinary supervised training, with no sampling during training and no reward model to serve.\n\nExample: a support team collects 5,000 pairs where agents marked one draft reply as better, and trains with β = 0.1.\n\nIt learns only from fixed pairs, so it cannot explore new answers the way online RL can.",
+  "mixup": "DPO still needs preference pairs and still has an implicit reward. What it removes is the separate reward model and the RL loop, not the need for good human or AI preference data.",
+  "related": [
+   "rlhf",
+   "supervised-fine-tuning",
+   "kl-divergence",
+   "lora"
+  ]
+ },
+ {
+  "id": "lora",
+  "name": "LoRA",
+  "topic": "llm",
+  "aka": [
+   "low-rank adaptation",
+   "QLoRA",
+   "adapters",
+   "PEFT",
+   "parameter-efficient fine-tuning",
+   "LoRA adapter"
+  ],
+  "summary": "A fine-tuning method that freezes the original weights and trains a small low-rank update added to selected weight matrices.",
+  "body": "For a frozen weight matrix W of size d × k, LoRA learns two small matrices B (d × r) and A (r × k), with rank r much smaller than d and k. The layer computes Wx + (α/r)·BAx. B starts at zero, so training begins from exactly the original model.\n\nOnly A and B are trained, which cuts trainable parameters and optimizer memory sharply. After training, BA can be merged into W, so inference has no extra latency. Or the adapters can be kept separate and swapped, letting one base model serve many tasks. QLoRA goes further by storing the frozen base in 4-bit precision during training.\n\nExample: for a 4,096 × 4,096 projection, full fine-tuning updates about 16.8 million weights. LoRA with r = 8 trains 8 × (4,096 + 4,096) = 65,536, about 0.4%.\n\nThe main knobs are the rank, which layers get adapters, and the learning rate, which is usually higher than for full fine-tuning.",
+  "mixup": "LoRA reduces what is trained, not the size of the model you must load. The full base model still has to fit in memory for training and serving, which is why QLoRA quantizes the frozen weights.",
+  "related": [
+   "supervised-fine-tuning",
+   "quantization",
+   "catastrophic-forgetting",
+   "transfer-learning"
+  ],
+  "diagram": "lora"
+ },
+ {
+  "id": "catastrophic-forgetting",
+  "name": "Catastrophic forgetting",
+  "topic": "llm",
+  "aka": [
+   "catastrophic interference",
+   "forgetting",
+   "capability regression",
+   "replay"
+  ],
+  "summary": "When training a model on a new task makes it lose skills or knowledge it had before.",
+  "body": "Fine-tuning moves the same weights that stored earlier abilities. If the new data is narrow and training is aggressive, the model can get very good at the new task while getting worse at everything else.\n\nIn applied work it shows up as regressions: a model fine-tuned on legal summaries stops following general instructions well, or a model tuned for a strict JSON format loses some reasoning quality.\n\nWays to limit it:\n\n- A lower learning rate and fewer epochs.\n- Mixing some general data in with the task data, often called replay.\n- Parameter-efficient methods such as LoRA, which change far fewer weights.\n- Penalizing movement away from the original weights, as elastic weight consolidation does for the weights that mattered most.\n\nThe check is simple: keep a fixed set of general evaluations and run it before and after every fine-tune, not just the task metric.\n\nExample: after SFT on 10,000 SQL queries, scores on a general reasoning benchmark drop by several points.",
+  "mixup": "Forgetting is not the same as overfitting. An overfit model does badly on new examples of its own task. A model with forgetting may do well on its task but worse on other tasks it used to handle.",
+  "related": [
+   "supervised-fine-tuning",
+   "lora",
+   "transfer-learning",
+   "overfitting"
+  ]
+ },
+ {
+  "id": "temperature",
+  "name": "Temperature",
+  "topic": "llm",
+  "aka": [
+   "sampling temperature",
+   "temp",
+   "softmax temperature"
+  ],
+  "summary": "A sampling setting that divides the logits before softmax, making output more predictable when low and more varied when high.",
+  "body": "With logits z and temperature T, the probabilities are softmax(z / T).\n\n- T = 1 leaves the model's distribution unchanged.\n- T below 1 sharpens it, so likely tokens become even more likely.\n- T above 1 flattens it, so unlikely tokens get picked more often.\n- T near 0 approaches greedy decoding, always taking the top token.\n\nUse low temperature for extraction, classification, code and anything that must be consistent. Use moderate values for writing and brainstorming, where variety helps. Very high values give incoherent text.\n\nExample: logits [2, 1, 0] give probabilities of about [0.67, 0.24, 0.09] at T = 1. At T = 0.5 the logits become [4, 2, 0], giving about [0.87, 0.12, 0.02].\n\nThe same idea, called temperature scaling, is used to calibrate classifiers, and a temperature also appears in contrastive and distillation losses.",
+  "mixup": "Temperature 0 does not guarantee identical outputs on every call, since batching and floating-point differences on serving hardware can still change results. It also does not make answers more correct, only more repeatable.",
+  "related": [
+   "softmax",
+   "top-p-sampling",
+   "next-token-prediction",
+   "calibration",
+   "hallucination"
+  ]
+ },
+ {
+  "id": "top-p-sampling",
+  "name": "Top-p sampling",
+  "topic": "llm",
+  "aka": [
+   "nucleus sampling",
+   "top-p",
+   "top p",
+   "top_p",
+   "nucleus"
+  ],
+  "summary": "A decoding rule that samples only from the smallest set of top tokens whose probabilities add up to at least p.",
+  "body": "At each step, sort tokens by probability and keep adding them until the running total reaches p. Renormalize the kept tokens so they sum to 1 and sample from them. Everything in the long tail is cut off.\n\nThe set adapts to the model's confidence. When the model is sure, one or two tokens may already cover p. When many continuations are plausible, the set grows. This removes the rare, odd tokens that make sampled text go off the rails, while keeping variety where it is reasonable.\n\nExample: probabilities are 0.5, 0.3, 0.1, 0.05 and 0.05 with p = 0.9. The first three sum to 0.9, so only they are kept, and they become about 0.56, 0.33 and 0.11.\n\nIt is usually combined with temperature. Common advice is to tune one of the two and leave the other near its default.",
+  "mixup": "Top-p and top-k both trim the tail, but top-k always keeps a fixed number of tokens, say 40, whatever the distribution looks like. Top-p keeps a variable number based on cumulative probability.",
+  "related": [
+   "temperature",
+   "next-token-prediction",
+   "softmax",
+   "hallucination"
+  ]
+ },
+ {
+  "id": "context-window",
+  "name": "Context window",
+  "topic": "llm",
+  "aka": [
+   "context length",
+   "context size",
+   "context limit",
+   "token limit",
+   "max context"
+  ],
+  "summary": "The maximum number of tokens a model can take into account in one call, covering the prompt, any history or documents, and the generated output.",
+  "body": "Everything the model sees in one call must fit in the window: system instructions, tool definitions, conversation history, retrieved documents, the user's message and the tokens it generates. Anything outside is simply not seen. In chat apps, older turns must be trimmed or summarized as the conversation grows.\n\nBigger windows are not free. Standard attention compute grows with the square of input length, the KV cache grows linearly with it, and cost and time to first token rise with every input token. Models also tend to use long inputs unevenly, often doing better with material near the start or end than buried in the middle.\n\nSo a large window does not remove the need to choose what goes in. Retrieval and careful context assembly usually beat pasting everything.\n\nExample: with a 32,000-token window, a 2,000-token system prompt and 4,000 tokens reserved for output leave 26,000 tokens for history and documents.",
+  "mixup": "The window is shared between input and output. A prompt that fills the whole window leaves no room for an answer, and the separate cap on output length is often much smaller than the window.",
+  "related": [
+   "tokenization",
+   "kv-cache",
+   "context-engineering",
+   "retrieval-augmented-generation",
+   "positional-encoding"
+  ]
+ },
+ {
+  "id": "in-context-learning",
+  "name": "In-context learning",
+  "topic": "llm",
+  "aka": [
+   "ICL",
+   "few-shot prompting",
+   "few-shot learning",
+   "zero-shot prompting",
+   "one-shot prompting",
+   "few-shot examples"
+  ],
+  "summary": "A model picking up a task from instructions or examples placed in the prompt, with no change to its weights.",
+  "body": "Show a model a few input and output pairs and then a new input, and it will usually continue the pattern. Zero-shot means instructions only. Few-shot means a handful of worked examples.\n\nNothing is trained. The examples act through attention during that one call and are gone afterwards. This makes it the fastest way to adapt a model, since changing behaviour is just editing text.\n\nWhat makes it work well:\n\n- Examples that match the real inputs and the wanted output format.\n- A mix of labels, so the model does not lean toward one of them.\n- The same formatting in the examples and in the real query.\n\nIts limits: examples use context and cost on every call, results can be sensitive to example order and wording, and it cannot supply knowledge the model lacks.\n\nExample: three short tickets labelled 'billing', 'bug' and 'account', followed by a new ticket, are enough for many models to label it in the same style.",
+  "mixup": "In-context learning is not fine-tuning. No weights change, so nothing persists between calls. If the same behaviour is needed on every request at high volume, fine-tuning may pay off. If the examples change often, prompts are easier.",
+  "related": [
+   "prompt-engineering",
+   "chain-of-thought",
+   "context-window",
+   "supervised-fine-tuning"
+  ]
+ },
+ {
+  "id": "chain-of-thought",
+  "name": "Chain of thought",
+  "topic": "llm",
+  "aka": [
+   "CoT",
+   "chain-of-thought prompting",
+   "step-by-step reasoning",
+   "think step by step",
+   "reasoning tokens",
+   "reasoning models"
+  ],
+  "summary": "Having a model write out intermediate reasoning steps before its final answer, which tends to improve multi-step problems.",
+  "body": "A model generates one token at a time, and each token gets a fixed amount of computation. Writing out intermediate steps gives the model more tokens to work through a problem, and each step can build on the ones already written.\n\nIt can be triggered by an instruction such as 'work through this step by step', by few-shot examples that show worked reasoning, or it can be built into a model trained to reason before answering. Gains are largest on arithmetic, logic, planning and multi-hop questions, and small or absent on simple lookups.\n\nThe cost is more output tokens, so more latency and spend. In production, ask for the reasoning in a separate field or section and parse out only the final answer.\n\nExample: 'A crate holds 12 boxes and each box holds 8 parts. How many parts are in 7 crates?' Writing 12 × 8 = 96, then 96 × 7 = 672, is less error-prone than jumping straight to a number.",
+  "mixup": "The written reasoning is not a guaranteed record of how the model reached its answer. Models can reach a right answer through flawed steps, or write plausible steps that did not drive the output, so do not treat it as a faithful explanation.",
+  "related": [
+   "in-context-learning",
+   "prompt-engineering",
+   "react-pattern",
+   "hallucination"
+  ]
+ },
+ {
+  "id": "hallucination",
+  "name": "Hallucination",
+  "topic": "llm",
+  "aka": [
+   "hallucinations",
+   "confabulation",
+   "fabrication",
+   "made-up facts",
+   "ungrounded output"
+  ],
+  "summary": "When a model states something fluent and confident that is false or not supported by its sources.",
+  "body": "Next-token training rewards text that sounds like a plausible continuation, not text that is verified. When the model lacks a fact, it often generates something with the right shape anyway: a realistic citation that does not exist, a plausible but fake API parameter, a wrong date stated firmly.\n\nTwo kinds are worth separating. Factual errors contradict the world. Unfaithful output contradicts or goes beyond the context it was given, for example a RAG answer that adds a refund rule the policy document never states.\n\nWays to reduce it:\n\n- Ground answers in retrieved sources and ask the model to cite them.\n- Allow and reward 'I don't know' when the context lacks the answer.\n- Use low temperature for factual tasks.\n- Check outputs with groundedness checks, schema validation and tool lookups.\n- Measure the rate on a labelled evaluation set rather than by feel.\n\nNo method removes it fully, so high-stakes outputs need verification or a human in the loop.",
+  "mixup": "Retrieval reduces hallucination but does not remove it. A RAG system can still ignore or misread the right passage, or answer from memory when retrieval misses. Groundedness has to be measured, not assumed.",
+  "related": [
+   "groundedness",
+   "retrieval-augmented-generation",
+   "llm-as-judge",
+   "temperature",
+   "human-in-the-loop"
+  ]
+ },
+ {
+  "id": "scaling-laws",
+  "name": "Scaling laws",
+  "topic": "llm",
+  "aka": [
+   "neural scaling laws",
+   "compute-optimal scaling",
+   "compute-optimal training",
+   "Chinchilla scaling",
+   "power law scaling"
+  ],
+  "summary": "Empirical rules showing that model loss falls smoothly and predictably, as a power law, when parameters, data and compute grow.",
+  "body": "Across many orders of magnitude, test loss roughly follows L(N, D) ≈ E + A/N^α + B/D^β, where N is the parameter count, D the number of training tokens and E an irreducible floor. Each doubling of scale buys a predictable, shrinking improvement.\n\nThe practical use is planning. Teams fit the curve on small runs and extrapolate to choose model size and data for a big run before spending the compute. Training compute is roughly C ≈ 6ND floating-point operations.\n\nA key finding is that, for a fixed compute budget, parameters and data should grow together. A widely cited rule of thumb for compute-optimal training is about 20 tokens per parameter. Many models are trained on far more tokens than that, because a smaller model trained longer is cheaper to serve.\n\nExample: a 1-billion-parameter model trained on 20 billion tokens needs about 6 × 10⁹ × 2 × 10¹⁰ = 1.2 × 10²⁰ FLOPs.\n\nScaling laws predict loss, not specific downstream abilities.",
+  "mixup": "Compute-optimal does not mean best for deployment. It minimizes training compute for a target loss. A model that will serve huge traffic is often better made smaller and trained on far more data, accepting a higher training bill.",
+  "related": [
+   "pretraining",
+   "mixture-of-experts",
+   "perplexity",
+   "knowledge-distillation"
+  ]
+ },
+ {
+  "id": "mixture-of-experts",
+  "name": "Mixture of experts",
+  "topic": "llm",
+  "aka": [
+   "MoE",
+   "sparse mixture of experts",
+   "sparse MoE",
+   "expert routing",
+   "gating network",
+   "router",
+   "top-k routing"
+  ],
+  "summary": "A layer with many parallel expert networks where a router sends each token to only a few of them, adding capacity without adding much compute per token.",
+  "body": "In a transformer MoE, the feed-forward sublayer is replaced by E expert FFNs and a small router. For each token, the router scores the experts, picks the top k (often 1 or 2, sometimes more when the experts are small), and combines their outputs weighted by the router scores.\n\nTotal parameters grow with E, but each token only runs through k experts, so compute per token stays close to that of a dense model of the active size. That buys more capacity for the same training and inference compute.\n\nThe costs are elsewhere. Every expert must sit in memory even though few are active, so memory follows the total size. Training needs an auxiliary load-balancing loss or a similar trick, so the router does not send most tokens to a few favourite experts. Serving across devices adds communication to move tokens to their experts.\n\nExample: 8 experts of 1 billion parameters each with top-2 routing hold 8 billion expert parameters but run about 2 billion per token.",
+  "mixup": "Experts are not topic specialists such as a maths expert and a history expert. Routing is learned per token and per layer, and experts tend to specialize in fuzzy, low-level patterns that rarely map to human subjects.",
+  "related": [
+   "transformer-block",
+   "scaling-laws",
+   "model-parallelism",
+   "memory-bound-decoding"
+  ],
+  "diagram": "mixture-of-experts"
+ }
+]

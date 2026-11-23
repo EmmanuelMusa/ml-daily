@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 180" role="img">
+<title>Training and validation error as the training set grows</title>
+<defs><marker id="learning-curve-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" class="f-ink s-none"/></marker></defs>
+<path d="M40,15 V155 H248" class="s-ink s-thin"/>
+<line x1="40" y1="155" x2="40" y2="11" class="s-none" marker-end="url(#learning-curve-arrow)"/>
+<line x1="40" y1="155" x2="252" y2="155" class="s-none" marker-end="url(#learning-curve-arrow)"/>
+<text x="144" y="171" text-anchor="middle" class="t-small">Training set size</text>
+<text x="32" y="85" text-anchor="middle" class="t-small" transform="rotate(-90 32 85)">Error</text>
+<polyline points="44,31.9 48.9,37.8 53.8,43 58.7,47.8 63.6,52.1 68.5,56.1 73.4,59.6 78.3,62.9 83.2,65.8 88.1,68.5 93,70.9 97.9,73 102.8,75 107.7,76.8 112.6,78.4 117.5,79.9 122.4,81.3 127.3,82.5 132.2,83.6 137.1,84.6 142,85.5 146.9,86.3 151.8,87 156.7,87.7 161.6,88.3 166.5,88.9 171.4,89.4 176.3,89.8 181.2,90.2 186.1,90.6 191,91 195.9,91.3 200.8,91.5 205.7,91.8 210.6,92 215.5,92.2 220.4,92.4 225.3,92.6 230.2,92.7 235.1,92.9 240,93" class="s-ink s-thick"/>
+<polyline points="44,144.1 48.9,141 53.8,138.1 58.7,135.5 63.6,133.2 68.5,131.1 73.4,129.1 78.3,127.4 83.2,125.8 88.1,124.4 93,123.1 97.9,121.9 102.8,120.8 107.7,119.9 112.6,119 117.5,118.2 122.4,117.5 127.3,116.8 132.2,116.2 137.1,115.7 142,115.2 146.9,114.7 151.8,114.3 156.7,114 161.6,113.7 166.5,113.4 171.4,113.1 176.3,112.8 181.2,112.6 186.1,112.4 191,112.2 195.9,112.1 200.8,111.9 205.7,111.8 210.6,111.7 215.5,111.5 220.4,111.4 225.3,111.3 230.2,111.3 235.1,111.2 240,111.1" class="s-muted s-thick"/>
+<line x1="224" y1="95.5" x2="224" y2="108.4" class="s-ink s-thin" marker-start="url(#learning-curve-arrow)" marker-end="url(#learning-curve-arrow)"/>
+<text x="219" y="106" text-anchor="end" class="t-small">gap</text>
+<text x="246" y="97" class="t-small">validation</text>
+<text x="246" y="115.1" class="t-small t-muted">training</text>
+<text x="246" y="30" class="t-small">Big gap: get</text>
+<text x="246" y="43" class="t-small">more data</text>
+<text x="246" y="64" class="t-small">Both high and</text>
+<text x="246" y="77" class="t-small">flat: underfit</text>
+</svg>

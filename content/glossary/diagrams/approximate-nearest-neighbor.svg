@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 186" role="img">
+<title>ANN search scans only the query's cell, so it can miss the true nearest point</title>
+<rect x="110" y="8" width="100" height="60" class="f-sheet s-none"/>
+<rect x="8" y="8" width="304" height="120" class="s-line"/>
+<line x1="110" y1="8" x2="110" y2="128" class="s-line"/>
+<line x1="210" y1="8" x2="210" y2="128" class="s-line"/>
+<line x1="8" y1="68" x2="312" y2="68" class="s-line"/>
+<circle cx="30" cy="30" r="3" class="f-muted s-none"/>
+<circle cx="70" cy="50" r="3" class="f-muted s-none"/>
+<circle cx="45" cy="100" r="3" class="f-muted s-none"/>
+<circle cx="85" cy="115" r="3" class="f-muted s-none"/>
+<circle cx="140" cy="100" r="3" class="f-muted s-none"/>
+<circle cx="180" cy="112" r="3" class="f-muted s-none"/>
+<circle cx="126" cy="30" r="3" class="f-muted s-none"/>
+<circle cx="132" cy="58" r="3" class="f-muted s-none"/>
+<circle cx="255" cy="25" r="3" class="f-muted s-none"/>
+<circle cx="290" cy="55" r="3" class="f-muted s-none"/>
+<circle cx="240" cy="100" r="3" class="f-muted s-none"/>
+<circle cx="285" cy="112" r="3" class="f-muted s-none"/>
+<circle cx="60" cy="80" r="3" class="f-muted s-none"/>
+<circle cx="195" cy="88" r="3" class="f-muted s-none"/>
+<circle cx="160" cy="44" r="3" class="f-muted s-none"/>
+<circle cx="160" cy="44" r="7" class="s-right s-thick"/>
+<circle cx="222" cy="44" r="3" class="f-muted s-none"/>
+<circle cx="222" cy="44" r="7" class="s-wrong s-thick s-dash"/>
+<rect x="194" y="42" width="8" height="8" class="f-ink s-none"/>
+<text x="160" y="22" text-anchor="middle" class="t-small t-bold">searched cell</text>
+<text x="198" y="63" text-anchor="middle" class="t-small">query</text>
+<rect x="12" y="140" width="8" height="8" class="f-ink s-none"/>
+<text x="26" y="148" class="t-small">query</text>
+<circle cx="80" cy="144" r="6" class="s-right s-thick"/>
+<text x="91" y="148" class="t-small">found (approx.)</text>
+<circle cx="190" cy="144" r="6" class="s-wrong s-thick s-dash"/>
+<text x="201" y="148" class="t-small">true nearest, missed</text>
+<text x="160" y="174" text-anchor="middle" class="t-small t-muted">Search one cell, not every point: fast but approximate.</text>
+</svg>

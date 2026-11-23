@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 192" role="img">
+<title>Self-attention: the token it attends mostly to cat</title>
+<defs><marker id="self-attention-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" class="f-ink s-none"/></marker></defs>
+<text x="160" y="14" text-anchor="middle" class="t-small t-bold">query: it</text>
+<text x="25" y="38" text-anchor="middle" class="t-muted">the</text>
+<text x="70" y="38" text-anchor="middle" class="t-muted">cat</text>
+<text x="115" y="38" text-anchor="middle" class="t-muted">sat</text>
+<text x="160" y="38" text-anchor="middle" class="t-muted">as</text>
+<text x="205" y="38" text-anchor="middle" class="t-bold">it</text>
+<text x="250" y="38" text-anchor="middle" class="t-muted">was</text>
+<text x="295" y="38" text-anchor="middle" class="t-muted">tired</text>
+<rect x="190" y="24" width="30" height="20" rx="4" class="s-ink"/>
+<line x1="205" y1="46" x2="25" y2="116" class="s-muted s-thin s-dash"/>
+<text x="25" y="132" text-anchor="middle">the</text>
+<text x="25" y="148" text-anchor="middle" class="t-small t-muted">.04</text>
+<line x1="205" y1="46" x2="70" y2="116" class="s-ink s-thick"/>
+<text x="70" y="132" text-anchor="middle">cat</text>
+<text x="70" y="148" text-anchor="middle" class="t-small t-bold">.60</text>
+<line x1="205" y1="46" x2="115" y2="116" class="s-muted s-thin s-dash"/>
+<text x="115" y="132" text-anchor="middle">sat</text>
+<text x="115" y="148" text-anchor="middle" class="t-small t-muted">.04</text>
+<line x1="205" y1="46" x2="160" y2="116" class="s-muted s-thin s-dash"/>
+<text x="160" y="132" text-anchor="middle">as</text>
+<text x="160" y="148" text-anchor="middle" class="t-small t-muted">.04</text>
+<line x1="205" y1="46" x2="205" y2="116" class="s-muted s-thin s-dash"/>
+<text x="205" y="132" text-anchor="middle">it</text>
+<text x="205" y="148" text-anchor="middle" class="t-small t-muted">.04</text>
+<line x1="205" y1="46" x2="250" y2="116" class="s-ink"/>
+<text x="250" y="132" text-anchor="middle">was</text>
+<text x="250" y="148" text-anchor="middle" class="t-small t-bold">.20</text>
+<line x1="205" y1="46" x2="295" y2="116" class="s-muted s-thin s-dash"/>
+<text x="295" y="132" text-anchor="middle">tired</text>
+<text x="295" y="148" text-anchor="middle" class="t-small t-muted">.04</text>
+<text x="160" y="172" text-anchor="middle" class="t-small">Weights sum to 1. Output for 'it' is the</text>
+<text x="160" y="185" text-anchor="middle" class="t-small">weighted mix of every token's value</text>
+</svg>

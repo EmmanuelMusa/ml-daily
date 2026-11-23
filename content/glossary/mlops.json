@@ -1,0 +1,345 @@
+[
+ {
+  "id": "data-drift",
+  "name": "Data drift",
+  "topic": "mlops",
+  "aka": [
+   "covariate shift",
+   "feature drift",
+   "input drift",
+   "distribution drift",
+   "data shift"
+  ],
+  "summary": "A change over time in the distribution of a model's input features compared with the data it was trained on.",
+  "body": "Data drift means P(X) changes. Users, products, sensors or upstream pipelines change, and the inputs the model sees in production stop looking like the training set. The model may then be asked about regions it saw little of, and performance can fall.\n\nTeams detect it by comparing recent production data with a reference window, usually the training data or a stable recent period, one feature at a time. Common tools are the population stability index (PSI), the Kolmogorov-Smirnov test for numeric features and the chi-squared test for categories. Watching the distribution of predictions helps too.\n\nExample: a loan model was trained when most applicants were 30 to 50. A new campaign brings in many applicants aged 20 to 25. The age distribution has drifted, even if the link between age and default has not.\n\nDrift is a warning, not proof of harm. Confirm with labelled performance where you can.",
+  "mixup": "Data drift is a change in the inputs, P(X). Concept drift is a change in the relationship between inputs and the target, P(y | X). Data drift can be seen without labels, while concept drift usually needs labels to confirm.",
+  "related": [
+   "concept-drift",
+   "population-stability-index",
+   "model-monitoring",
+   "distribution-shift",
+   "label-delay"
+  ],
+  "diagram": "data-drift"
+ },
+ {
+  "id": "concept-drift",
+  "name": "Concept drift",
+  "topic": "mlops",
+  "aka": [
+   "concept shift",
+   "real drift",
+   "posterior drift"
+  ],
+  "summary": "A change over time in the relationship between inputs and the target, so the same inputs now lead to different outcomes and the model's learned mapping goes stale.",
+  "body": "Concept drift means P(y | X) changes. The features may look exactly as before, but what they predict has moved. It can be sudden, such as a new fraud tactic, gradual, such as slowly changing tastes, or seasonal and recurring.\n\nBecause inputs can look unchanged, input drift checks may miss it. The reliable signal is falling performance on fresh labelled data, which is why label delay matters so much. Proxy signals such as rising complaints, more chargebacks or a shift in prediction scores can give earlier hints.\n\nExample: a demand model learned that restaurants near offices are busy at lunch on weekdays. When many firms move to remote work, those lunches fall. The inputs, such as location, weekday and time, look the same, but the right answer for them has changed. The usual fix is retraining on recent data, sometimes with older data down-weighted.",
+  "mixup": "People often call any drift concept drift. If only the mix of inputs changed, that is data drift, and the model may still be right wherever it has data. Concept drift means the true answer for the same input has changed.",
+  "related": [
+   "data-drift",
+   "label-delay",
+   "retraining-policy",
+   "model-monitoring"
+  ]
+ },
+ {
+  "id": "training-serving-skew",
+  "name": "Training-serving skew",
+  "topic": "mlops",
+  "aka": [
+   "train-serve skew",
+   "training serving skew",
+   "train serving skew",
+   "online-offline skew",
+   "feature skew"
+  ],
+  "summary": "A difference between how features are computed, or what data looks like, in training and in production, which makes a model do worse live than it did offline.",
+  "body": "The model learns from features built one way, then sees features built another way. Common causes are separate code paths, such as a batch SQL job for training and a hand-written service for serving. Others are different defaults for missing values, unit or timezone mismatches, stale lookups at serving time, and training features that accidentally used information not available at prediction time.\n\nIt matters because offline metrics look fine while live results quietly suffer, and nothing crashes.\n\nExample: in training, `days_since_last_order` is computed in UTC from the warehouse and missing values become 0. The serving code computes it in local time and returns −1 when missing. The model now sees values it never learned from.\n\nPrevent it by sharing one feature definition for both paths, often through a feature store, by logging the features actually used at serving time and training on those logs, and by comparing training and serving feature distributions.",
+  "mixup": "Skew is a mismatch built into the pipeline, present from day one. Drift is the world changing after launch. Both lower live performance, but skew is fixed in code, while drift is handled by retraining.",
+  "related": [
+   "feature-store",
+   "point-in-time-correctness",
+   "data-drift",
+   "data-validation",
+   "target-leakage"
+  ]
+ },
+ {
+  "id": "feature-store",
+  "name": "Feature store",
+  "topic": "mlops",
+  "aka": [
+   "feature platform",
+   "online feature store",
+   "offline feature store"
+  ],
+  "summary": "A system that defines, computes and stores ML features once, then serves the same values for building training sets and for low-latency online prediction.",
+  "body": "A feature store usually has two parts. The offline store keeps the full history of feature values, often in a data warehouse, for building training sets. The online store keeps the latest value for each entity, such as each user or card, in a fast key-value database for serving in milliseconds. One feature definition feeds both.\n\nIt solves three common problems. It cuts training-serving skew, because both paths use the same logic. It gives point-in-time correct training data, joining each label with the feature values as they were at that moment, which prevents leakage. And it lets teams reuse features instead of rebuilding them.\n\nExample: a fraud model needs `card_txn_count_1h`. A streaming job keeps it fresh in the online store for every card. When building training data, the store returns each past transaction's value as of that transaction's timestamp, not today's value.\n\nIt is extra infrastructure, so a small team with one model may not need one.",
+  "mixup": "A feature store is more than a table of features. Its value is point-in-time correct historical joins plus matching online values. Keeping only current values and joining them to old labels leaks future information into training.",
+  "related": [
+   "training-serving-skew",
+   "point-in-time-correctness",
+   "batch-vs-online-inference",
+   "data-leakage"
+  ],
+  "diagram": "feature-store"
+ },
+ {
+  "id": "model-registry",
+  "name": "Model registry",
+  "topic": "mlops",
+  "aka": [
+   "model store",
+   "model catalog",
+   "model catalogue",
+   "model versioning"
+  ],
+  "summary": "A central record of trained model versions with their files, metadata and lifecycle stage, used to control which version is deployed.",
+  "body": "Each registered version links the model file to how it was made: the training data version, code commit, hyperparameters, evaluation results and owner. Versions move through stages such as candidate, staging, production and archived, often with an approval step.\n\nWithout a registry, nobody can quickly answer \"which model is live, and how was it trained?\" With one, deploying or rolling back means pointing serving at a different version, and there is an audit trail for regulated settings.\n\nExample: version 14 of a churn model is in production. Version 15 passes offline checks and is registered as a candidate. After a canary release it is promoted to production, and version 14 is kept, so rolling back is one step.",
+  "mixup": "A model registry is not an experiment tracker. The tracker logs every training run, most of which are thrown away. The registry holds the few chosen models that may be deployed, with their status and lineage.",
+  "related": [
+   "reproducibility",
+   "ci-cd-for-ml",
+   "canary-release",
+   "model-card"
+  ]
+ },
+ {
+  "id": "reproducibility",
+  "name": "Reproducibility",
+  "topic": "mlops",
+  "aka": [
+   "reproducible ML",
+   "reproducible training",
+   "determinism",
+   "lineage",
+   "data versioning"
+  ],
+  "summary": "Being able to rebuild the same model, or explain any difference, from recorded code, data, configuration and environment.",
+  "body": "To reproduce a model you need to pin four things: the code version, the exact data snapshot, the configuration including hyperparameters and random seeds, and the environment, meaning library versions and hardware.\n\nIt matters for debugging (\"did my change help, or was it noise?\"), audits, rollbacks and handing work to teammates.\n\nExact bit-for-bit results are hard on GPUs, because some parallel operations add numbers in a varying order and floating-point addition is not associative. Frameworks offer deterministic modes at some cost in speed. A practical goal is often statistical reproducibility: reruns land within a known spread.\n\nExample: two runs of the same fine-tuning job with different seeds score 0.842 and 0.851. Before claiming a new feature's 0.849 is a gain, run several seeds of both versions and compare against that spread.\n\nHabits that help: versioned data, logging the commit and config with every run, and container images for the environment.",
+  "mixup": "Setting a random seed is not enough. Changed data, a library upgrade, different hardware or non-deterministic GPU kernels can each change results even with the same seed.",
+  "related": [
+   "model-registry",
+   "ci-cd-for-ml",
+   "hyperparameter-tuning",
+   "train-validation-test-split"
+  ]
+ },
+ {
+  "id": "shadow-deployment",
+  "name": "Shadow deployment",
+  "topic": "mlops",
+  "aka": [
+   "shadow mode",
+   "shadow testing",
+   "shadow traffic",
+   "traffic mirroring",
+   "dark launch"
+  ],
+  "summary": "Running a new model on copies of real production requests next to the live model, logging its outputs without ever showing them to users.",
+  "body": "Each live request goes to the current model, whose answer is served, and a copy goes to the candidate, whose answer is only logged. You then compare the two: how often predictions agree, score distributions, latency, error rates and memory use under real load.\n\nIt is a safe way to catch problems that offline tests miss, such as training-serving skew, slow responses on real inputs, or crashes on odd requests, with no user impact. The cost is running two models at once.\n\nIts limit is that it cannot measure effects that depend on users acting on the output, such as clicks or sales, because users never see the candidate's answers. For that you need a canary release or an A/B test.\n\nExample: a new fraud model runs in shadow for two weeks. It would have blocked 3% more transactions, and its p99 latency is 40 ms over budget. Both issues are fixed before any customer is affected.",
+  "mixup": "In a shadow deployment the candidate serves nobody. In a canary release it serves a small share of real users. Shadow mode tests safety and agreement, while canaries and A/B tests show real user impact.",
+  "related": [
+   "canary-release",
+   "ab-testing",
+   "training-serving-skew",
+   "model-monitoring"
+  ]
+ },
+ {
+  "id": "canary-release",
+  "name": "Canary release",
+  "topic": "mlops",
+  "aka": [
+   "canary deployment",
+   "canary rollout",
+   "canary",
+   "progressive rollout",
+   "staged rollout",
+   "gradual rollout"
+  ],
+  "summary": "Rolling out a new model to a small share of real traffic first, watching key metrics, and widening the rollout only while it stays healthy.",
+  "body": "A canary starts with something like 1 to 5% of traffic on the new version. You compare its error rate, latency and model or business metrics with the old version, often through automatic checks. If they hold, traffic steps up, perhaps to 25%, 50% and 100%. If not, traffic goes back to the old version at once.\n\nIt limits the blast radius of a bad release: a bug hurts a few users for a short time instead of everyone. It needs the old version kept ready for rollback and metrics that react quickly.\n\nExample: a new ranking model gets 5% of users for a day. Its crash rate is normal, but click-through is 4% lower than the control group's, so it is rolled back before full launch.\n\nSmall canary groups give noisy metrics, so a canary is best at catching clear breakage, not at measuring small effects.",
+  "mixup": "A canary release is mainly a safety check. An A/B test is a planned experiment with a set sample size, built to measure an effect precisely. They can share traffic-splitting tools, but a canary is not a substitute for a properly powered experiment.",
+  "related": [
+   "shadow-deployment",
+   "ab-testing",
+   "model-monitoring",
+   "model-registry",
+   "service-level-objective"
+  ],
+  "diagram": "canary-release"
+ },
+ {
+  "id": "model-monitoring",
+  "name": "Model monitoring",
+  "topic": "mlops",
+  "aka": [
+   "ML monitoring",
+   "production monitoring",
+   "model observability",
+   "performance monitoring"
+  ],
+  "summary": "Tracking a deployed model's health, inputs, outputs and real-world performance over time, so problems are caught before they cause harm.",
+  "body": "Monitoring covers several layers. Service health: latency, error rate, throughput and cost. Data quality: missing values, schema changes and out-of-range values. Drift: shifts in input features and in prediction scores. Model quality: accuracy, precision, calibration or business metrics, computed once labels arrive. And slices: the same metrics by segment, since an overall average can hide a group that is failing.\n\nAlerts should fire on thresholds that matter, or the team learns to ignore them.\n\nExample: a churn model's overall AUC is stable, but a slice dashboard shows recall for new mobile users fell from 0.70 to 0.45. An app update had renamed an event that fed one feature. A data quality check on that feature would have caught it on day one.\n\nWhen labels arrive late, input and prediction drift serve as early warnings.",
+  "mixup": "Ordinary software monitoring is not enough. A model can return fast, valid responses with no errors while its predictions are quietly wrong. ML monitoring adds data, drift and quality checks on top of service health.",
+  "related": [
+   "data-drift",
+   "concept-drift",
+   "label-delay",
+   "slice-based-evaluation",
+   "llm-observability"
+  ]
+ },
+ {
+  "id": "population-stability-index",
+  "name": "Population stability index",
+  "topic": "mlops",
+  "aka": [
+   "PSI",
+   "population stability",
+   "stability index"
+  ],
+  "summary": "A drift score that compares how a variable is spread across bins in a reference sample and a recent sample, where larger values mean a bigger shift.",
+  "body": "Bin the variable, often into 10 bins using the deciles of the reference data. For each bin, take the reference share E and the recent share A, then sum over bins:\n\nPSI = Σ (A − E) × ln(A / E)\n\nEvery term is zero or positive, so PSI is never negative and is zero only when the shares match. It is also symmetric: swapping the two samples gives the same value. Common rules of thumb are below 0.1 for little change, 0.1 to 0.25 for a moderate shift worth checking, and above 0.25 for a major shift. These cut-offs come from credit scoring practice, not from a statistical test.\n\nExample: one bin held 10% of the training data and now holds 20%. Its term is (0.20 − 0.10) × ln(2) ≈ 0.069. Add the terms for all bins to get the total.\n\nWatch the details: an empty bin makes ln(A / E) undefined, so use a small floor, and results depend on the binning.",
+  "mixup": "PSI measures how far a distribution moved, not whether the model got worse. A high PSI on an unimportant feature may not matter, and concept drift can hurt the model while every PSI stays near zero.",
+  "related": [
+   "data-drift",
+   "kl-divergence",
+   "model-monitoring",
+   "concept-drift"
+  ]
+ },
+ {
+  "id": "retraining-policy",
+  "name": "Retraining policy",
+  "topic": "mlops",
+  "aka": [
+   "retraining strategy",
+   "retraining schedule",
+   "retraining trigger",
+   "model refresh",
+   "continuous training"
+  ],
+  "summary": "The rules for when and how a production model is retrained, such as on a fixed schedule, on a drift or performance trigger, or both.",
+  "body": "A policy answers three questions. When: on a schedule such as nightly or weekly, on a trigger such as performance below a threshold, drift above a limit or enough new labels, or both. On what data: a sliding window of recent data, all history, or history with recent data weighted more. How it ships: the new model passes the same checks as any release and must match or beat the live model on a fresh holdout before promotion.\n\nThe right cadence depends on how fast the world changes, how long labels take and what training costs. Fraud may need daily retraining, while a stable sensor model may need it yearly.\n\nExample: a demand model retrains weekly on a rolling 12 months of data. It is promoted only if its error on the latest week is no worse than the live model's.\n\nAutomatic retraining without these checks can ship a model trained on broken data.",
+  "mixup": "Retraining is not always the fix. If performance fell because of a pipeline bug or training-serving skew, retraining on the broken data can make things worse. Find the cause first.",
+  "related": [
+   "concept-drift",
+   "label-delay",
+   "model-monitoring",
+   "ci-cd-for-ml",
+   "catastrophic-forgetting"
+  ]
+ },
+ {
+  "id": "ci-cd-for-ml",
+  "name": "CI/CD for ML",
+  "topic": "mlops",
+  "aka": [
+   "CI/CD",
+   "CICD",
+   "CI CD",
+   "continuous integration",
+   "continuous delivery",
+   "ML pipeline automation"
+  ],
+  "summary": "Automating the testing, validation and release of ML code, data and models, so every change reaches production through the same repeatable checks.",
+  "body": "Normal CI/CD tests code. ML adds two more things that change: data and models. A typical pipeline has unit tests for feature and training code, data validation of schema, ranges and null rates, a training step, quality checks against a fixed evaluation set and against the current production model, checks on latency, size and fairness, and then a staged release such as shadow or canary, with rollback ready.\n\nMany teams add continuous training, where new data triggers the pipeline to retrain and re-validate automatically.\n\nExample: a pull request changes how a feature is bucketed. CI runs the unit tests and retrains a small model on a sample. The quality gate fails because AUC on the fixed evaluation set dropped from 0.91 to 0.88, so the change cannot merge without review.\n\nThe aim is that no model reaches users by hand from a notebook.",
+  "mixup": "Passing code tests does not mean a model is safe to ship. A pipeline can run cleanly and still produce a worse model. ML pipelines need data and quality gates, not only unit tests.",
+  "related": [
+   "model-registry",
+   "data-validation",
+   "reproducibility",
+   "canary-release",
+   "retraining-policy"
+  ]
+ },
+ {
+  "id": "batch-vs-online-inference",
+  "name": "Batch vs online inference",
+  "topic": "mlops",
+  "aka": [
+   "batch inference",
+   "online inference",
+   "offline inference",
+   "real-time inference",
+   "batch prediction",
+   "online prediction"
+  ],
+  "summary": "Batch inference scores many records on a schedule and stores the results, while online inference computes a prediction on demand when a request arrives.",
+  "body": "Batch inference runs as a job, for example nightly, over a whole table and writes predictions to a store that apps read. It is cheap, simple and efficient at volume, but predictions are only as fresh as the last run, and it scores many records that are never used.\n\nOnline inference runs a model behind an API. It can use fresh context, such as what the user just searched, and handles new users or items. It must meet a latency budget, stay available and scale with traffic.\n\nExample: a weekly churn score for 2 million customers suits batch, since retention emails go out once a week. Card payment fraud checks need online inference, because the decision must use the current transaction within tens of milliseconds.\n\nMany systems mix both: precompute heavy parts in batch, such as item embeddings, and do light scoring online at request time.",
+  "mixup": "Online inference does not mean the model learns online. It only means predictions are made at request time. Online learning, where the model updates from each new example, is a separate idea.",
+  "related": [
+   "feature-store",
+   "latency-budget",
+   "capacity-estimation",
+   "two-stage-recommender"
+  ]
+ },
+ {
+  "id": "label-delay",
+  "name": "Label delay",
+  "topic": "mlops",
+  "aka": [
+   "delayed labels",
+   "label latency",
+   "label lag",
+   "delayed feedback",
+   "feedback delay"
+  ],
+  "summary": "The gap between when a model makes a prediction and when the true outcome becomes known, which slows down both monitoring and retraining.",
+  "body": "Some labels arrive in seconds, such as a click. Others take weeks or months, such as a loan default, a chargeback or a customer cancelling. Until the label arrives, you cannot measure real accuracy on recent predictions.\n\nThis shapes the whole MLOps setup. Quality monitoring lags, so teams watch proxies such as input drift, prediction score distributions and early signals that correlate with the final label. Retraining data always ends some time in the past. And training sets need care, because a recent example with no label yet can be wrongly treated as negative.\n\nExample: fraud chargebacks can take up to 60 days to arrive. A model deployed today gets a reliable precision figure only after about two months. Labelling last week's transactions \"not fraud\" just because no chargeback has come yet would teach the model that fresh fraud looks legitimate.",
+  "mixup": "A missing label on recent data is not a negative label. Treating \"not known yet\" as \"no\" biases both training data and metrics. Wait for a maturity window, or model the delay explicitly.",
+  "related": [
+   "model-monitoring",
+   "concept-drift",
+   "retraining-policy",
+   "data-drift"
+  ]
+ },
+ {
+  "id": "llm-observability",
+  "name": "LLM observability",
+  "topic": "mlops",
+  "aka": [
+   "LLM monitoring",
+   "LLM tracing",
+   "LLMOps",
+   "AI observability",
+   "trace logging"
+  ],
+  "summary": "Capturing traces, inputs, outputs, costs and quality signals from an LLM application in production, so you can debug failures and track quality over time.",
+  "body": "LLM apps fail in ways normal metrics miss: a fluent but wrong answer still returns a success code. Observability adds a trace for each request that records every step: the prompt template and its version, retrieved documents, tool calls, model responses, token counts, latency and cost per step.\n\nOn top of traces you run quality checks: automatic evals such as groundedness or format checks, LLM-as-judge scoring on a sample, user feedback such as thumbs up or down, and tracking of refusals and guardrail triggers. Bad traces become new test cases for your evaluation set.\n\nExample: complaints about wrong refund amounts rise. Traces show the retrieval step returns an outdated policy document for 8% of refund questions, and the model faithfully quotes it. The fix is in the index, not the prompt.\n\nTraces often contain personal data, so redact it and set retention limits.",
+  "mixup": "Observability is more than logging the final answer. Without the steps in between, such as retrieval and tool calls, you cannot tell whether a bad answer came from the model, the prompt or the context it was given.",
+  "related": [
+   "model-monitoring",
+   "llm-as-judge",
+   "groundedness",
+   "trajectory-evaluation",
+   "pii-handling"
+  ]
+ },
+ {
+  "id": "service-level-objective",
+  "name": "Service level objective",
+  "topic": "mlops",
+  "aka": [
+   "SLO",
+   "SLI",
+   "SLA",
+   "service level indicator",
+   "service level agreement",
+   "error budget"
+  ],
+  "summary": "A target for how well a service must perform over a time window, such as 99.9% of requests answered within 300 ms over 30 days.",
+  "body": "Three terms go together. A service level indicator (SLI) is the measurement, such as the share of requests answered within 300 ms. The SLO is the internal target for that SLI over a window. A service level agreement (SLA) is a contract with customers, usually looser than the SLO, with penalties if it is missed.\n\nThe gap to 100% is the error budget. A 99.9% availability SLO over a 30-day month allows 0.1% of 43,200 minutes, which is 43.2 minutes of failure. When the budget is used up, teams slow down risky releases and focus on reliability.\n\nFor ML services, SLOs often cover latency percentiles, availability and the freshness of features or predictions, and sometimes a quality floor such as a minimum precision on a daily audit.\n\nExample: an LLM assistant sets SLOs of p95 time to first token under 1 second and 99.5% of requests completing without error.",
+  "mixup": "An SLO is not an SLA. The SLO is the team's own target, while the SLA is an outside promise with consequences. Latency targets are also set on percentiles, not averages, because averages hide slow requests.",
+  "related": [
+   "latency-budget",
+   "throughput-vs-latency",
+   "graceful-degradation",
+   "model-monitoring",
+   "capacity-estimation"
+  ]
+ }
+]

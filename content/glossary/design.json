@@ -1,0 +1,291 @@
+[
+ {
+  "id": "two-stage-recommender",
+  "name": "Two-stage recommender",
+  "topic": "design",
+  "aka": [
+   "retrieval and ranking",
+   "candidate generation and ranking",
+   "candidate generation",
+   "multi-stage recommender",
+   "multi-stage ranking",
+   "two-stage ranking"
+  ],
+  "summary": "A recommender design where a fast retrieval stage narrows millions of items to a few hundred candidates and a heavier model ranks those candidates.",
+  "body": "Scoring every item with a rich model on every request is far too slow, so the work is split. Candidate generation, or retrieval, uses cheap methods such as a two-tower model with approximate nearest neighbour search, co-occurrence lists or popular items to pull a few hundred to a few thousand items in milliseconds. Its goal is high recall.\n\nThe ranking stage then scores each candidate with a heavier model that can use many features, including crosses of user and item features and live context, to predict clicks, watch time or purchases. Its goal is precision at the top. Many systems add a final re-ranking step for diversity, freshness and business rules.\n\nExample: a video app with 10 million videos retrieves 500 candidates from several sources in 20 ms, ranks them with a gradient-boosted or neural model in 50 ms, then re-ranks the top 50 so no single creator fills the page.",
+  "mixup": "The stages are judged differently. Retrieval is judged by recall: did the good items make it into the candidate set? Ranking is judged by order quality, such as NDCG. A great ranker cannot rescue an item that retrieval dropped.",
+  "related": [
+   "two-tower-model",
+   "approximate-nearest-neighbor",
+   "learning-to-rank",
+   "latency-budget",
+   "ndcg"
+  ],
+  "diagram": "two-stage-recommender"
+ },
+ {
+  "id": "collaborative-filtering",
+  "name": "Collaborative filtering",
+  "topic": "design",
+  "aka": [
+   "CF",
+   "user-based collaborative filtering",
+   "item-based collaborative filtering",
+   "item-to-item recommendations",
+   "people who bought this also bought"
+  ],
+  "summary": "Recommending items from patterns in many users' behaviour, on the idea that people who agreed in the past will like similar things, without using item content.",
+  "body": "Collaborative filtering works from the user-item interaction matrix of ratings, purchases or clicks. Neighbourhood methods find similar users or similar items, for example by cosine similarity of their interaction vectors. Item-based CF (\"people who bought this also bought\") is common because item similarities change slowly. Model-based methods, such as matrix factorization, learn a vector for each user and each item so that their dot product predicts the interaction.\n\nBecause it needs only behaviour, it can find links that item descriptions would never show.\n\nExample: many viewers of three particular sci-fi films also watch a certain niche documentary. CF recommends that documentary to another viewer of those films, even though nothing in its description mentions sci-fi.\n\nIts weaknesses are cold start, since a new item has no interactions, and a pull toward popular items. Most data is implicit feedback, so a missing interaction does not mean dislike.",
+  "mixup": "Collaborative filtering uses who interacted with what. Content-based filtering uses item attributes such as text, genre or price. CF handles new items badly and content-based methods handle them well, which is why hybrid systems are common.",
+  "related": [
+   "matrix-factorization",
+   "content-based-filtering",
+   "cold-start",
+   "two-tower-model",
+   "cosine-similarity"
+  ]
+ },
+ {
+  "id": "content-based-filtering",
+  "name": "Content-based filtering",
+  "topic": "design",
+  "aka": [
+   "content-based recommendation",
+   "content-based recommender",
+   "content based filtering",
+   "item-feature recommendation"
+  ],
+  "summary": "Recommending items whose features resemble what a user liked before, using item attributes such as text, category or embeddings rather than other users' behaviour.",
+  "body": "Each item is described by features: genre, tags, price, or text and image embeddings. A user profile is built from the items they engaged with, for example the average of their embeddings. Candidate items are scored by similarity to that profile, often cosine similarity.\n\nIts strength is that a new item can be recommended as soon as it has features, with no interaction history. It also gives easy explanations (\"because you read X\") and serves users with niche tastes well.\n\nIts weakness is narrowness. It keeps suggesting more of the same and cannot discover that sci-fi readers also love a certain cookbook. Quality depends on how good the item features are.\n\nExample: a news app embeds every article. A reader who opened three articles about electric cars is shown a new battery-technology article minutes after it is published, before anyone else has clicked it.",
+  "mixup": "Content-based filtering solves the new-item cold start, not the new-user one. A user with no history has no profile, so it still needs a fallback such as popular items or a few onboarding questions.",
+  "related": [
+   "collaborative-filtering",
+   "cold-start",
+   "embedding",
+   "cosine-similarity",
+   "two-tower-model"
+  ]
+ },
+ {
+  "id": "two-tower-model",
+  "name": "Two-tower model",
+  "topic": "design",
+  "aka": [
+   "dual encoder",
+   "dual-encoder",
+   "two tower",
+   "bi-encoder",
+   "two-tower retrieval"
+  ],
+  "summary": "A retrieval model where one network embeds the user or query and another embeds items, trained so that matching pairs have a high dot product.",
+  "body": "The query tower takes user features, history or a search query. The item tower takes item features. Both output vectors of the same size, and the score is their dot product or cosine similarity. Training usually uses positive pairs, such as clicks, with in-batch negatives, where the other items in the batch act as non-matches, under a softmax loss.\n\nThe key property is that the towers do not interact until the final dot product. So all item embeddings can be computed ahead of time and loaded into an approximate nearest neighbour index. At request time you run only the query tower and search the index, which scales to many millions of items.\n\nExample: a job site embeds 5 million postings each night. When a user opens the app, their tower runs once and the index returns the 300 closest postings in a few milliseconds, which then go to a ranking model.",
+  "mixup": "A two-tower model is fast precisely because it cannot model fine interactions between query and item features. A cross-encoder or ranking model sees both together and is more accurate, but too slow for millions of items, so they are used in sequence.",
+  "related": [
+   "two-stage-recommender",
+   "approximate-nearest-neighbor",
+   "contrastive-learning",
+   "cross-encoder-reranking",
+   "embedding"
+  ]
+ },
+ {
+  "id": "cold-start",
+  "name": "Cold start",
+  "topic": "design",
+  "aka": [
+   "cold start problem",
+   "cold-start problem",
+   "new user problem",
+   "new item problem"
+  ],
+  "summary": "The difficulty of making good predictions for new users or new items that have little or no interaction history.",
+  "body": "Behaviour-based models such as collaborative filtering learn from past interactions, so a brand-new user or item gives them nothing to work with. There are three cases: a new user, a new item and a whole new system.\n\nCommon fixes:\n- Use content features for new items, such as text or image embeddings.\n- Ask new users a few onboarding questions.\n- Fall back to popularity in context, such as top items in the user's region.\n- Use the signals you do have, such as device, referrer and the first clicks in this session.\n- Explore on purpose, for example with a bandit that gives new items some exposure.\n\nExample: a marketplace lists 20,000 new products a day. A pure CF model never shows them, so they never get clicks, so they stay invisible. Giving each new item a small guaranteed share of impressions, placed using its content embedding, breaks that loop.",
+  "mixup": "Cold start is not only a new-user problem. New items can be the bigger issue, since a model that never shows them never collects the data to learn about them. The two cases need different fixes.",
+  "related": [
+   "collaborative-filtering",
+   "content-based-filtering",
+   "multi-armed-bandit",
+   "feedback-loop"
+  ]
+ },
+ {
+  "id": "learning-to-rank",
+  "name": "Learning to rank",
+  "topic": "design",
+  "aka": [
+   "LTR",
+   "ranking model",
+   "pointwise ranking",
+   "pairwise ranking",
+   "listwise ranking",
+   "LambdaMART",
+   "RankNet"
+  ],
+  "summary": "Training a model to order a list of items by relevance for a query or user, optimizing the quality of the ordering rather than each prediction on its own.",
+  "body": "There are three main approaches. Pointwise treats each item alone and predicts a score or label, such as click probability, with ordinary regression or classification. Pairwise learns which of two items should rank higher, with a loss on pairs, as in RankNet. Listwise uses a loss over the whole list that is tied to a ranking metric such as NDCG, as in LambdaMART and softmax-based list losses.\n\nRanking metrics care most about the top positions, which pointwise losses treat no differently from the rest. Pairwise and listwise methods focus learning on the order.\n\nTraining data comes from human relevance grades or from clicks, which must be corrected for position bias.\n\nExample: a help-centre search has 50 candidate articles for \"reset router password\". A pairwise model learns from clicks that the official setup guide should beat an old forum thread, and the list is sorted by its scores.",
+  "mixup": "Better pointwise accuracy does not guarantee a better ranking. A model can predict click rates well on average yet order the top few items poorly. Judge ranking models with ranking metrics such as NDCG or MRR.",
+  "related": [
+   "ndcg",
+   "position-bias",
+   "two-stage-recommender",
+   "mean-reciprocal-rank",
+   "cross-encoder-reranking"
+  ]
+ },
+ {
+  "id": "position-bias",
+  "name": "Position bias",
+  "topic": "design",
+  "aka": [
+   "presentation bias",
+   "rank bias",
+   "position effect",
+   "examination bias"
+  ],
+  "summary": "The tendency of users to click higher-placed results more often just because of where they appear, so clicks overstate how relevant the top positions are.",
+  "body": "Click logs mix two things: whether a user looked at an item and whether they liked it. Items near the top are looked at far more, so a ranker trained naively on clicks learns that whatever it showed first was best, and keeps showing it.\n\nOne fix is to estimate how likely each position is to be examined, for example by randomizing the order for a small slice of traffic, then weight each click by the inverse of that probability. Another is to add position as a feature in training and set it to a fixed value at serving time. Interleaving experiments also compare rankers more fairly.\n\nExample: position 1 is examined 90% of the time and position 5 about 30%. A result at position 5 with a 6% click rate may be more relevant than one at position 1 with a 15% click rate, since 6 / 0.30 = 20% versus 15 / 0.90 ≈ 16.7%.",
+  "mixup": "A high click rate at the top is not proof of relevance, because it mixes visibility with quality. Position bias is one case of the wider feedback loop, where a model's own choices shape the data it learns from next.",
+  "related": [
+   "learning-to-rank",
+   "feedback-loop",
+   "selection-bias",
+   "ab-testing"
+  ]
+ },
+ {
+  "id": "multi-armed-bandit",
+  "name": "Multi-armed bandit",
+  "topic": "design",
+  "aka": [
+   "bandit",
+   "bandits",
+   "MAB",
+   "contextual bandit",
+   "epsilon-greedy",
+   "Thompson sampling",
+   "UCB",
+   "upper confidence bound",
+   "explore-exploit"
+  ],
+  "summary": "A method that repeatedly chooses among options while learning which pays off best, balancing trying uncertain options against using the current best.",
+  "body": "Each option is an arm with an unknown reward, such as a click rate. Each round you pick an arm, see its reward and update your estimates. The tension is exploration versus exploitation. Epsilon-greedy picks the best arm so far most of the time and a random arm with probability ε. Upper confidence bound (UCB) picks the arm with the highest optimistic estimate. Thompson sampling draws a value from each arm's posterior and picks the highest draw. Contextual bandits also use user features, so the choice can differ per person.\n\nCompared with an A/B test, a bandit shifts traffic toward winners while still learning, so less traffic goes to poor options. The price is weaker evidence about how big the differences are.\n\nExample: four headline variants for one article. With ε = 0.1, 90% of readers see the headline with the best click rate so far and 10% see a randomly chosen one, so a slow starter can still catch up.",
+  "mixup": "A bandit does not replace every A/B test. A bandit aims to earn the most reward while learning, while an A/B test aims to measure an effect precisely. Bandits suit short-lived choices like headlines, tests suit decisions that need a trustworthy estimate.",
+  "related": [
+   "ab-testing",
+   "cold-start",
+   "feedback-loop",
+   "reinforcement-learning"
+  ]
+ },
+ {
+  "id": "feedback-loop",
+  "name": "Feedback loop",
+  "topic": "design",
+  "aka": [
+   "degenerate feedback loop",
+   "self-reinforcing loop",
+   "filter bubble",
+   "rich-get-richer effect",
+   "self-fulfilling prediction"
+  ],
+  "summary": "When a model's predictions change the data it is later trained on, so its own past choices shape, and can distort, what it learns next.",
+  "body": "A recommender shows items, users click among what they were shown, and those clicks become training data. Items the model favours get more exposure and more clicks, which convinces it they are even better. Items it never shows collect no evidence. Over time diversity shrinks and errors reinforce themselves.\n\nIt appears outside recommenders too. A fraud model blocks transactions, so you never learn whether the blocked ones were really fraud. Predictive policing sends officers where the model expects crime, which records more crime there.\n\nWays to break the loop: keep a small random or exploration slice of traffic, log what was shown and its probability of being shown so training can correct for it, monitor diversity and catalogue coverage, and collect labels for a sample of cases the model rejected.\n\nExample: after a music app launches a ranker trained on clicks, the top 1% of songs grow from 30% to 55% of all plays in six months, while plays of new artists fall.",
+  "mixup": "A feedback loop is not ordinary data drift. Drift comes from the world changing on its own. A feedback loop comes from the model changing its own training data, so simply retraining on the new data tends to deepen it.",
+  "related": [
+   "position-bias",
+   "multi-armed-bandit",
+   "selection-bias",
+   "cold-start",
+   "data-drift"
+  ]
+ },
+ {
+  "id": "capacity-estimation",
+  "name": "Capacity estimation",
+  "topic": "design",
+  "aka": [
+   "back-of-the-envelope estimation",
+   "back of the envelope",
+   "back-of-envelope calculation",
+   "capacity planning",
+   "sizing",
+   "QPS estimation"
+  ],
+  "summary": "Rough calculations of the traffic, compute, memory and storage a system will need, used to size hardware and spot bottlenecks before building.",
+  "body": "Start from users and their behaviour, convert to requests per second, then to resources. Average QPS = daily requests / 86,400. Plan for the peak, often 2 to 5 times the average, then add headroom. Divide by what one server or GPU can handle, using throughput measured at your latency target.\n\nFor LLMs, estimate tokens, not just requests: QPS × (input + output tokens), plus memory for weights and the KV cache.\n\nExample: 10 million daily users each send 5 requests, so 50 million requests a day, about 580 QPS on average. With a peak of 3 times, that is about 1,740 QPS. If one GPU replica handles 60 QPS within the latency target, you need 1,740 / 60 = 29 replicas, then a few more for redundancy, say 35.\n\nStorage works the same way: 50 million logged requests at 2 KB each is 100 GB per day.\n\nWrite down every assumption. Interviewers care more about clear, checkable steps than exact numbers.",
+  "mixup": "Sizing for average load is a classic mistake. Peaks and bursts decide how much capacity you need, and running servers close to 100% utilization makes queueing delay, and so latency, rise sharply.",
+  "related": [
+   "throughput-vs-latency",
+   "latency-budget",
+   "kv-cache",
+   "batch-vs-online-inference",
+   "service-level-objective"
+  ]
+ },
+ {
+  "id": "latency-budget",
+  "name": "Latency budget",
+  "topic": "design",
+  "aka": [
+   "latency budgeting",
+   "time budget",
+   "response time budget",
+   "latency allocation"
+  ],
+  "summary": "The total response time a request is allowed, split into a share for each step, so every component knows how much time it may spend.",
+  "body": "Start from the product target, usually a percentile such as p99 under 200 ms, then divide it along the request path: network, feature lookups, retrieval, model inference and post-processing, plus a margin for spikes. Each team designs to its share.\n\nThe budget drives design choices: which features can be fetched live, how big the ranking model can be, how many candidates to score, what to cache and which steps can run in parallel. Steps in sequence add up, while parallel steps cost only as much as the slowest one.\n\nExample: a search page has 200 ms at p99. Network and API overhead take 30 ms, query understanding 15 ms, retrieval 40 ms, ranking 80 ms and rendering 15 ms, leaving a 20 ms margin. Adding a 60 ms reranker means something else must shrink or run in parallel.\n\nWhen one request fans out to many services, it waits for the slowest, so each part's tail latency matters a lot.",
+  "mixup": "Meeting the budget on average does not mean meeting it. Budgets are set on tail percentiles, because users notice slow requests and fan-out calls wait for their slowest part. Also, adding each step's p99 usually overstates the end-to-end p99, so treat that sum as a safe upper estimate.",
+  "related": [
+   "service-level-objective",
+   "throughput-vs-latency",
+   "two-stage-recommender",
+   "model-cascade",
+   "graceful-degradation"
+  ]
+ },
+ {
+  "id": "model-cascade",
+  "name": "Model cascade",
+  "topic": "design",
+  "aka": [
+   "cascade",
+   "cascading models",
+   "LLM cascade",
+   "tiered models",
+   "confidence-based escalation"
+  ],
+  "summary": "A chain of models from cheap to expensive, where each request is answered by the cheapest model that is confident enough and only hard cases move on.",
+  "body": "The first model handles the request and gives a confidence, such as a calibrated probability or a verifier's judgement. If the confidence clears a threshold, its answer is used. If not, the request passes to the next, stronger model. Simple rules can sit at the front to settle the easiest cases.\n\nIt cuts average cost and latency while keeping quality close to the strongest model, as long as the confidence signal is reliable. Thresholds are tuned on held-out data to hit a quality target.\n\nExample: a support classifier answers 80% of tickets with confidence above 0.9. The other 20% go to a large LLM. If the small model costs 1 unit and the large one 20, every ticket pays 1 and a fifth also pay 20, so the average is 1 + 0.2 × 20 = 5 units, against 20 for sending everything to the large model.\n\nEscalated requests are slower, since they run both models.",
+  "mixup": "A cascade tries models in order and escalates on low confidence. A router predicts up front which model to call, so each request runs only one model. Cascades depend on calibrated confidence, since an overconfident first model never escalates its own mistakes.",
+  "related": [
+   "model-routing",
+   "calibration",
+   "decision-threshold",
+   "knowledge-distillation",
+   "latency-budget"
+  ],
+  "diagram": "model-cascade"
+ },
+ {
+  "id": "graceful-degradation",
+  "name": "Graceful degradation",
+  "topic": "design",
+  "aka": [
+   "fallback",
+   "fallbacks",
+   "fallback strategy",
+   "degraded mode",
+   "fail soft"
+  ],
+  "summary": "Designing a system so that when a component fails or slows down, it falls back to a simpler but still useful response instead of failing outright.",
+  "body": "Every dependency of an ML service can fail: the model server, the feature store, the vector database or an external LLM API. Graceful degradation decides in advance what to do. Typical fallbacks are cached or precomputed results, a simpler model, default feature values, rule-based logic, popular items, or an alternative LLM. Timeouts and circuit breakers make sure a slow dependency triggers the fallback instead of stalling the whole request.\n\nFallbacks must be tested and monitored, and the team should know how much quality each one gives up.\n\nExample: a homepage recommender calls a ranking service with a 100 ms timeout. On timeout, the page shows that user's recommendations from last night's batch job, and if those are missing, the top items in the user's region. The page always loads.\n\nFor risky decisions such as large payments, the safe fallback may be to fail closed, holding the action for review, rather than to allow it.",
+  "mixup": "Graceful degradation is not just retrying. Retrying a struggling service adds load and can make an outage worse. It means switching to a lower-quality but reliable path, and in some domains the safe default is to refuse rather than guess.",
+  "related": [
+   "latency-budget",
+   "service-level-objective",
+   "model-cascade",
+   "rate-limits-and-backoff",
+   "batch-vs-online-inference"
+  ]
+ }
+]

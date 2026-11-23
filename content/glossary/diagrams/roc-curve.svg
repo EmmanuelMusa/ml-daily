@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 176" role="img">
+<title>ROC curve: true positive rate against false positive rate</title>
+<defs><marker id="roc-curve-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" class="f-ink s-none"/></marker></defs>
+<polygon points="42,150 42,150 44.6,101.1 47.2,91.9 49.8,85.7 52.4,80.9 55,76.9 57.6,73.5 60.2,70.5 62.8,67.8 65.4,65.3 68,63.1 70.6,61 73.2,59 75.8,57.2 78.4,55.4 81,53.8 83.6,52.2 86.2,50.7 88.8,49.3 91.4,47.9 94,46.6 96.6,45.3 99.2,44.1 101.8,42.9 104.4,41.8 107,40.7 109.6,39.6 112.2,38.6 114.8,37.5 117.4,36.6 120,35.6 122.6,34.6 125.2,33.7 127.8,32.8 130.4,31.9 133,31.1 135.6,30.2 138.2,29.4 140.8,28.6 143.4,27.8 146,27.1 148.6,26.3 151.2,25.5 153.8,24.8 156.4,24.1 159,23.4 161.6,22.7 164.2,22 166.8,21.3 169.4,20.7 172,20 172,150" class="f-line s-none"/>
+<path d="M42,14 V150 H178" class="s-ink s-thin"/>
+<line x1="42" y1="150" x2="42" y2="10" class="s-none" marker-end="url(#roc-curve-arrow)"/>
+<line x1="42" y1="150" x2="182" y2="150" class="s-none" marker-end="url(#roc-curve-arrow)"/>
+<text x="110" y="166" text-anchor="middle" class="t-small">False positive rate</text>
+<text x="34" y="82" text-anchor="middle" class="t-small" transform="rotate(-90 34 82)">True positive rate</text>
+<text x="42" y="162" text-anchor="middle" class="t-small t-muted">0</text>
+<text x="172" y="162" text-anchor="middle" class="t-small t-muted">1</text>
+<text x="38" y="24" text-anchor="end" class="t-small t-muted">1</text>
+<line x1="42" y1="150" x2="172" y2="20" class="s-muted s-dash"/>
+<polyline points="42,150 44.6,101.1 47.2,91.9 49.8,85.7 52.4,80.9 55,76.9 57.6,73.5 60.2,70.5 62.8,67.8 65.4,65.3 68,63.1 70.6,61 73.2,59 75.8,57.2 78.4,55.4 81,53.8 83.6,52.2 86.2,50.7 88.8,49.3 91.4,47.9 94,46.6 96.6,45.3 99.2,44.1 101.8,42.9 104.4,41.8 107,40.7 109.6,39.6 112.2,38.6 114.8,37.5 117.4,36.6 120,35.6 122.6,34.6 125.2,33.7 127.8,32.8 130.4,31.9 133,31.1 135.6,30.2 138.2,29.4 140.8,28.6 143.4,27.8 146,27.1 148.6,26.3 151.2,25.5 153.8,24.8 156.4,24.1 159,23.4 161.6,22.7 164.2,22 166.8,21.3 169.4,20.7 172,20" class="s-ink s-thick"/>
+<text x="122.6" y="121.4" text-anchor="middle" class="t-small t-bold">AUC = 0.8</text>
+<text x="153.8" y="74.6" text-anchor="middle" class="t-small t-muted">random</text>
+<circle cx="42" cy="20" r="3.5" class="f-ink s-none"/>
+<text x="50" y="16" class="t-small">perfect</text>
+<text x="188" y="34" class="t-small">Each point on the</text>
+<text x="188" y="47" class="t-small">curve is one threshold</text>
+<text x="188" y="74" class="t-small">Closer to the top left</text>
+<text x="188" y="87" class="t-small">is better</text>
+<text x="188" y="114" class="t-small t-muted">Dashed diagonal</text>
+<text x="188" y="127" class="t-small t-muted">= random guessing</text>
+</svg>

@@ -1,0 +1,474 @@
+[
+ {
+  "id": "supervised-learning",
+  "name": "Supervised learning",
+  "topic": "foundations",
+  "aka": [
+   "supervised ML",
+   "supervised machine learning",
+   "learning from labels",
+   "labeled learning"
+  ],
+  "summary": "Learning a mapping from inputs to known outputs, using training examples where the correct answer, the label, is given for each one.",
+  "body": "In supervised learning each training example is a pair: input features x and a target y. The model learns a function f(x) ≈ y by minimising a loss on those pairs, then predicts y for new inputs.\n\nThere are two main kinds. **Classification** predicts a category, such as fraud or not fraud. **Regression** predicts a number, such as delivery time in minutes.\n\nIn real work the hard part is usually the labels. They cost money, arrive late and contain mistakes. Most production ML, from churn models to ad click prediction, is supervised.\n\nExample: a bank has 200,000 past transactions, each marked fraud or legitimate after investigation. A model trained on them learns which patterns of amount, merchant and time go with fraud, then scores new transactions as they happen.",
+  "mixup": "Supervised does not mean a human watches training. It means each example comes with a target. Self-supervised learning, used to pretrain LLMs, also has targets, but they are made from the data itself, such as the next token in a sentence.",
+  "related": [
+   "unsupervised-learning",
+   "loss-function",
+   "train-validation-test-split",
+   "generalization",
+   "label-noise"
+  ]
+ },
+ {
+  "id": "unsupervised-learning",
+  "name": "Unsupervised learning",
+  "topic": "foundations",
+  "aka": [
+   "unsupervised ML",
+   "unsupervised machine learning",
+   "learning without labels"
+  ],
+  "summary": "Finding structure in data that has no labels, such as groups of similar items, a few underlying patterns, or unusual points.",
+  "body": "Unsupervised learning works with inputs x only. There is no target to predict, so the model looks for structure in the data itself.\n\nCommon tasks:\n- **Clustering**: group similar items, such as k-means on customer behaviour.\n- **Dimensionality reduction**: compress many features into a few, such as PCA.\n- **Density estimation and anomaly detection**: learn what normal looks like and flag what does not fit.\n\nIt matters because labels are expensive and most data has none. It is often a first step for exploring data, building features, or picking cases for human review.\n\nExample: an online shop clusters 50,000 customers on order frequency, basket size and discount use. Five clusters come out, and after inspecting them the team calls one \"bargain hunters\". Judging the result is harder than in supervised learning, because there is no ground truth to score against.",
+  "mixup": "Clustering is not classification. A classifier learns categories that people defined in advance. Clustering invents groups from the data, and those groups may not match any business category you had in mind.",
+  "related": [
+   "supervised-learning",
+   "k-means",
+   "pca",
+   "anomaly-detection",
+   "silhouette-score"
+  ]
+ },
+ {
+  "id": "reinforcement-learning",
+  "name": "Reinforcement learning",
+  "topic": "foundations",
+  "aka": [
+   "RL",
+   "reward learning",
+   "policy learning"
+  ],
+  "summary": "An agent learns which actions to take by trying them in an environment and receiving rewards, aiming to maximise its total reward over time.",
+  "body": "In reinforcement learning an agent sees a state, picks an action, and the environment returns a reward and a new state. The goal is a **policy**, a rule for choosing actions, that maximises the expected sum of future rewards. Future rewards are usually discounted: G = r₁ + γr₂ + γ²r₃ + ..., with γ between 0 and 1.\n\nTwo things make it harder than supervised learning. Feedback can be delayed, so the agent must work out which earlier action earned a reward. And the agent must balance **exploration**, trying new actions, against **exploitation**, using what already works.\n\nIt is used in robotics, games, ad bidding and recommendations, and in LLM training through RLHF, where a reward model scores responses.\n\nExample: a warehouse robot gets +10 for delivering a box and −1 for each second spent. Over many episodes it learns short routes.",
+  "mixup": "RL is not supervised learning with rewards as labels. A label says what the right answer was. A reward only says how good the chosen action turned out, and says nothing about the actions the agent never tried.",
+  "related": [
+   "multi-armed-bandit",
+   "rlhf",
+   "supervised-learning",
+   "feedback-loop"
+  ]
+ },
+ {
+  "id": "generalization",
+  "name": "Generalization",
+  "topic": "foundations",
+  "aka": [
+   "generalisation",
+   "generalization error",
+   "generalization gap",
+   "out-of-sample performance",
+   "out-of-sample error"
+  ],
+  "summary": "How well a model performs on new data it never saw in training, which is the thing you actually care about.",
+  "body": "A model is useful only if it works on future data, not just on the examples it learned from. **Generalization error** is the expected loss on new data from the same distribution. The **generalization gap** is the difference between training performance and performance on unseen data.\n\nYou estimate it with data held out from training: a validation set for choices during development and a test set for the final number. Cross-validation gives a steadier estimate when data is small.\n\nTwo things break generalization. Overfitting makes the model memorise noise, so the gap grows. Distribution shift makes new data differ from training data, so even a well-fitted model degrades.\n\nExample: a churn model scores 0.95 AUC on its training customers and 0.78 on held-out customers. The 0.78 is the honest estimate, and the gap of 0.17 says the model is overfitting.",
+  "mixup": "Low training loss is not good generalization. A model that memorises the training set can reach zero training error and still do badly on new data. Always judge a model on data it did not learn from.",
+  "related": [
+   "overfitting",
+   "bias-variance-tradeoff",
+   "train-validation-test-split",
+   "cross-validation",
+   "distribution-shift"
+  ]
+ },
+ {
+  "id": "overfitting",
+  "name": "Overfitting",
+  "topic": "foundations",
+  "aka": [
+   "overfit",
+   "over-fitting",
+   "overfitted",
+   "high variance"
+  ],
+  "summary": "When a model fits the training data too closely, learning its noise and quirks, so it does well in training but poorly on new data.",
+  "body": "An overfit model has learned patterns that are true only of its training sample. The sign is a gap: training error is low while validation error is clearly higher. Often validation error starts rising while training error keeps falling.\n\nIt happens when the model is too flexible for the amount of data, such as a very deep decision tree, many features with few rows, or a network trained for too many epochs.\n\nCommon fixes:\n- get more data, or use data augmentation\n- add regularization, such as L1, L2, dropout or weight decay\n- simplify the model, such as limiting tree depth\n- use early stopping\n\nExample: a decision tree with no depth limit reaches 100% training accuracy on 2,000 loan applications but only 71% on the validation set. Limiting depth to 5 drops training accuracy to 84% and lifts validation accuracy to 80%.",
+  "mixup": "A big gap between training and validation is not always overfitting. If validation data comes from a different period or source, the gap may be distribution shift. Leakage can also make validation look too good, which hides overfitting until production.",
+  "related": [
+   "underfitting",
+   "bias-variance-tradeoff",
+   "regularization",
+   "early-stopping",
+   "learning-curve"
+  ]
+ },
+ {
+  "id": "underfitting",
+  "name": "Underfitting",
+  "topic": "foundations",
+  "aka": [
+   "underfit",
+   "under-fitting",
+   "underfitted",
+   "high bias"
+  ],
+  "summary": "When a model is too simple or too constrained to capture the real pattern, so it does poorly on both training data and new data.",
+  "body": "An underfit model misses structure that is really there. The sign is that **training** error is already high, and validation error is about as high. The gap is small because the model has not learned much of anything.\n\nCauses include a model that is too simple, such as a straight line for a curved relationship, too much regularization, too few or weak features, or training stopped far too early.\n\nThe fixes go the other way from overfitting: use a more flexible model, add better features, reduce regularization, or train longer.\n\nExample: a linear regression predicts taxi fares from the pickup hour as a raw number from 0 to 23. It scores an R² of 0.10 on training data and 0.09 on validation. Fares do not rise steadily with the hour, so a single line cannot fit them. One-hot encoding the hour and adding trip distance raise both scores.",
+  "mixup": "People often add regularization when a model scores badly, but if training error is also high the model is underfitting, and more regularization makes it worse. Check training error first. High training error means underfitting, a big train-validation gap means overfitting.",
+  "related": [
+   "overfitting",
+   "bias-variance-tradeoff",
+   "learning-curve",
+   "baseline-model"
+  ]
+ },
+ {
+  "id": "bias-variance-tradeoff",
+  "name": "Bias-variance tradeoff",
+  "topic": "foundations",
+  "aka": [
+   "bias variance tradeoff",
+   "bias-variance trade-off",
+   "bias-variance decomposition",
+   "bias and variance"
+  ],
+  "summary": "A model's expected error splits into bias from wrong assumptions, variance from sensitivity to the training sample, and noise, and lowering one often raises another.",
+  "body": "For squared error, the expected error at a point breaks down as:\n\nE[(y − ŷ)²] = Bias² + Variance + irreducible noise\n\n**Bias** is how far the average prediction, over many possible training sets, sits from the truth. Simple models have high bias. **Variance** is how much predictions change when you train on a different sample. Flexible models have high variance. **Noise** is randomness in y that no model can remove.\n\nMaking a model more flexible usually lowers bias and raises variance, so total error is often U-shaped as complexity grows. Regularization, more data and ensembles are the main levers. Bagging mostly cuts variance, and boosting mostly cuts bias.\n\nExample: a linear model for house prices gives similar predictions whichever 1,000 houses you train it on, but is consistently off for large homes (high bias). A deep tree fits each sample closely, so its predictions jump around from sample to sample (high variance).",
+  "mixup": "This bias is not fairness bias or the bias term in a linear model. It means systematic error from the model's assumptions. Also, more data lowers variance but does nothing for bias, so a high-bias model needs a better model or features instead.",
+  "related": [
+   "overfitting",
+   "underfitting",
+   "regularization",
+   "bagging",
+   "learning-curve"
+  ],
+  "diagram": "bias-variance-tradeoff"
+ },
+ {
+  "id": "learning-curve",
+  "name": "Learning curve",
+  "topic": "foundations",
+  "aka": [
+   "learning curves",
+   "training curve",
+   "training curves",
+   "loss curve"
+  ],
+  "summary": "A plot of training and validation performance as the training set grows, used to tell whether more data or a different model would help.",
+  "body": "A learning curve trains the model on growing subsets of the data, such as 10%, 20% and so on up to 100%, and plots training and validation scores against training set size. Some people also use the name for loss plotted against training epochs, so check which one is meant.\n\nHow to read the size version:\n- **High variance (overfitting)**: training score high, validation score much lower, and the gap is still closing at the right edge. More data is likely to help.\n- **High bias (underfitting)**: both curves flat and close together at a poor score. More data will not help, so change the model or the features.\n\nThis saves money in practice, because labelling more data is often the most expensive option.\n\nExample: a support ticket classifier scores 0.98 on training and 0.81 on validation at 5,000 tickets, and the validation curve is still rising. Labelling another 5,000 tickets is a reasonable bet.",
+  "mixup": "A rising validation curve does not promise big gains, because curves flatten, so extrapolate with care. And the loss-per-epoch plot answers a different question: when to stop training, not whether more data would help.",
+  "related": [
+   "bias-variance-tradeoff",
+   "overfitting",
+   "underfitting",
+   "early-stopping"
+  ],
+  "diagram": "learning-curve"
+ },
+ {
+  "id": "train-validation-test-split",
+  "name": "Train, validation and test split",
+  "topic": "foundations",
+  "aka": [
+   "train/val/test split",
+   "train test split",
+   "train-test split",
+   "holdout set",
+   "hold-out set",
+   "validation set",
+   "test set",
+   "dev set"
+  ],
+  "summary": "Dividing data into one part to fit the model, one part to make choices such as hyperparameters, and one part kept untouched for a final estimate.",
+  "body": "- **Training set**: the model learns its parameters here.\n- **Validation set**, or dev set: you compare models, tune hyperparameters and pick thresholds here.\n- **Test set**: used once at the end to estimate performance on new data.\n\nThe split exists because every decision you make using a set leaks information from it. If you tune on the test set, its score becomes optimistic and no longer tells you how the model will do in production.\n\nCommon ratios are 70/15/15 or 80/10/10, with smaller holdout shares when data is huge. Split by the right unit: by user when one user has many rows, by time when the model will predict the future, and stratified by class when positives are rare.\n\nExample: 100,000 support tickets are split 80,000, 10,000 and 10,000. You try 20 model settings on validation, pick the best, then report its test score once.",
+  "mixup": "Validation and test are not the same thing. If you keep checking the test set and adjusting, it has become a second validation set and its score is biased upward. Some tools also use \"validation\" loosely, so say which set you mean.",
+  "related": [
+   "cross-validation",
+   "time-series-split",
+   "data-leakage",
+   "stratified-sampling",
+   "hyperparameter-tuning"
+  ]
+ },
+ {
+  "id": "cross-validation",
+  "name": "Cross-validation",
+  "topic": "foundations",
+  "aka": [
+   "CV",
+   "k-fold cross-validation",
+   "k-fold CV",
+   "k fold",
+   "kfold",
+   "KFold",
+   "cross validation"
+  ],
+  "summary": "Estimating performance by splitting data into k folds, training k times with each fold held out once, and averaging the k scores.",
+  "body": "In k-fold cross-validation you split the data into k equal folds, often 5 or 10. For each fold, you train on the other k − 1 folds and score on the held-out one. The final estimate is the mean of the k scores, and their spread shows how stable the model is.\n\nIt helps when data is limited, because every row is used for both training and evaluation, and the estimate is less noisy than a single split. The cost is training k models.\n\nVariants fit the data's structure. **Stratified** k-fold keeps class ratios the same in each fold. **Group** k-fold keeps all rows from one patient or user in the same fold. Time-based splits are used for forecasting.\n\nExample: 5-fold CV on 2,000 medical records gives AUCs of 0.82, 0.85, 0.80, 0.84 and 0.84. The estimate is their mean, 0.83, with a spread of about ±0.02.",
+  "mixup": "If you used cross-validation to pick hyperparameters, its best score is not an unbiased final estimate, because you chose the best of many. Use a separate test set or nested CV. Plain shuffled k-fold is also wrong for time series and for grouped data.",
+  "related": [
+   "train-validation-test-split",
+   "time-series-split",
+   "hyperparameter-tuning",
+   "stratified-sampling",
+   "data-leakage"
+  ],
+  "diagram": "cross-validation"
+ },
+ {
+  "id": "time-series-split",
+  "name": "Time-based validation split",
+  "topic": "foundations",
+  "aka": [
+   "time-based split",
+   "temporal split",
+   "out-of-time validation",
+   "out-of-time test",
+   "walk-forward validation",
+   "rolling-origin validation",
+   "backtesting",
+   "TimeSeriesSplit"
+  ],
+  "summary": "Validating a model by training on earlier data and testing on later data, so that evaluation matches how the model will be used.",
+  "body": "When a model predicts the future, a random split lets it train on rows from after the period it is tested on. That leaks future information and inflates scores. A time-based split puts a cut-off date between training and validation data.\n\n**Walk-forward** validation repeats this: train on months 1 to 6 and test on month 7, then train on 1 to 7 and test on 8, and so on. Some setups use a fixed-length sliding window instead of a growing one. A **gap** between the train and test periods helps when labels arrive late or features look back over a window.\n\nIt matters for demand forecasting, fraud, churn and any model whose inputs change over time.\n\nExample: a churn model scores 0.91 AUC with a random split but 0.79 when trained on January to June and tested on July. The 0.79 is much closer to what production will see.",
+  "mixup": "Sorting rows by time is not enough if features for training rows were built using events after the cut-off. The cut-off must apply to how features and labels are computed too, not only to which rows go where.",
+  "related": [
+   "cross-validation",
+   "data-leakage",
+   "point-in-time-correctness",
+   "distribution-shift",
+   "label-delay"
+  ],
+  "diagram": "time-series-split"
+ },
+ {
+  "id": "hyperparameter-tuning",
+  "name": "Hyperparameter tuning",
+  "topic": "foundations",
+  "aka": [
+   "hyperparameter optimization",
+   "hyperparameter optimisation",
+   "HPO",
+   "hyperparameter search",
+   "grid search",
+   "random search",
+   "Bayesian optimization",
+   "hyperparameters",
+   "GridSearchCV"
+  ],
+  "summary": "Searching for the settings fixed before training, such as learning rate or tree depth, by comparing the resulting models on validation data.",
+  "body": "**Parameters** are learned from data, such as a model's weights. **Hyperparameters** are set by you before training, such as learning rate, regularization strength, number of trees or maximum depth. Tuning means trying combinations and keeping the one with the best validation score.\n\nCommon methods:\n- **Grid search**: try every combination on a grid. Simple, but the cost multiplies with each added hyperparameter.\n- **Random search**: sample combinations at random. It usually finds good settings faster than a grid when only a few hyperparameters really matter.\n- **Bayesian optimization**: model how the score depends on the settings, and pick each next trial where that model looks most promising.\n\nSearch scale-sensitive values such as learning rate on a log scale, for example from 0.0001 to 0.1.\n\nExample: a gradient boosting fraud model is tuned over 60 random trials of learning rate, depth and number of trees, each scored with 5-fold CV.",
+  "mixup": "Hyperparameters are not the weights the model learns. Also, the best validation score from many trials is optimistic, because some trials win by luck. Confirm the final choice on a test set that played no part in tuning.",
+  "related": [
+   "cross-validation",
+   "train-validation-test-split",
+   "regularization",
+   "learning-rate",
+   "early-stopping"
+  ]
+ },
+ {
+  "id": "regularization",
+  "name": "Regularization",
+  "topic": "foundations",
+  "aka": [
+   "regularisation",
+   "regularizer",
+   "regulariser",
+   "penalty term"
+  ],
+  "summary": "Any technique that limits how closely a model can fit its training data, trading a little training accuracy for better performance on new data.",
+  "body": "Regularization fights overfitting by discouraging overly complex models. The classic form adds a penalty to the loss:\n\nTotal loss = data loss + λ × penalty(weights)\n\nλ (lambda) sets the strength. A larger λ gives simpler models with more bias and less variance, and λ = 0 turns the penalty off. You tune λ on validation data.\n\nForms you will meet:\n- **L2** (ridge): penalises Σw², shrinking all weights.\n- **L1** (lasso): penalises Σ|w|, pushing some weights to exactly zero.\n- **Structural limits**: maximum tree depth, minimum rows per leaf, fewer features.\n- **Training methods**: dropout, weight decay, early stopping, data augmentation.\n\nExample: a logistic regression on 5,000 text features reaches 99% training accuracy but 82% on validation. Adding an L2 penalty with a tuned λ brings training accuracy to 91% and lifts validation to 87%.",
+  "mixup": "Regularization is not normalization. Normalization rescales features or activations, while regularization constrains the model. Penalties like L1 and L2 also depend on feature scale, so scale features before applying them.",
+  "related": [
+   "l1-regularization",
+   "l2-regularization",
+   "overfitting",
+   "dropout",
+   "weight-decay"
+  ]
+ },
+ {
+  "id": "l1-regularization",
+  "name": "L1 regularization (lasso)",
+  "topic": "foundations",
+  "aka": [
+   "L1",
+   "lasso",
+   "LASSO",
+   "lasso regression",
+   "L1 penalty",
+   "L1 regularisation",
+   "Lasso"
+  ],
+  "summary": "A penalty on the sum of absolute weight values that shrinks weights and pushes many of them to exactly zero, which also selects features.",
+  "body": "L1 regularization adds λ Σ|wᵢ| to the loss. Lasso regression is linear regression with this penalty.\n\nThe absolute value pulls every weight towards zero with the same force however small it gets, so weak features end up with weights of exactly 0. The result is a **sparse** model that uses only a subset of features, which is easier to explain and cheaper to serve.\n\nWhen features are strongly correlated, L1 tends to keep one and drop the others somewhat arbitrarily. **Elastic net** mixes L1 and L2 to soften this.\n\nExample: a lasso model for house prices starts with 300 features. With λ tuned by cross-validation, 41 features keep non-zero weights and the rest drop to zero, with validation error about the same as the full model.\n\nScale features first, because the penalty treats every weight the same.",
+  "mixup": "L1 is the one that gives exact zeros. L2 only shrinks. People often swap them. To remember: L1 penalises |w|, whose pull stays constant near zero, while L2 penalises w², whose pull fades as w gets small.",
+  "related": [
+   "l2-regularization",
+   "regularization",
+   "feature-selection",
+   "linear-regression",
+   "feature-scaling"
+  ]
+ },
+ {
+  "id": "l2-regularization",
+  "name": "L2 regularization (ridge)",
+  "topic": "foundations",
+  "aka": [
+   "L2",
+   "ridge",
+   "ridge regression",
+   "Ridge",
+   "L2 penalty",
+   "L2 regularisation",
+   "Tikhonov regularization"
+  ],
+  "summary": "A penalty on the sum of squared weights that shrinks all weights smoothly towards zero, reducing variance without removing any features.",
+  "body": "L2 regularization adds λ Σwᵢ² to the loss. Ridge regression is linear regression with this penalty.\n\nLarge weights are penalised much more than small ones, so the model spreads influence across features instead of leaning hard on a few. Weights get smaller but rarely reach exactly zero. With correlated features, ridge tends to share weight between them, which makes it far more stable than plain least squares.\n\nIn neural networks the same idea appears as **weight decay**, which shrinks weights a little at each step. With plain SGD the two are equivalent. With Adam they are not, which is why AdamW applies decay separately.\n\nExample: two nearly identical sensor readings in a maintenance model get weights of +40 and −38 without a penalty. With ridge they become +1.1 and +0.9, and predictions on new machines become much steadier.",
+  "mixup": "Ridge does not select features. It shrinks weights but almost never sets them to zero, so if you need a sparse model use L1 or elastic net. And an L2 penalty equals weight decay only under plain SGD, not under adaptive optimizers like Adam.",
+  "related": [
+   "l1-regularization",
+   "regularization",
+   "weight-decay",
+   "linear-regression",
+   "adam-optimizer"
+  ]
+ },
+ {
+  "id": "early-stopping",
+  "name": "Early stopping",
+  "topic": "foundations",
+  "aka": [
+   "early stop",
+   "patience",
+   "EarlyStopping",
+   "early_stopping_rounds"
+  ],
+  "summary": "Stopping training once performance on validation data stops improving, and keeping the best checkpoint, so the model does not go on to overfit.",
+  "body": "During training you track a validation metric after each epoch or every few hundred steps. Training loss usually keeps falling, but validation loss falls and then starts to rise as the model begins to overfit. Early stopping halts near that turn.\n\nIn practice you set a **patience**: stop if validation has not improved for, say, 5 checks in a row, then restore the weights from the best check. It acts as regularization, because it limits how far the weights can travel from their starting values.\n\nIt is standard in gradient boosting libraries and in neural network training, and it saves compute.\n\nExample: a boosting model may grow up to 2,000 trees, with patience 50. Validation log loss is best at tree 640 and has not improved by tree 690, so training stops and the 640-tree model is kept.",
+  "mixup": "The validation set used for early stopping is part of tuning, so its score is slightly optimistic. Report final performance on a separate test set. Also, a noisy metric with low patience can stop training too soon.",
+  "related": [
+   "overfitting",
+   "regularization",
+   "learning-curve",
+   "train-validation-test-split",
+   "gradient-boosting"
+  ]
+ },
+ {
+  "id": "loss-function",
+  "name": "Loss function",
+  "topic": "foundations",
+  "aka": [
+   "loss",
+   "cost function",
+   "objective function",
+   "objective",
+   "error function",
+   "criterion"
+  ],
+  "summary": "A function that scores how wrong a model's predictions are, giving the single number that training tries to make as small as possible.",
+  "body": "Training adjusts parameters to minimise the loss, usually with gradient descent, so the loss must be computable for each example and is usually differentiable.\n\nCommon choices:\n- **Mean squared error**: (1/n) Σ(y − ŷ)². For regression. Punishes large errors heavily.\n- **Mean absolute error**: (1/n) Σ|y − ŷ|. For regression. Less sensitive to outliers.\n- **Cross-entropy (log loss)**: −Σ y log p. For classification. Punishes confident wrong answers hard.\n- **Hinge loss**: max(0, 1 − y·f(x)) with y in {−1, +1}. Used by SVMs.\n\nThe choice encodes which mistakes you care about. A model trained on squared error learns to predict the mean, and one trained on absolute error learns the median.\n\nExample: true delivery times are 30 and 50 minutes, and predictions are 35 and 40. Squared errors are 25 and 100, so MSE is 62.5. Absolute errors are 5 and 10, so MAE is 7.5.",
+  "mixup": "The loss you train on is often not the metric you report. You might train with log loss but judge the model on F1 or revenue, because metrics like accuracy are not differentiable. Some people say loss for one example and cost for the average, but most use the words interchangeably.",
+  "related": [
+   "cross-entropy-loss",
+   "gradient-descent",
+   "regularization",
+   "mae",
+   "log-loss"
+  ]
+ },
+ {
+  "id": "baseline-model",
+  "name": "Baseline model",
+  "topic": "foundations",
+  "aka": [
+   "baseline",
+   "naive baseline",
+   "dummy model",
+   "dummy baseline",
+   "heuristic baseline",
+   "DummyClassifier"
+  ],
+  "summary": "A simple reference model, such as predicting the most common class or last week's value, that any real model must clearly beat to be worth using.",
+  "body": "A baseline tells you what score is cheap to get. Without one, a number like 92% accuracy means little.\n\nUseful baselines, from simplest up:\n- **Constant**: predict the most common class, or the mean or median for regression.\n- **Naive time series**: predict the last value, or the value from the same day last week.\n- **Heuristic**: a business rule already in use, such as \"flag orders over $1,000\".\n- **Simple model**: logistic or linear regression on a few obvious features.\n\nBaselines catch bugs, show whether ML is needed at all, and set a fair bar for complex models. In production, the current system is the baseline a new model must beat.\n\nExample: 97% of transactions are legitimate, so always predicting \"legitimate\" scores 97% accuracy. A fraud model with 96% accuracy is worse than doing nothing on that metric, which is why fraud models are judged on precision and recall instead.",
+  "mixup": "A baseline is not a straw man. Beating a constant predictor by a lot proves little if a one-line rule would score nearly as well. Compare against the strongest simple option you can build quickly, on the same split and the same metric.",
+  "related": [
+   "class-imbalance",
+   "accuracy",
+   "underfitting",
+   "linear-regression",
+   "offline-online-evaluation"
+  ]
+ },
+ {
+  "id": "curse-of-dimensionality",
+  "name": "Curse of dimensionality",
+  "topic": "foundations",
+  "aka": [
+   "high-dimensional data",
+   "dimensionality curse",
+   "high dimensionality"
+  ],
+  "summary": "As the number of features grows, data becomes sparse and distances lose meaning, so models need far more data to learn reliably.",
+  "body": "Each added feature adds a dimension, and the volume of the space grows exponentially. A fixed number of points therefore covers it more and more thinly.\n\nEffects you see in practice:\n- **Distances concentrate**: for random points, the nearest and farthest neighbours end up at similar distances. This hurts k-NN, k-means and other distance-based methods.\n- **Data needs explode**: to fill 10 bins per feature, 2 features need 100 cells but 10 features need 10 billion.\n- **Chance patterns multiply**: with many features and few rows, some feature will match the labels by luck, which drives overfitting.\n\nRemedies include feature selection, regularization, dimensionality reduction such as PCA, and learned embeddings. Real data often lies near a lower-dimensional structure, which is why high-dimensional models can still work.\n\nExample: k-NN on 500 raw gene expression features for 300 patients may do barely better than chance, and often improves after reducing to 20 principal components.",
+  "mixup": "More features are not always better. Each one adds a dimension and some noise unless it carries real signal. The curse is about sparsity and distances, not mainly about compute time, though that grows too.",
+  "related": [
+   "k-nearest-neighbors",
+   "pca",
+   "feature-selection",
+   "overfitting",
+   "regularization"
+  ]
+ },
+ {
+  "id": "distribution-shift",
+  "name": "Distribution shift",
+  "topic": "foundations",
+  "aka": [
+   "dataset shift",
+   "domain shift",
+   "covariate shift",
+   "label shift",
+   "prior shift",
+   "train-test mismatch",
+   "out-of-distribution",
+   "OOD"
+  ],
+  "summary": "When the data a model meets in use differs from the data it was trained on, so the performance measured in development no longer holds.",
+  "body": "Models assume future data looks like training data. When it does not, accuracy can fall without any error being raised.\n\nThe main types, writing x for inputs and y for the target:\n- **Covariate shift**: P(x) changes but P(y | x) stays the same, such as a new customer segment arriving.\n- **Label shift**, or prior shift: P(y) changes while P(x | y) stays the same, such as the fraud rate jumping from 1% to 4% during an attack.\n- **Concept drift**: P(y | x) changes, so the same inputs now mean something different, such as fraudsters changing tactics.\n\nAlmost every production model faces some shift. Teams monitor input distributions and live metrics, validate on time-based splits, and retrain on fresh data.\n\nExample: a restaurant demand model trained on years of normal sales would overpredict badly in a sudden lockdown, because the link between day, weather and orders has changed.",
+  "mixup": "Drift in the inputs does not always hurt a model, and stable inputs do not prove it is fine. Covariate shift can be harmless, while concept drift can ruin accuracy even when input distributions look unchanged.",
+  "related": [
+   "data-drift",
+   "concept-drift",
+   "training-serving-skew",
+   "model-monitoring",
+   "time-series-split"
+  ]
+ },
+ {
+  "id": "generative-vs-discriminative",
+  "name": "Generative vs discriminative models",
+  "topic": "foundations",
+  "aka": [
+   "generative model",
+   "discriminative model",
+   "generative versus discriminative",
+   "generative and discriminative models",
+   "generative classifier",
+   "discriminative classifier"
+  ],
+  "summary": "Discriminative models learn P(y | x) to separate classes directly, while generative models learn how the data itself is produced, P(x, y) or P(x).",
+  "body": "A **discriminative** classifier models P(y | x), or just a decision boundary. Logistic regression, SVMs, gradient boosted trees and most neural classifiers are discriminative. They tend to be more accurate when labelled data is plentiful.\n\nA **generative** model learns the joint distribution P(x, y) = P(x | y) P(y), and uses Bayes' theorem to get P(y | x) when classifying. Naive Bayes and Gaussian mixture models are classic examples. Because they model x as well, they can produce new samples, cope with missing inputs more naturally, and often do well with little data.\n\nToday \"generative model\" often means a model of P(x) that produces new content, such as an LLM modelling the probability of each next token.\n\nExample: for spam filtering, Naive Bayes learns which words tend to appear in spam and in normal mail, then compares the two. Logistic regression learns weights that separate them directly.",
+  "mixup": "Generative does not just mean \"makes text or images\". In classic ML it means modelling how x is distributed, even if you only use the model to classify. And a model that only learns P(y | x) is discriminative however complex it is.",
+  "related": [
+   "naive-bayes",
+   "logistic-regression",
+   "gaussian-mixture-model",
+   "bayes-theorem",
+   "next-token-prediction"
+  ]
+ }
+]

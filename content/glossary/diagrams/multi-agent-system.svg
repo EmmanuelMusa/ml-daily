@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 176" role="img">
+<title>An orchestrator agent splits a task among specialist agents and combines their results</title>
+<defs><marker id="multi-agent-system-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-ink s-none"/></marker><marker id="multi-agent-system-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-muted s-none"/></marker></defs>
+<rect x="100" y="10" width="120" height="32" rx="5" class="f-sheet s-ink"/>
+<text x="160" y="30" text-anchor="middle" class="t-small t-bold">orchestrator agent</text>
+<path d="M122.6,42 L46,104" class="s-ink" marker-end="url(#multi-agent-system-ink)"/>
+<path d="M58,106 L132.6,44" class="s-muted s-dash" marker-end="url(#multi-agent-system-muted)"/>
+<rect x="8" y="106" width="88" height="34" rx="5" class="f-sheet s-muted"/>
+<text x="52" y="121" text-anchor="middle" class="t-small">researcher</text>
+<text x="52" y="133" text-anchor="middle" class="t-small">web search</text>
+<path d="M155,42 L154,104" class="s-ink" marker-end="url(#multi-agent-system-ink)"/>
+<path d="M166,106 L165,44" class="s-muted s-dash" marker-end="url(#multi-agent-system-muted)"/>
+<rect x="116" y="106" width="88" height="34" rx="5" class="f-sheet s-muted"/>
+<text x="160" y="121" text-anchor="middle" class="t-small">coder</text>
+<text x="160" y="133" text-anchor="middle" class="t-small">runs code</text>
+<path d="M187.4,42 L262,104" class="s-ink" marker-end="url(#multi-agent-system-ink)"/>
+<path d="M274,106 L197.4,44" class="s-muted s-dash" marker-end="url(#multi-agent-system-muted)"/>
+<rect x="224" y="106" width="88" height="34" rx="5" class="f-sheet s-muted"/>
+<text x="268" y="121" text-anchor="middle" class="t-small">reviewer</text>
+<text x="268" y="133" text-anchor="middle" class="t-small">checks work</text>
+<text x="48" y="70" text-anchor="middle" class="t-small">subtask</text>
+<text x="276" y="70" text-anchor="middle" class="t-small t-muted">result</text>
+<text x="160" y="164" text-anchor="middle" class="t-small t-muted">Each agent has its own prompt and tools.</text>
+</svg>

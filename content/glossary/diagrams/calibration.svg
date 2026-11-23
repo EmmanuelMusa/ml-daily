@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 176" role="img">
+<title>Calibration plot: predicted probability against how often it really happens</title>
+<defs><marker id="calibration-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" class="f-ink s-none"/></marker></defs>
+<path d="M42,14 V150 H178" class="s-ink s-thin"/>
+<line x1="42" y1="150" x2="42" y2="10" class="s-none" marker-end="url(#calibration-arrow)"/>
+<line x1="42" y1="150" x2="182" y2="150" class="s-none" marker-end="url(#calibration-arrow)"/>
+<text x="110" y="166" text-anchor="middle" class="t-small">Predicted probability</text>
+<text x="34" y="82" text-anchor="middle" class="t-small" transform="rotate(-90 34 82)">Observed rate</text>
+<text x="42" y="162" text-anchor="middle" class="t-small t-muted">0</text>
+<text x="172" y="162" text-anchor="middle" class="t-small t-muted">1</text>
+<text x="38" y="24" text-anchor="end" class="t-small t-muted">1</text>
+<line x1="42" y1="150" x2="172" y2="20" class="s-muted s-dash"/>
+<polyline points="55,113.6 68,106.5 81,99.3 94,92.2 107,85 120,77.8 133,70.7 146,63.5 159,56.4" class="s-ink s-thick"/>
+<circle cx="55" cy="113.6" r="3" class="f-ink s-none"/>
+<circle cx="68" cy="106.5" r="3" class="f-ink s-none"/>
+<circle cx="81" cy="99.3" r="3" class="f-ink s-none"/>
+<circle cx="94" cy="92.2" r="3" class="f-ink s-none"/>
+<circle cx="107" cy="85" r="3" class="f-ink s-none"/>
+<circle cx="120" cy="77.8" r="3" class="f-ink s-none"/>
+<circle cx="133" cy="70.7" r="3" class="f-ink s-none"/>
+<circle cx="146" cy="63.5" r="3" class="f-ink s-none"/>
+<circle cx="159" cy="56.4" r="3" class="f-ink s-none"/>
+<circle cx="159" cy="56.4" r="7" class="s-ink s-thin"/>
+<text x="132" y="34" text-anchor="end" class="t-small t-muted">perfect</text>
+<text x="188" y="34" class="t-small">Dashed line: says 70%,</text>
+<text x="188" y="47" class="t-small">happens 70% of the time</text>
+<text x="188" y="78" class="t-label">This model is</text>
+<text x="188" y="94" class="t-label">overconfident</text>
+<text x="188" y="116" class="t-small">circled: says 90%,</text>
+<text x="188" y="129" class="t-small">right 72% of the time</text>
+</svg>

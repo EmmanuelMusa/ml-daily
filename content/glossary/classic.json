@@ -1,0 +1,507 @@
+[
+ {
+  "id": "linear-regression",
+  "name": "Linear regression",
+  "topic": "classic",
+  "aka": [
+   "OLS",
+   "ordinary least squares",
+   "least squares regression",
+   "least squares",
+   "linear model",
+   "multiple regression",
+   "LinearRegression"
+  ],
+  "summary": "Predicting a number as a weighted sum of input features plus an intercept, with the weights chosen to minimise squared error.",
+  "body": "The model is ŷ = w₀ + w₁x₁ + w₂x₂ + ... + wₚxₚ. Ordinary least squares picks the weights that minimise the sum of squared residuals, Σ(y − ŷ)². There is a closed-form solution, w = (XᵀX)⁻¹Xᵀy, though libraries use more stable methods, and gradient descent works for very large data.\n\nEach weight is the expected change in y for a one-unit rise in that feature, holding the others fixed. That makes the model easy to explain and a strong baseline.\n\nIt assumes a linear relationship and, for valid confidence intervals, independent errors with constant variance. It can still model curves if you add features such as x² or log x.\n\nExample: a fitted model says delivery time = 8 + 2.5 × distance in km. A 6 km order is predicted at 8 + 15 = 23 minutes.",
+  "mixup": "\"Linear\" means linear in the weights, not in the raw inputs. A model with x² and log x features is still linear regression. Also, a large weight does not mean an important feature unless the features are on the same scale.",
+  "related": [
+   "logistic-regression",
+   "l2-regularization",
+   "l1-regularization",
+   "r-squared",
+   "rmse"
+  ]
+ },
+ {
+  "id": "logistic-regression",
+  "name": "Logistic regression",
+  "topic": "classic",
+  "aka": [
+   "logit model",
+   "logit regression",
+   "LogisticRegression",
+   "binary logistic regression",
+   "multinomial logistic regression",
+   "logreg"
+  ],
+  "summary": "A classification model that passes a weighted sum of features through the sigmoid function to output a probability between 0 and 1.",
+  "body": "Logistic regression computes z = w₀ + w·x, then p = σ(z) = 1 / (1 + e⁻ᶻ). The output p is the predicted probability of the positive class. You get a class by comparing p to a threshold, 0.5 by default but often tuned.\n\nWeights are fitted by minimising log loss, also called cross-entropy. There is no closed form, so iterative solvers are used. The loss is convex, so solvers do not get stuck in poor local minima. Each weight shifts the **log-odds**, log(p / (1 − p)), linearly: a weight of 0.7 multiplies the odds by exp(0.7) ≈ 2.0.\n\nIt is fast, easy to explain, often reasonably well calibrated, and a standard baseline for churn, fraud and click prediction. Softmax extends it to many classes.\n\nExample: z = −3 + 0.8 × (support tickets last month). A customer with 5 tickets has z = 1, so p = σ(1) ≈ 0.73 chance of churning.",
+  "mixup": "Despite the name, logistic regression is used for classification. It regresses the log-odds, not the class. It also draws a linear decision boundary, so it cannot separate classes that need curves unless you add features such as interactions.",
+  "related": [
+   "linear-regression",
+   "log-loss",
+   "decision-threshold",
+   "softmax",
+   "calibration"
+  ]
+ },
+ {
+  "id": "decision-tree",
+  "name": "Decision tree",
+  "topic": "classic",
+  "aka": [
+   "decision trees",
+   "CART",
+   "classification tree",
+   "regression tree",
+   "DecisionTreeClassifier",
+   "DecisionTreeRegressor"
+  ],
+  "summary": "A model that predicts by asking a series of yes or no questions about features, splitting the data until each leaf gives a prediction.",
+  "body": "A tree starts with all training rows at the root. It picks the feature and threshold that best separate the targets, such as \"account age < 30 days\", and splits. It repeats on each branch until a stopping rule is met. A leaf predicts the majority class or the average value of its rows.\n\nSplits are chosen greedily to reduce impurity: Gini impurity or entropy for classification, squared error for regression.\n\nTrees handle mixed feature types, need no scaling, capture interactions and are easy to read. On their own they overfit easily and are unstable, since a small change in the data can change the whole tree. So you limit depth or leaf size, or use ensembles such as random forests and gradient boosting.\n\nExample: a loan tree first splits on debt-to-income above 0.4, then on more than 2 missed payments. Applicants high on both land in a leaf where 78% of training rows defaulted, so they are predicted to default.",
+  "mixup": "Greedy splitting does not find the best possible tree, only good local choices. And an unlimited tree reaching 100% training accuracy is a warning sign, not a success, because it has probably memorised the training rows.",
+  "related": [
+   "gini-impurity",
+   "information-gain",
+   "random-forest",
+   "gradient-boosting",
+   "overfitting"
+  ],
+  "diagram": "decision-tree"
+ },
+ {
+  "id": "gini-impurity",
+  "name": "Gini impurity",
+  "topic": "classic",
+  "aka": [
+   "Gini index",
+   "Gini",
+   "Gini criterion",
+   "Gini split"
+  ],
+  "summary": "A measure of how mixed the classes are in a tree node: the chance that two items drawn at random from it have different labels.",
+  "body": "Gini impurity for a node is:\n\nGini = 1 − Σ pₖ²\n\nwhere pₖ is the share of class k in the node. A pure node has Gini 0. For two classes the maximum is 0.5, at a 50/50 mix.\n\nA decision tree tries each candidate split and picks the one with the lowest size-weighted Gini across the child nodes, which is the biggest drop from the parent. It is the default criterion in CART and in scikit-learn, and is slightly cheaper than entropy because it needs no logarithm. The two usually pick very similar splits.\n\nExample: a node has 40 fraud and 60 legitimate rows. Gini = 1 − (0.4² + 0.6²) = 0.48. A split gives a left child with 30 fraud and 10 legitimate (Gini 0.375) and a right child with 10 fraud and 50 legitimate (Gini about 0.278). The weighted Gini is 0.4 × 0.375 + 0.6 × 0.278 ≈ 0.317, a drop of about 0.16.",
+  "mixup": "Gini impurity is not the Gini coefficient used for income inequality or in credit scoring, where Gini = 2 × AUC − 1. Same name, different measures. People also forget to weight each child by its share of the rows.",
+  "related": [
+   "decision-tree",
+   "information-gain",
+   "entropy",
+   "random-forest"
+  ]
+ },
+ {
+  "id": "information-gain",
+  "name": "Entropy and information gain",
+  "topic": "classic",
+  "aka": [
+   "information gain",
+   "IG",
+   "entropy criterion",
+   "entropy split",
+   "gain ratio",
+   "Shannon entropy in decision trees"
+  ],
+  "summary": "Entropy measures how uncertain the label is in a node, and information gain is how much a split reduces that uncertainty.",
+  "body": "Entropy for a node is:\n\nH = −Σ pₖ log₂ pₖ\n\nwhere pₖ is the share of class k. A pure node has H = 0. A 50/50 node with two classes has H = 1 bit, the maximum for two classes.\n\nInformation gain is the parent's entropy minus the size-weighted entropy of the children:\n\nIG = H(parent) − Σ (nⱼ / n) H(childⱼ)\n\nA decision tree picks the split with the highest gain. ID3 uses it directly, C4.5 uses a normalised version called gain ratio, and scikit-learn offers it as `criterion=\"entropy\"`. It usually picks splits close to those chosen by Gini impurity.\n\nExample: a parent node is 50/50 churn, so H = 1. A split makes two equal-sized children, one 80/20 and one 20/80. Each child has H = −(0.8 log₂ 0.8 + 0.2 log₂ 0.2) ≈ 0.722. So IG = 1 − 0.722 = 0.278 bits.",
+  "mixup": "Information gain favours features with many distinct values, such as a customer ID, because splitting into tiny pure groups looks perfect. That is why C4.5 uses gain ratio. Also, entropy here measures label uncertainty inside a node, not anything about the features.",
+  "related": [
+   "gini-impurity",
+   "decision-tree",
+   "entropy",
+   "kl-divergence",
+   "feature-selection"
+  ]
+ },
+ {
+  "id": "bagging",
+  "name": "Bagging",
+  "topic": "classic",
+  "aka": [
+   "bootstrap aggregating",
+   "bootstrap aggregation",
+   "bagged trees",
+   "BaggingClassifier",
+   "BaggingRegressor"
+  ],
+  "summary": "Training many copies of a model on different bootstrap samples of the data, then averaging their predictions to reduce variance.",
+  "body": "Bagging stands for bootstrap aggregating. For each of B models, draw a bootstrap sample: n rows sampled with replacement from the n training rows. Train a model on each sample, then combine them by averaging for regression or voting for classification.\n\nAveraging many models whose errors are not fully correlated lowers variance while leaving bias about the same. So bagging helps most with unstable, high-variance models such as deep decision trees, and helps little with stable ones like linear regression.\n\nEach bootstrap sample leaves out about 37% of the rows, since (1 − 1/n)ⁿ ≈ 1/e. Those **out-of-bag** rows give a free validation estimate. The models are independent, so they can train in parallel.\n\nExample: 200 deep trees are each trained on a bootstrap sample of 10,000 insurance claims. A single tree scores 0.74 AUC on validation, and the bagged ensemble scores 0.84.",
+  "mixup": "Bagging is not boosting. Bagging trains models independently, in parallel, and mainly reduces variance. Boosting trains them in sequence, each correcting the last, and mainly reduces bias. A random forest is bagging plus a random choice of features at each split.",
+  "related": [
+   "random-forest",
+   "gradient-boosting",
+   "bias-variance-tradeoff",
+   "decision-tree",
+   "stacking"
+  ]
+ },
+ {
+  "id": "random-forest",
+  "name": "Random forest",
+  "topic": "classic",
+  "aka": [
+   "random forests",
+   "RF",
+   "RandomForestClassifier",
+   "RandomForestRegressor",
+   "forest of trees"
+  ],
+  "summary": "An ensemble of decision trees, each trained on a bootstrap sample and limited to a random subset of features at each split, with predictions averaged.",
+  "body": "A random forest is bagged decision trees with one extra twist. At every split a tree may only choose from a random subset of features, often √p of the p features for classification. This stops every tree from splitting on the same strong feature first, so the trees are less correlated and averaging them cuts variance further.\n\nTrees are usually grown deep, and the averaging controls overfitting. Adding more trees does not cause overfitting, it just stops helping after a point. Out-of-bag rows give a built-in validation score.\n\nIt works well with little tuning, handles mixed features without scaling, and is a strong default for tabular data. A well-tuned gradient boosting model often scores a little higher.\n\nExample: a churn forest has 500 trees and 30 features, and each split chooses among about 5 random features (√30 ≈ 5.5). The predicted churn probability is the average of the trees' outputs.",
+  "mixup": "More trees do not make a random forest overfit, but deep trees on noisy data can still fit noise. Also, the built-in impurity importances are biased towards features with many distinct values, so check them with permutation importance.",
+  "related": [
+   "bagging",
+   "decision-tree",
+   "gradient-boosting",
+   "feature-importance",
+   "isolation-forest"
+  ]
+ },
+ {
+  "id": "gradient-boosting",
+  "name": "Gradient boosting",
+  "topic": "classic",
+  "aka": [
+   "GBM",
+   "GBDT",
+   "gradient boosted trees",
+   "gradient boosted decision trees",
+   "gradient boosting machine",
+   "boosting",
+   "XGBoost",
+   "LightGBM",
+   "CatBoost"
+  ],
+  "summary": "Building an ensemble of small trees in sequence, where each new tree is fitted to correct the errors left by the trees before it.",
+  "body": "Gradient boosting starts with a simple prediction, such as the mean. Each round it computes the negative gradient of the loss for every row, which for squared error is just the residual y − ŷ, and fits a small tree to it. The new tree's output, scaled by a **learning rate** η, is added:\n\nFₘ(x) = Fₘ₋₁(x) + η × hₘ(x)\n\nThis is gradient descent in function space. Shallow trees, a small learning rate, many rounds and early stopping usually work best. Libraries such as XGBoost, LightGBM and CatBoost add regularization and speed.\n\nOn tabular data it is often the strongest model, and it is common for fraud, credit risk, ranking and pricing.\n\nExample: a true price is 300, the first prediction is 250, so the residual is 50. With η = 0.1, a tree that fits that residual adds 5, giving 255. Later trees keep chipping away at the remaining 45.",
+  "mixup": "Unlike a random forest, boosting can overfit as rounds are added, so the number of trees is tuned, often with early stopping. A lower learning rate needs more trees. Boosting mainly reduces bias through sequential correction, while bagging mainly reduces variance.",
+  "related": [
+   "bagging",
+   "random-forest",
+   "decision-tree",
+   "early-stopping",
+   "learning-rate"
+  ]
+ },
+ {
+  "id": "stacking",
+  "name": "Stacking",
+  "topic": "classic",
+  "aka": [
+   "stacked generalization",
+   "stacked ensemble",
+   "stacking ensemble",
+   "meta-learner",
+   "meta-model",
+   "blending",
+   "StackingClassifier"
+  ],
+  "summary": "Combining several different models by training a second-level model to learn how best to combine their predictions.",
+  "body": "In stacking, several base models, often of different kinds such as gradient boosting, logistic regression and k-NN, each make predictions. A **meta-model**, often a simple logistic or linear regression, takes those predictions as its input features and learns the final output.\n\nThe key detail is to train the meta-model on **out-of-fold** predictions. Use k-fold cross-validation so each base model only predicts rows it did not train on. If the meta-model sees base predictions on their own training rows, it learns to trust whichever model overfit most.\n\nStacking can add accuracy when the base models make different errors, which is why it is popular in competitions. In production every extra model adds latency, cost and maintenance, so the gain must be worth it.\n\nExample: three fraud models score 0.88, 0.86 and 0.84 AUC. A logistic regression trained on their out-of-fold scores reaches 0.90.",
+  "mixup": "Blending is a simpler cousin that trains the meta-model on one holdout set instead of out-of-fold predictions. And stacking is not plain averaging. The meta-model learns how much to trust each base model from data.",
+  "related": [
+   "bagging",
+   "gradient-boosting",
+   "cross-validation",
+   "data-leakage"
+  ]
+ },
+ {
+  "id": "k-nearest-neighbors",
+  "name": "k-nearest neighbours",
+  "topic": "classic",
+  "aka": [
+   "k-NN",
+   "kNN",
+   "KNN",
+   "k-nearest neighbors",
+   "k nearest neighbours",
+   "nearest neighbours",
+   "nearest neighbors",
+   "KNeighborsClassifier"
+  ],
+  "summary": "Predicting for a new point by finding the k closest training points and taking their majority class or their average value.",
+  "body": "k-NN has no real training step. It stores the training data. At prediction time it measures the distance from the new point to the stored points, usually Euclidean distance, and takes the k nearest. Classification uses a majority vote, regression uses the mean, and both can give closer neighbours more weight.\n\nk controls the tradeoff. k = 1 follows every noisy point (high variance), while a very large k smooths away real structure (high bias). Pick k with cross-validation.\n\nFeature scaling is essential, because a feature measured in thousands swamps one measured in fractions. Prediction is slow on large data, so real systems use approximate nearest neighbour indexes. It also suffers badly in high dimensions.\n\nExample: with k = 5, a new loan applicant's five nearest past applicants include 4 who repaid and 1 who defaulted. The prediction is \"repays\", with a score of 0.8.",
+  "mixup": "k-NN is not k-means. k-NN is a supervised method that predicts labels from neighbours. k-means is an unsupervised method that groups unlabelled points into k clusters. The k means something different in each.",
+  "related": [
+   "feature-scaling",
+   "curse-of-dimensionality",
+   "approximate-nearest-neighbor",
+   "k-means",
+   "bias-variance-tradeoff"
+  ],
+  "diagram": "k-nearest-neighbors"
+ },
+ {
+  "id": "naive-bayes",
+  "name": "Naive Bayes",
+  "topic": "classic",
+  "aka": [
+   "naive Bayes classifier",
+   "NB",
+   "multinomial naive Bayes",
+   "Gaussian naive Bayes",
+   "Bernoulli naive Bayes",
+   "MultinomialNB",
+   "GaussianNB"
+  ],
+  "summary": "A probabilistic classifier that applies Bayes' theorem while assuming every feature is independent of the others once the class is known.",
+  "body": "Naive Bayes picks the class with the highest P(y | x), using:\n\nP(y | x₁, ..., xₙ) ∝ P(y) × P(x₁ | y) × ... × P(xₙ | y)\n\nThe \"naive\" part is assuming features are conditionally independent given the class. That is rarely true, yet the ranking of classes is often still good. Variants differ in how they model P(xᵢ | y): multinomial for word counts, Bernoulli for yes or no features, Gaussian for continuous values.\n\nIt trains in one pass of counting, works with little data, and is a classic baseline for text such as spam filtering. Use **Laplace smoothing**, adding one to every count, so an unseen word does not force a probability to zero. Work in log probabilities to avoid underflow.\n\nExample: P(spam) = 0.3. The word \"invoice\" appears in 20% of spam and 5% of normal mail. Looking only at that word, the scores are 0.3 × 0.2 = 0.06 for spam and 0.7 × 0.05 = 0.035 for normal, so P(spam) = 0.06 / 0.095 ≈ 0.63.",
+  "mixup": "Naive Bayes often ranks classes well, but its probabilities are poorly calibrated, usually pushed towards 0 or 1 because correlated features are counted as separate evidence. Do not read its scores as true probabilities without calibrating them.",
+  "related": [
+   "bayes-theorem",
+   "conditional-probability",
+   "generative-vs-discriminative",
+   "logistic-regression",
+   "calibration"
+  ]
+ },
+ {
+  "id": "support-vector-machine",
+  "name": "Support vector machine",
+  "topic": "classic",
+  "aka": [
+   "SVM",
+   "SVMs",
+   "support vector classifier",
+   "SVC",
+   "LinearSVC",
+   "SVR",
+   "support vector regression",
+   "maximum margin classifier"
+  ],
+  "summary": "A classifier that finds the boundary with the widest possible margin between classes, defined only by the training points closest to it.",
+  "body": "A linear SVM looks for a hyperplane w·x + b = 0 that separates the classes with the largest **margin**, the gap to the nearest points on either side. Those nearest points are the **support vectors**. Moving any other point does not change the boundary.\n\nReal data overlaps, so the soft-margin SVM allows some violations. It minimises ½‖w‖² + C Σξᵢ, where ξᵢ measures how far point i is on the wrong side of its margin. A large C punishes violations hard and fits tightly. A small C allows more of them for a wider, smoother margin. This is the same as hinge loss with L2 regularization.\n\nWith the kernel trick, SVMs can draw curved boundaries. They do well on medium-sized, high-dimensional data such as text, and need feature scaling. Kernel SVMs scale poorly to millions of rows. They output scores, not probabilities, unless calibrated.\n\nExample: on 5,000 product reviews with TF-IDF features, a linear SVM separates positive from negative reviews, and only 600 reviews end up as support vectors.",
+  "mixup": "In SVMs, C is the inverse of regularization strength. A larger C means less regularization, the opposite direction to λ in ridge or lasso. People often tune it the wrong way for this reason.",
+  "related": [
+   "kernel-trick",
+   "logistic-regression",
+   "loss-function",
+   "feature-scaling",
+   "regularization"
+  ],
+  "diagram": "support-vector-machine"
+ },
+ {
+  "id": "kernel-trick",
+  "name": "Kernel trick",
+  "topic": "classic",
+  "aka": [
+   "kernel method",
+   "kernel methods",
+   "kernel function",
+   "kernels",
+   "RBF kernel",
+   "Gaussian kernel",
+   "polynomial kernel"
+  ],
+  "summary": "Computing inner products in a high-dimensional feature space directly from the original inputs, so linear methods can learn curved boundaries cheaply.",
+  "body": "Some algorithms, such as SVMs, use the data only through dot products xᵢ·xⱼ. Replace each dot product with a **kernel** k(xᵢ, xⱼ) that equals φ(xᵢ)·φ(xⱼ) for some feature map φ. The algorithm becomes linear in φ-space, which is non-linear in the original space. You never compute φ itself, which may have a huge or even infinite number of dimensions.\n\nCommon kernels:\n- **Polynomial**: (x·z + c)ᵈ\n- **RBF**, or Gaussian: exp(−γ‖x − z‖²). Nearby points score near 1 and distant ones near 0. A larger γ gives a wigglier boundary.\n\nThe cost is a kernel matrix with n² entries, which is why kernel methods struggle beyond tens of thousands of rows.\n\nExample: points inside a circle are one class and points outside are another. No straight line splits them in 2D. With φ(x) = (x₁², x₂², √2 x₁x₂), the kernel (x·z)² gives the same dot products, and in that space the flat plane x₁² + x₂² = r² separates the classes.",
+  "mixup": "The kernel trick does not add columns to your data table. It changes how similarity between rows is computed. A valid kernel must be positive semi-definite, meaning it matches a real inner product, so not every similarity function qualifies.",
+  "related": [
+   "support-vector-machine",
+   "feature-scaling",
+   "logistic-regression",
+   "curse-of-dimensionality"
+  ]
+ },
+ {
+  "id": "k-means",
+  "name": "k-means clustering",
+  "topic": "classic",
+  "aka": [
+   "k-means",
+   "kmeans",
+   "k means",
+   "KMeans",
+   "Lloyd's algorithm",
+   "k-means++"
+  ],
+  "summary": "A clustering method that splits data into k groups by repeatedly assigning points to the nearest centre and moving each centre to the mean of its points.",
+  "body": "k-means minimises the within-cluster sum of squared distances, Σ‖x − μ‖², where μ is the centre of the cluster that x belongs to. Lloyd's algorithm:\n\n- pick k starting centres\n- assign every point to its nearest centre\n- move each centre to the mean of its assigned points\n- repeat until assignments stop changing\n\nIt always converges, but to a local optimum that depends on the start. k-means++ chooses spread-out starting centres, and running several starts and keeping the best is standard.\n\nYou must choose k, often with the elbow method or silhouette score plus business sense. Scale features first. It assumes roughly round clusters of similar size, and outliers drag centres away.\n\nExample: a delivery company clusters 10,000 drop-off locations with k = 8 to place 8 depots, each near the centre of its cluster.",
+  "mixup": "k-means is not k-NN. k-means is unsupervised and finds k clusters. k-NN is supervised and uses k neighbours to predict a label. Also, k-means always returns k clusters, even when the data has no real cluster structure.",
+  "related": [
+   "k-nearest-neighbors",
+   "silhouette-score",
+   "gaussian-mixture-model",
+   "dbscan",
+   "feature-scaling"
+  ],
+  "diagram": "k-means"
+ },
+ {
+  "id": "dbscan",
+  "name": "DBSCAN",
+  "topic": "classic",
+  "aka": [
+   "density-based clustering",
+   "density-based spatial clustering of applications with noise",
+   "density clustering"
+  ],
+  "summary": "A clustering method that groups points lying in dense regions and labels points in sparse regions as noise, without needing the number of clusters.",
+  "body": "DBSCAN has two settings: a radius ε (eps) and a minimum count, minPts. A **core point** has at least minPts points, itself included, within ε. Clusters grow by linking core points that are within ε of each other, plus the **border points** near them. Any point not reachable from a core point is **noise**.\n\nStrengths: it finds clusters of any shape, does not need k, and flags outliers naturally. Weaknesses: one ε cannot suit clusters of very different density, results are sensitive to ε, and like other distance methods it struggles in high dimensions. HDBSCAN relaxes the single-density limit.\n\nA common way to pick ε is to sort every point's distance to its k-th nearest neighbour, plot it, and look for the elbow.\n\nExample: on GPS pings from rental scooters, DBSCAN with ε = 50 metres and minPts = 10 finds dense parking hotspots of odd shapes and marks lone pings as noise.",
+  "mixup": "DBSCAN noise points are not a cluster. Code often labels them `-1`, and treating them as one more group is a common mistake. Unlike k-means, changing ε or adding data can change the number of clusters completely.",
+  "related": [
+   "k-means",
+   "anomaly-detection",
+   "gaussian-mixture-model",
+   "silhouette-score",
+   "curse-of-dimensionality"
+  ]
+ },
+ {
+  "id": "gaussian-mixture-model",
+  "name": "Gaussian mixture model",
+  "topic": "classic",
+  "aka": [
+   "GMM",
+   "Gaussian mixture",
+   "mixture of Gaussians",
+   "GaussianMixture",
+   "EM clustering",
+   "soft clustering"
+  ],
+  "summary": "A model that treats data as a mix of several Gaussian distributions, and gives each point a probability of belonging to each one.",
+  "body": "A GMM says each point was drawn from one of K Gaussian components, chosen with probability πₖ. The density p(x) is the sum over components of πₖ × N(x | μₖ, Σₖ). Each component has its own mean μₖ and covariance Σₖ, so clusters can be stretched ellipses rather than the round blobs k-means favours.\n\nIt is fitted with **expectation maximisation** (EM). The E step computes each point's responsibilities, the probability it came from each component. The M step updates the weights, means and covariances from those soft assignments. Like k-means it finds a local optimum, so several starts help. K is often chosen with BIC.\n\nBecause it gives a full density, it also works for anomaly detection: flag points with very low p(x).\n\nExample: customers are fitted on spend and visit frequency with K = 3. One customer gets responsibilities of 0.70, 0.25 and 0.05, a soft membership that k-means cannot express.",
+  "mixup": "k-means is close to a special case of a GMM with equal round covariances and hard assignments. A GMM gives soft probabilities instead. Also, a GMM is generative: it models how x is distributed, not just where the boundaries are.",
+  "related": [
+   "k-means",
+   "maximum-likelihood-estimation",
+   "normal-distribution",
+   "anomaly-detection",
+   "generative-vs-discriminative"
+  ]
+ },
+ {
+  "id": "silhouette-score",
+  "name": "Silhouette score",
+  "topic": "classic",
+  "aka": [
+   "silhouette coefficient",
+   "silhouette",
+   "silhouette analysis",
+   "silhouette_score"
+  ],
+  "summary": "A clustering quality score from −1 to 1 that compares how close each point is to its own cluster versus the nearest other cluster.",
+  "body": "For one point:\n\n- a = mean distance to the other points in its own cluster\n- b = mean distance to the points in the nearest other cluster\n- s = (b − a) / max(a, b)\n\nAn s near 1 means the point sits well inside its cluster. Near 0 means it is on a border. Negative means it is probably in the wrong cluster. The silhouette score is the mean s over all points.\n\nIt needs no labels, so it is a common way to compare clusterings or to choose k: run k-means for k = 2 to 10 and see which k scores highest, then check that those clusters make sense.\n\nIt needs O(n²) distances, so on large data it is usually computed on a sample. It favours compact, round clusters, so it can underrate good DBSCAN results with odd shapes.\n\nExample: a = 2.0 and b = 5.0, so s = (5 − 2) / 5 = 0.6.",
+  "mixup": "A higher silhouette score does not prove the clusters are useful. It measures geometric separation only. Two well-separated clusters can mean nothing to the business, and a lower-scoring split can be the one that matches real customer segments.",
+  "related": [
+   "k-means",
+   "dbscan",
+   "unsupervised-learning",
+   "gaussian-mixture-model"
+  ]
+ },
+ {
+  "id": "anomaly-detection",
+  "name": "Anomaly detection",
+  "topic": "classic",
+  "aka": [
+   "outlier detection",
+   "novelty detection",
+   "anomaly detector",
+   "anomaly scoring"
+  ],
+  "summary": "Finding the rare data points that differ sharply from normal behaviour, such as fraud, faults or attacks, often with few or no labels.",
+  "body": "Anomalies are rare, varied and often unlabelled, so the usual approach is to learn what normal looks like and score how far each point is from it.\n\nCommon methods:\n- **Statistical**: z-scores or the interquartile range on one metric.\n- **Density or distance**: GMM likelihood, k-NN distance, local outlier factor.\n- **Isolation**: isolation forest, which measures how easily a point is separated.\n- **Reconstruction**: an autoencoder or PCA, flagging points it rebuilds badly.\n- **Supervised**: when labelled anomalies exist, a classifier with care for class imbalance often beats all of the above.\n\nThe output is usually a score, and the threshold sets how many alerts a team must review. Evaluate with precision at that alert budget or with PR curves, not accuracy.\n\nExample: a payments team scores 1 million transactions a day and can review 500, so it alerts on the top 0.05% by anomaly score.",
+  "mixup": "An anomaly is not the same as fraud or failure. It is only unusual, and many unusual events are harmless, such as a large holiday purchase. Outlier detection looks for oddities in the data you have, while novelty detection checks new points against a clean reference set.",
+  "related": [
+   "isolation-forest",
+   "class-imbalance",
+   "outliers",
+   "pr-curve",
+   "dbscan"
+  ]
+ },
+ {
+  "id": "isolation-forest",
+  "name": "Isolation forest",
+  "topic": "classic",
+  "aka": [
+   "iForest",
+   "IsolationForest",
+   "isolation forests"
+  ],
+  "summary": "An anomaly detector that builds random trees and scores a point as anomalous when it can be isolated with very few random splits.",
+  "body": "Isolation forest builds many trees on small random subsamples, often 256 rows each. Each tree splits by picking a random feature and a random threshold between that feature's minimum and maximum, and keeps going until points are alone or a depth limit is reached.\n\nAnomalies are few and different, so random cuts separate them quickly and they end up near the root. Normal points sit in dense regions and need many cuts. The anomaly score comes from the average path length across trees, and shorter means more anomalous. In the original paper's scale, scores near 1 suggest anomalies and scores well below 0.5 suggest normal points.\n\nIt needs no labels, no distance computations and no scaling, so it is fast on large tabular data. The contamination setting controls where the alert cut-off falls.\n\nExample: in server metrics, a machine with normal CPU but 40 times the usual disk writes is isolated in about 3 splits on average, while typical machines take about 10.",
+  "mixup": "Despite the name, isolation forest is not a random forest classifier and uses no labels. Its splits are random, not chosen to reduce impurity. And in scikit-learn the sign is flipped, so lower `score_samples` values mean more anomalous.",
+  "related": [
+   "anomaly-detection",
+   "random-forest",
+   "decision-tree",
+   "outliers"
+  ]
+ },
+ {
+  "id": "matrix-factorization",
+  "name": "Matrix factorization",
+  "topic": "classic",
+  "aka": [
+   "matrix factorisation",
+   "MF",
+   "low-rank factorization",
+   "latent factor model",
+   "ALS",
+   "alternating least squares",
+   "SVD for recommendations",
+   "Funk SVD"
+  ],
+  "summary": "Approximating a large, sparse user-by-item matrix as the product of two small matrices of learned user vectors and item vectors.",
+  "body": "Picture a ratings matrix R with a row per user and a column per item, mostly empty. Matrix factorization learns a k-dimensional vector pᵤ for each user and qᵢ for each item, so that the predicted score is their dot product:\n\nr̂ᵤᵢ = pᵤ · qᵢ\n\nk is small, such as 32 or 128, so the vectors capture broad tastes as latent factors. Training minimises squared error on the **observed** entries only, plus L2 regularization, using SGD or alternating least squares. Bias terms for each user and item are often added.\n\nIt was central in the Netflix Prize era and still underlies much collaborative filtering. For implicit feedback, such as clicks and views, variants treat unobserved entries as weak negatives.\n\nExample: with k = 2, a user vector (0.9, 0.1) and a film vector (0.8, 0.3) give a predicted score of 0.72 + 0.03 = 0.75.",
+  "mixup": "This is not textbook SVD, which needs a full matrix and would treat missing ratings as zeros. Recommender matrix factorization fits only the known entries. Also, a brand new user or item has no learned vector, which is the cold start problem.",
+  "related": [
+   "collaborative-filtering",
+   "embedding",
+   "cold-start",
+   "two-tower-model",
+   "l2-regularization"
+  ]
+ },
+ {
+  "id": "feature-importance",
+  "name": "Feature importance",
+  "topic": "classic",
+  "aka": [
+   "variable importance",
+   "feature importances",
+   "permutation importance",
+   "impurity importance",
+   "MDI",
+   "gain importance",
+   "feature_importances_"
+  ],
+  "summary": "A score for how much each input feature contributes to a model's predictions or performance, used to explain and debug models.",
+  "body": "There are several kinds, and they answer different questions:\n\n- **Impurity-based** (MDI): for tree models, the total impurity drop from splits on each feature. Free to compute, but biased towards features with many distinct values and measured on training data.\n- **Permutation importance**: shuffle one feature in validation data and measure how much the score drops. Works for any model and reflects real performance, but is slow and misleading when features are correlated.\n- **SHAP values**: split each prediction among the features using Shapley values. Gives both global and per-row explanations.\n- **Coefficients**: for linear models on standardised features.\n\nIt helps catch leakage, prune features and explain models to stakeholders.\n\nExample: shuffling `days_since_last_login` drops a churn model's AUC from 0.85 to 0.70, while shuffling `signup_month` drops it by 0.002. The first matters a lot, the second barely at all.",
+  "mixup": "Importance shows what the model relies on, not what causes the outcome. Correlated features also share or hide importance: drop one of two near-duplicates and the other's score jumps. A suspiciously dominant feature is often a sign of leakage.",
+  "related": [
+   "shap-values",
+   "random-forest",
+   "target-leakage",
+   "feature-selection",
+   "gradient-boosting"
+  ]
+ },
+ {
+  "id": "t-sne",
+  "name": "t-SNE and UMAP",
+  "topic": "classic",
+  "aka": [
+   "t-SNE",
+   "tSNE",
+   "TSNE",
+   "UMAP",
+   "t-distributed stochastic neighbor embedding",
+   "uniform manifold approximation and projection"
+  ],
+  "summary": "Non-linear methods that squash high-dimensional data into 2 or 3 dimensions for plotting, keeping points that are neighbours close together.",
+  "body": "t-SNE turns distances between points into probabilities of being neighbours, both in the original space and in a 2D map. In the map it uses a heavy-tailed Student t distribution, which gives the method its name. It then moves the map points so the two sets of probabilities match, by minimising KL divergence. Its key setting, **perplexity**, often 5 to 50, roughly sets how many neighbours each point considers.\n\nUMAP has the same goal but works from a graph of nearest neighbours. It is usually faster, scales to millions of points, and can place new points into an existing layout. Its main settings are `n_neighbors` and `min_dist`.\n\nBoth are mainly for visual exploration, such as checking whether embeddings of support tickets group by topic. Local neighbourhoods are meaningful. Cluster sizes, gaps between clusters and global positions mostly are not, and they change with settings and random seeds.\n\nExample: a UMAP plot of 20,000 support question embeddings shows tight groups for billing, login and shipping.",
+  "mixup": "Unlike PCA, t-SNE and UMAP are non-linear and do not preserve global distances. Do not read a gap between two blobs as a real distance or a big blob as a big group. t-SNE in particular is for looking at data, not for building model features.",
+  "related": [
+   "pca",
+   "embedding",
+   "curse-of-dimensionality",
+   "kl-divergence",
+   "unsupervised-learning"
+  ]
+ }
+]

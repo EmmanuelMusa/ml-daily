@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 172" role="img">
+<title>Confusion matrix: actual class by predicted class</title>
+<defs><marker id="confusion-matrix-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" class="f-ink s-none"/></marker></defs>
+<text x="152" y="14" text-anchor="middle" class="t-small t-bold">Predicted positive</text>
+<text x="260" y="14" text-anchor="middle" class="t-small t-bold">Predicted negative</text>
+<text x="90" y="44" text-anchor="end" class="t-small t-bold">Actual</text>
+<text x="90" y="56" text-anchor="end" class="t-small t-bold">positive</text>
+<text x="90" y="96" text-anchor="end" class="t-small t-bold">Actual</text>
+<text x="90" y="108" text-anchor="end" class="t-small t-bold">negative</text>
+<rect x="98" y="22" width="108" height="52" class="f-right s-right"/>
+<text x="152" y="46" text-anchor="middle" class="t-label">TP</text>
+<text x="152" y="62" text-anchor="middle" class="t-small">true positive</text>
+<rect x="206" y="22" width="108" height="52" class="f-wrong s-wrong"/>
+<text x="260" y="46" text-anchor="middle" class="t-label">FN</text>
+<text x="260" y="62" text-anchor="middle" class="t-small">false negative</text>
+<rect x="98" y="74" width="108" height="52" class="f-wrong s-wrong"/>
+<text x="152" y="98" text-anchor="middle" class="t-label">FP</text>
+<text x="152" y="114" text-anchor="middle" class="t-small">false positive</text>
+<rect x="206" y="74" width="108" height="52" class="f-right s-right"/>
+<text x="260" y="98" text-anchor="middle" class="t-label">TN</text>
+<text x="260" y="114" text-anchor="middle" class="t-small">true negative</text>
+<text x="98" y="148" class="t-small">Precision = TP / (TP + FP)</text>
+<text x="98" y="163" class="t-small">Recall = TP / (TP + FN)</text>
+<text x="10" y="148" class="t-small t-muted">Green: correct</text>
+<text x="10" y="163" class="t-small t-muted">Red: errors</text>
+</svg>

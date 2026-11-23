@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 196" role="img">
+<title>Continuous batching refills a slot as soon as a request finishes instead of waiting for the whole batch</title>
+<defs><marker id="continuous-batching-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-muted s-none"/></marker></defs>
+<text x="8" y="16" class="t-small t-bold">static batching</text>
+<text x="50" y="36" text-anchor="end" class="t-small t-muted">slot 1</text>
+<rect x="58" y="24" width="100" height="16" rx="3" class="f-sheet s-muted"/>
+<text x="108" y="36" text-anchor="middle" class="t-small">A</text>
+<rect x="158" y="24" width="125" height="16" rx="3" class="f-wrong s-wrong s-dash"/>
+<text x="220.5" y="36" text-anchor="middle" class="t-small t-muted">idle</text>
+<rect x="283" y="24" width="25" height="16" rx="3" class="f-sheet s-muted"/>
+<text x="295.5" y="36" text-anchor="middle" class="t-small">D</text>
+<text x="50" y="56" text-anchor="end" class="t-small t-muted">slot 2</text>
+<rect x="58" y="44" width="225" height="16" rx="3" class="f-sheet s-muted"/>
+<text x="170.5" y="56" text-anchor="middle" class="t-small">B</text>
+<text x="50" y="76" text-anchor="end" class="t-small t-muted">slot 3</text>
+<rect x="58" y="64" width="150" height="16" rx="3" class="f-sheet s-muted"/>
+<text x="133" y="76" text-anchor="middle" class="t-small">C</text>
+<rect x="208" y="64" width="75" height="16" rx="3" class="f-wrong s-wrong s-dash"/>
+<text x="245.5" y="76" text-anchor="middle" class="t-small t-muted">idle</text>
+<rect x="283" y="64" width="25" height="16" rx="3" class="f-sheet s-muted"/>
+<text x="295.5" y="76" text-anchor="middle" class="t-small">E</text>
+<text x="8" y="104" class="t-small t-bold">continuous batching</text>
+<text x="50" y="124" text-anchor="end" class="t-small t-muted">slot 1</text>
+<rect x="58" y="112" width="100" height="16" rx="3" class="f-sheet s-muted"/>
+<text x="108" y="124" text-anchor="middle" class="t-small">A</text>
+<rect x="158" y="112" width="150" height="16" rx="3" class="f-right s-right"/>
+<text x="233" y="124" text-anchor="middle" class="t-small">D</text>
+<text x="50" y="144" text-anchor="end" class="t-small t-muted">slot 2</text>
+<rect x="58" y="132" width="225" height="16" rx="3" class="f-sheet s-muted"/>
+<text x="170.5" y="144" text-anchor="middle" class="t-small">B</text>
+<rect x="283" y="132" width="25" height="16" rx="3" class="f-right s-right"/>
+<text x="295.5" y="144" text-anchor="middle" class="t-small">F</text>
+<text x="50" y="164" text-anchor="end" class="t-small t-muted">slot 3</text>
+<rect x="58" y="152" width="150" height="16" rx="3" class="f-sheet s-muted"/>
+<text x="133" y="164" text-anchor="middle" class="t-small">C</text>
+<rect x="208" y="152" width="100" height="16" rx="3" class="f-right s-right"/>
+<text x="258" y="164" text-anchor="middle" class="t-small">E</text>
+<path d="M58,182 L308,182" class="s-muted s-thin" marker-end="url(#continuous-batching-muted)"/>
+<text x="183" y="194" text-anchor="middle" class="t-small t-muted">decode steps</text>
+</svg>

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 176" role="img">
+<title>Precision-recall curve: precision falls as recall rises</title>
+<defs><marker id="pr-curve-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" class="f-ink s-none"/></marker></defs>
+<path d="M42,14 V150 H178" class="s-ink s-thin"/>
+<line x1="42" y1="150" x2="42" y2="10" class="s-none" marker-end="url(#pr-curve-arrow)"/>
+<line x1="42" y1="150" x2="182" y2="150" class="s-none" marker-end="url(#pr-curve-arrow)"/>
+<text x="110" y="166" text-anchor="middle" class="t-small">Recall</text>
+<text x="34" y="82" text-anchor="middle" class="t-small" transform="rotate(-90 34 82)">Precision</text>
+<text x="42" y="162" text-anchor="middle" class="t-small t-muted">0</text>
+<text x="172" y="162" text-anchor="middle" class="t-small t-muted">1</text>
+<text x="38" y="24" text-anchor="end" class="t-small t-muted">1</text>
+<line x1="42" y1="124" x2="172" y2="124" class="s-muted s-dash"/>
+<text x="46" y="119" class="t-small t-muted">random = 0.2</text>
+<polyline points="42,22.6 45.2,22.6 48.5,22.6 51.8,22.6 55,22.7 58.2,22.8 61.5,22.9 64.8,23.1 68,23.4 71.2,23.8 74.5,24.2 77.8,24.7 81,25.3 84.2,26.1 87.5,26.9 90.8,27.9 94,29.1 97.2,30.4 100.5,31.8 103.8,33.5 107,35.3 110.2,37.3 113.5,39.5 116.8,41.9 120,44.5 123.2,47.4 126.5,50.4 129.8,53.8 133,57.4 136.2,61.2 139.5,65.4 142.8,69.8 146,74.5 149.2,79.5 152.5,84.9 155.8,90.5 159,96.5 162.2,102.9 165.5,109.5 168.8,116.6 172,124" class="s-ink s-thick"/>
+<text x="48" y="48" class="t-small">strict</text>
+<text x="150" y="100.6" text-anchor="end" class="t-small">loose</text>
+<text x="188" y="34" class="t-small">Lowering the threshold</text>
+<text x="188" y="47" class="t-small">finds more positives</text>
+<text x="188" y="60" class="t-small">but flags more by mistake</text>
+<text x="188" y="90" class="t-small t-muted">Random baseline = share</text>
+<text x="188" y="103" class="t-small t-muted">of positives (here 20%)</text>
+<text x="188" y="130" class="t-small">Best view when</text>
+<text x="188" y="143" class="t-small">positives are rare</text>
+</svg>

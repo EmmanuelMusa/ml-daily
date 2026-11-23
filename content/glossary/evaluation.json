@@ -1,0 +1,515 @@
+[
+ {
+  "id": "confusion-matrix",
+  "name": "Confusion matrix",
+  "topic": "evaluation",
+  "aka": [
+   "error matrix",
+   "contingency table"
+  ],
+  "summary": "A table that counts a classifier's predictions against the true labels, so you can see exactly which kinds of mistakes it makes.",
+  "body": "For a binary problem it has four cells: true positives (TP), false positives (FP), false negatives (FN) and true negatives (TN). Rows usually hold the true class and columns the predicted class, as in scikit-learn's `confusion_matrix`, but some tools flip this, so always read the axis labels.\n\nNearly every classification metric is built from these four counts: accuracy, precision, recall, specificity and F1. For k classes it becomes a k × k grid, and the large off-diagonal cells show which pairs of classes get confused.\n\nExample: a fraud model scores 1,000 transactions. 30 are fraud and it catches 24 (TP = 24, FN = 6). Of the 970 good ones it wrongly flags 16 (FP = 16, TN = 954). Precision is 24 / 40 = 0.60 and recall is 24 / 30 = 0.80.",
+  "mixup": "A false positive is a real negative that the model called positive. A false negative is a real positive that the model missed. The second word is what the model predicted, and the first word says whether that prediction was right.",
+  "related": [
+   "precision",
+   "recall",
+   "accuracy",
+   "specificity",
+   "decision-threshold"
+  ],
+  "diagram": "confusion-matrix"
+ },
+ {
+  "id": "accuracy",
+  "name": "Accuracy",
+  "topic": "evaluation",
+  "aka": [
+   "classification accuracy",
+   "acc",
+   "percent correct"
+  ],
+  "summary": "The share of all predictions that were correct, counting every class and every kind of mistake the same.",
+  "body": "Accuracy is (TP + TN) / (TP + TN + FP + FN). It is easy to explain and works well when classes are roughly balanced and every mistake costs about the same.\n\nIt breaks down on imbalanced data. If 99% of transactions are legitimate, a model that always says \"not fraud\" scores 99% accuracy and catches nothing. It also hides which kind of error the model makes, so a false alarm and a missed cancer count the same.\n\nExample: 25 of 200 customers churn. A churn model gets 20 churners and 150 stayers right, so accuracy is 170 / 200 = 0.85. Yet always predicting \"stays\" scores 175 / 200 = 0.875, higher than the model, while catching no churners at all.",
+  "mixup": "High accuracy does not mean a useful model. Always compare it with the majority-class baseline, which on imbalanced data can be very high on its own. Precision, recall or F1 show what accuracy hides.",
+  "related": [
+   "class-imbalance",
+   "confusion-matrix",
+   "baseline-model",
+   "f1-score",
+   "precision"
+  ]
+ },
+ {
+  "id": "precision",
+  "name": "Precision",
+  "topic": "evaluation",
+  "aka": [
+   "positive predictive value",
+   "PPV"
+  ],
+  "summary": "Of everything the model flagged as positive, the share that really was positive.",
+  "body": "Precision is TP / (TP + FP). It looks only at the cases the model said yes to and asks how many of those were right.\n\nIt matters when a false alarm is costly, such as a spam filter that might hide a real email or a fraud rule that blocks a good customer. A model can reach high precision by flagging very little, so precision is always read next to recall.\n\nExample: a model flags 50 transactions and 40 are real fraud. Precision is 40 / 50 = 0.80.",
+  "mixup": "Precision divides by what the model flagged. Recall divides by what was really there. Swapping the two denominators is the most common slip in interviews.",
+  "related": [
+   "recall",
+   "f1-score",
+   "decision-threshold",
+   "pr-curve",
+   "class-imbalance"
+  ]
+ },
+ {
+  "id": "recall",
+  "name": "Recall",
+  "topic": "evaluation",
+  "aka": [
+   "sensitivity",
+   "true positive rate",
+   "TPR"
+  ],
+  "summary": "Of all the real positive cases, the share the model managed to catch.",
+  "body": "Recall is TP / (TP + FN). It looks at every case that really was positive and asks how many the model found.\n\nIt matters when a miss is costly, such as a cancer screen or a fraud check, where letting a real case through does real harm. A model can reach perfect recall by flagging everything, so recall is always read next to precision.\n\nExample: there were 80 fraud cases and the model caught 40 of them. Recall is 40 / 80 = 0.50.",
+  "mixup": "Recall, sensitivity and true positive rate are the same number under different names. Do not confuse recall with specificity, which measures how many real negatives the model correctly left alone.",
+  "related": [
+   "precision",
+   "f1-score",
+   "specificity",
+   "roc-curve",
+   "decision-threshold"
+  ]
+ },
+ {
+  "id": "f1-score",
+  "name": "F1 score",
+  "topic": "evaluation",
+  "aka": [
+   "F1",
+   "F-score",
+   "F-measure",
+   "F1-score",
+   "F-beta"
+  ],
+  "summary": "The harmonic mean of precision and recall, a single number that is high only when both of them are high.",
+  "body": "F1 = 2 × P × R / (P + R), which also equals 2TP / (2TP + FP + FN). The harmonic mean punishes imbalance: a model with precision 1.0 and recall 0.1 gets F1 ≈ 0.18, not the 0.55 an ordinary average would give.\n\nF1 suits rare-positive problems where both false alarms and misses matter but you have no clear cost for each. It ignores true negatives entirely. When one error matters more, use F-beta, which treats recall as β times as important as precision. F2 favours recall and F0.5 favours precision.\n\nExample: precision 0.60 and recall 0.80 give F1 = 2 × 0.48 / 1.40 ≈ 0.69.",
+  "mixup": "F1 depends on the decision threshold, just like precision and recall. A model's F1 at 0.5 says nothing about its best F1. Also, averaging per-class F1 scores (macro) gives a different number from computing F1 on pooled counts (micro).",
+  "related": [
+   "precision",
+   "recall",
+   "macro-micro-averaging",
+   "decision-threshold",
+   "pr-curve"
+  ]
+ },
+ {
+  "id": "specificity",
+  "name": "Specificity",
+  "topic": "evaluation",
+  "aka": [
+   "true negative rate",
+   "TNR",
+   "selectivity"
+  ],
+  "summary": "Of all the real negative cases, the share the model correctly left as negative.",
+  "body": "Specificity is TN / (TN + FP). It is the mirror of recall for the negative class, and it equals 1 minus the false positive rate.\n\nIt matters in screening and alerting, where healthy people or good customers vastly outnumber the cases you are looking for. Medical tests are usually reported as a pair: sensitivity (recall) and specificity.\n\nA high specificity can still produce many false alarms when negatives are common. Example: a screening test with specificity 0.95 is run on 10,000 healthy people. It still flags 500 of them, which can swamp the handful of true cases it finds.",
+  "mixup": "Specificity is not precision. Specificity divides by all real negatives, so it ignores how rare positives are. Precision divides by what was flagged, so it can be very low on rare positives even when specificity is high.",
+  "related": [
+   "recall",
+   "false-positive-rate",
+   "roc-curve",
+   "precision",
+   "confusion-matrix"
+  ]
+ },
+ {
+  "id": "false-positive-rate",
+  "name": "False positive rate",
+  "topic": "evaluation",
+  "aka": [
+   "FPR",
+   "fall-out",
+   "false alarm rate"
+  ],
+  "summary": "Of all the real negative cases, the share the model wrongly flagged as positive.",
+  "body": "FPR = FP / (FP + TN), which is 1 minus specificity. It is the x-axis of the ROC curve, with recall (true positive rate) on the y-axis.\n\nTeams often set an FPR budget, such as \"block no more than 0.1% of good payments\", and then pick the threshold that gives the most recall within that budget.\n\nExample: of 20,000 legitimate logins, a bot detector challenges 200. FPR is 200 / 20,000 = 0.01. That sounds small, but 200 real users hit a challenge, and if only 50 bots tried to log in, most challenges went to real people.",
+  "mixup": "FPR is not the false discovery rate. FPR divides by all real negatives. The false discovery rate, FP / (FP + TP), divides by everything the model flagged and equals 1 minus precision.",
+  "related": [
+   "specificity",
+   "roc-curve",
+   "decision-threshold",
+   "recall",
+   "precision"
+  ]
+ },
+ {
+  "id": "decision-threshold",
+  "name": "Decision threshold",
+  "topic": "evaluation",
+  "aka": [
+   "classification threshold",
+   "cutoff",
+   "operating point",
+   "probability threshold"
+  ],
+  "summary": "The score above which a classifier calls a case positive. Moving it trades false positives against false negatives.",
+  "body": "Most classifiers output a score or probability, and a threshold turns it into a yes or no. The default of 0.5 is only a convention. Lowering the threshold flags more cases, so recall rises and precision usually falls. Raising it does the opposite.\n\nChoose the threshold on a validation set, not the test set, from the cost of each error or from a constraint such as \"recall of at least 0.90\". If scores are calibrated and a false negative costs 10 times as much as a false positive, flag a case when its probability is above 1 / (1 + 10) ≈ 0.09.\n\nExample: a ticket router flags urgent tickets. At threshold 0.5 it catches 70% of them. At 0.3 it catches 88% but sends twice as many routine tickets to the urgent queue.",
+  "mixup": "Changing the threshold changes precision, recall and F1, but not ROC-AUC or the model itself. Threshold metrics describe one operating point, while AUC summarizes every possible threshold at once.",
+  "related": [
+   "calibration",
+   "precision",
+   "recall",
+   "roc-curve",
+   "pr-curve"
+  ]
+ },
+ {
+  "id": "roc-curve",
+  "name": "ROC curve",
+  "topic": "evaluation",
+  "aka": [
+   "ROC",
+   "receiver operating characteristic",
+   "ROC plot"
+  ],
+  "summary": "A plot of true positive rate against false positive rate as the decision threshold moves from strictest to loosest.",
+  "body": "Each point on the curve is one threshold. At the strictest threshold nothing is flagged, so the curve starts at (0, 0). At the loosest everything is flagged, so it ends at (1, 1). A random classifier follows the diagonal, and a perfect one goes straight up to (0, 1) and then across.\n\nThe curve lets you compare models across all thresholds and pick an operating point, such as the highest recall with FPR under 1%. Both axes divide by the size of their own class, so changing only the class ratio does not move the curve.\n\nExample: a fraud model reaches TPR 0.80 at FPR 0.05. If 1 transaction in 1,000 is fraud, that point flags about 62 good transactions for every fraud it catches, a precision under 2% that the ROC curve does not show.",
+  "mixup": "A curve that hugs the top left can still mean poor precision when positives are rare, because a small FPR times a huge number of negatives is a lot of false alarms. Use the precision-recall curve for rare positives.",
+  "related": [
+   "roc-auc",
+   "pr-curve",
+   "false-positive-rate",
+   "recall",
+   "decision-threshold"
+  ],
+  "diagram": "roc-curve"
+ },
+ {
+  "id": "roc-auc",
+  "name": "ROC-AUC",
+  "topic": "evaluation",
+  "aka": [
+   "AUC",
+   "AUROC",
+   "AUC-ROC",
+   "ROC AUC",
+   "area under the ROC curve",
+   "area under the curve"
+  ],
+  "summary": "The area under the ROC curve, equal to the chance that a random positive gets a higher score than a random negative.",
+  "body": "ROC-AUC runs from 0 to 1. A value of 0.5 means the scores rank no better than chance, 1.0 means every positive outranks every negative, and below 0.5 means the ranking is inverted. Tied pairs count as half.\n\nIt measures ranking quality only. It needs no threshold and does not change under any order-preserving change to the scores, so a model can have high AUC and badly calibrated probabilities.\n\nExample: a churn model is checked on 4 churners and 5 stayers, which makes 20 churner-stayer pairs. If the churner has the higher score in 17 of them, AUC = 17 / 20 = 0.85.\n\nOn heavily imbalanced data, AUC can look strong while precision at useful thresholds is poor, because much of the area comes from ranking the many easy negatives.",
+  "mixup": "AUC is not accuracy, and it is not the chance that the model is right on one case. It is a pairwise ranking probability. Two models with the same AUC can have very different precision at the threshold you actually use.",
+  "related": [
+   "roc-curve",
+   "pr-curve",
+   "calibration",
+   "class-imbalance",
+   "decision-threshold"
+  ]
+ },
+ {
+  "id": "pr-curve",
+  "name": "Precision-recall curve",
+  "topic": "evaluation",
+  "aka": [
+   "PR curve",
+   "precision recall curve",
+   "PR-AUC",
+   "AUPRC",
+   "average precision",
+   "AP"
+  ],
+  "summary": "A plot of precision against recall across thresholds, the clearest view of a classifier when positives are rare.",
+  "body": "Each threshold gives one point, with recall on the x-axis and precision on the y-axis. Lowering the threshold moves right as recall grows, and precision usually falls, though not always smoothly.\n\nThe baseline for random scoring is a flat line at the positive rate. If 1% of cases are positive, random scores give precision of about 0.01 at every recall. That makes the PR curve far more sensitive to false positives on rare classes than the ROC curve. The area under it is usually summarized as average precision (AP).\n\nExample: a tumour detector sees 2% positives. At recall 0.90 its precision is 0.30, so 7 of every 10 flagged scans are false alarms. The ROC curve for the same model shows an FPR of only about 0.04 at that point.",
+  "mixup": "Unlike ROC-AUC, the PR curve depends on the positive rate. An average precision of 0.40 can be excellent on data with 1% positives and poor on data with 30%, so compare PR numbers only on the same data.",
+  "related": [
+   "precision",
+   "recall",
+   "roc-curve",
+   "roc-auc",
+   "class-imbalance"
+  ],
+  "diagram": "pr-curve"
+ },
+ {
+  "id": "calibration",
+  "name": "Calibration",
+  "topic": "evaluation",
+  "aka": [
+   "probability calibration",
+   "calibration curve",
+   "reliability diagram",
+   "Platt scaling",
+   "isotonic calibration",
+   "ECE",
+   "expected calibration error"
+  ],
+  "summary": "How well a model's predicted probabilities match real frequencies. Of all cases scored 0.8, about 80% should turn out positive.",
+  "body": "A model can rank cases well and still be badly calibrated. You check it with a reliability diagram: bin predictions by score, then plot each bin's mean predicted probability against its observed positive rate. A calibrated model sits on the diagonal. Expected calibration error (ECE) sums the gaps, weighted by bin size.\n\nCalibration matters whenever the probability itself is used: expected-cost decisions, ad bidding, risk scores shown to clinicians, or combining models.\n\nFixes are fitted on held-out data: Platt scaling (a logistic regression on the scores), isotonic regression, or temperature scaling for neural networks. Modern deep networks are often overconfident, and oversampling or class weights push probabilities away from real rates.\n\nExample: a credit model's cases scored between 0.10 and 0.20 average a prediction of 0.15, but 30% of them default. The model underestimates risk in that band.",
+  "mixup": "Good AUC does not mean good calibration. AUC only checks ranking, so halving every score leaves AUC unchanged while ruining calibration. Log loss and the Brier score do reward calibrated probabilities.",
+  "related": [
+   "log-loss",
+   "roc-auc",
+   "decision-threshold",
+   "class-weights",
+   "resampling"
+  ],
+  "diagram": "calibration"
+ },
+ {
+  "id": "log-loss",
+  "name": "Log loss",
+  "topic": "evaluation",
+  "aka": [
+   "logarithmic loss",
+   "logloss",
+   "binary cross-entropy",
+   "log-likelihood loss"
+  ],
+  "summary": "The average negative log of the probability a model gave to the true label. Confident correct predictions cost little and confident wrong ones cost a lot.",
+  "body": "For binary labels, log loss = −(1/N) Σ [y ln p + (1 − y) ln(1 − p)], where p is the predicted probability of the positive class. A perfect model scores 0, and there is no upper limit.\n\nThe penalty grows fast as a wrong prediction gets more confident. Giving the true class 0.9 costs −ln 0.9 ≈ 0.11. Giving it 0.01 costs −ln 0.01 ≈ 4.6. One very confident mistake can outweigh many good predictions, which is why log loss is sensitive to calibration. A useful baseline is the log loss of always predicting the base rate.\n\nExample: a click model predicts 0.8, 0.3 and 0.6 for three impressions with labels 1, 0 and 1. The losses are 0.22, 0.36 and 0.51, so log loss ≈ 0.36.",
+  "mixup": "Log loss as a metric is the same quantity as binary cross-entropy used as a training loss. It scores probabilities, not labels, so two models with the same accuracy can have very different log loss.",
+  "related": [
+   "cross-entropy-loss",
+   "calibration",
+   "maximum-likelihood-estimation",
+   "entropy"
+  ]
+ },
+ {
+  "id": "mae",
+  "name": "Mean absolute error",
+  "topic": "evaluation",
+  "aka": [
+   "MAE",
+   "L1 loss",
+   "absolute error"
+  ],
+  "summary": "The average size of the errors, ignoring their sign, in the same units as the target.",
+  "body": "MAE = (1/n) Σ |yᵢ − ŷᵢ|. Every unit of error counts the same, so an error of 10 counts exactly twice as much as an error of 5. That makes it fairly robust to a few large outliers and easy to explain: \"on average we are off by 6 minutes.\"\n\nThe constant prediction that minimizes MAE is the median, not the mean, and a model trained on MAE learns the conditional median. That matters for skewed targets such as delivery times or order values.\n\nExample: a delivery-time model predicts 30, 45 and 20 minutes and the real times are 35, 40 and 30. The errors are 5, 5 and 10, so MAE = 20 / 3 ≈ 6.7 minutes.",
+  "mixup": "MAE and RMSE use the same units but answer different questions. RMSE is always at least as large as MAE, and the gap grows when a few errors are large. Optimizing MAE pulls predictions toward the median, RMSE toward the mean.",
+  "related": [
+   "rmse",
+   "r-squared",
+   "outliers",
+   "loss-function"
+  ]
+ },
+ {
+  "id": "rmse",
+  "name": "Root mean squared error",
+  "topic": "evaluation",
+  "aka": [
+   "RMSE",
+   "root mean square error",
+   "RMSD"
+  ],
+  "summary": "The square root of the average squared error. It is in the target's units and penalizes large errors much more than small ones.",
+  "body": "RMSE = √((1/n) Σ (yᵢ − ŷᵢ)²). Mean squared error (MSE) is the same thing without the square root. Squaring means an error of 10 counts four times as much as an error of 5, so RMSE suits problems where big misses are much worse than small ones, such as forecasting warehouse stock.\n\nThe prediction that minimizes squared error is the mean, and a model trained on it learns the conditional mean. RMSE is sensitive to outliers and to a few badly predicted rows, so look at the error distribution, not just the single number.\n\nExample: with errors of 5, 5 and 10 minutes, MSE = (25 + 25 + 100) / 3 = 50 and RMSE = √50 ≈ 7.1 minutes. MAE on the same errors is 6.7.",
+  "mixup": "RMSE is not the average error. It is always at least MAE, and equal only when every error has the same size. A model with lower MAE can still have higher RMSE if it makes a few big mistakes.",
+  "related": [
+   "mae",
+   "r-squared",
+   "outliers",
+   "linear-regression",
+   "loss-function"
+  ]
+ },
+ {
+  "id": "r-squared",
+  "name": "R-squared",
+  "topic": "evaluation",
+  "aka": [
+   "R²",
+   "R2",
+   "R^2",
+   "coefficient of determination"
+  ],
+  "summary": "The share of the target's variance that a regression model explains, compared with always predicting the mean.",
+  "body": "R² = 1 − SS_res / SS_tot, where SS_res = Σ (yᵢ − ŷᵢ)² and SS_tot = Σ (yᵢ − ȳ)². A score of 1 is a perfect fit, 0 is no better than predicting the mean, and on held-out data it goes negative when the model does worse than the mean.\n\nR² has no units, which makes it handy for comparing models on the same target. But it says nothing about the size of errors in business terms, and a high R² can hide a model that is badly wrong on an important slice. Report it next to MAE or RMSE.\n\nExample: for a house-price model, SS_tot = 400 and SS_res = 100 on the test set. R² = 1 − 100 / 400 = 0.75.",
+  "mixup": "R² is not always the square of a correlation. That only holds for least squares linear regression with an intercept, scored on its own training data. On a test set R² can be below zero. Adding features never lowers training R², which is why adjusted R² exists.",
+  "related": [
+   "rmse",
+   "mae",
+   "linear-regression",
+   "variance",
+   "correlation"
+  ]
+ },
+ {
+  "id": "macro-micro-averaging",
+  "name": "Macro and micro averaging",
+  "topic": "evaluation",
+  "aka": [
+   "macro average",
+   "micro average",
+   "weighted average",
+   "macro-F1",
+   "micro-F1",
+   "macro F1",
+   "micro F1"
+  ],
+  "summary": "Two ways to combine a metric across classes. Macro averages the per-class scores equally. Micro pools all the counts first.",
+  "body": "Macro averaging computes the metric for each class, then takes the plain mean, so a rare class counts as much as a common one. Micro averaging adds up TP, FP and FN across all classes and computes the metric once, so common classes dominate. Weighted averaging takes the mean of per-class scores weighted by each class's support.\n\nFor single-label multiclass problems, micro precision, micro recall and micro F1 all equal accuracy.\n\nExample: a ticket classifier has 900 billing tickets with F1 0.95 and 100 legal tickets with F1 0.40. Macro F1 = (0.95 + 0.40) / 2 = 0.675. Weighted F1 = 0.9 × 0.95 + 0.1 × 0.40 = 0.895. Only the macro number shows that the legal class is failing.\n\nReport macro when every class matters, such as rare but serious ticket types.",
+  "mixup": "Micro F1 sounds balanced but is not. In single-label multiclass problems it is just accuracy, so it hides a failing rare class. Macro is the average that treats each class equally.",
+  "related": [
+   "f1-score",
+   "precision",
+   "recall",
+   "class-imbalance",
+   "slice-based-evaluation"
+  ]
+ },
+ {
+  "id": "ndcg",
+  "name": "NDCG",
+  "topic": "evaluation",
+  "aka": [
+   "nDCG",
+   "NDCG@k",
+   "normalized discounted cumulative gain",
+   "DCG",
+   "discounted cumulative gain"
+  ],
+  "summary": "A ranking metric that rewards putting the most relevant items near the top, scaled so a perfect ordering scores 1.",
+  "body": "Discounted cumulative gain adds up the relevance of each result, divided by a log of its position: DCG@k = Σ relᵢ / log₂(i + 1) for positions i = 1 to k. Some systems use 2^rel − 1 as the gain to reward highly relevant items more. NDCG@k divides DCG@k by the DCG of the ideal ordering (IDCG), giving a score from 0 to 1 for each query, then averages across queries.\n\nIt handles graded relevance, such as 0 to 3, and cares about order, which makes it a standard metric for search and recommendation.\n\nExample: the top 3 results have relevance 3, 0 and 2. DCG = 3/1 + 0/1.585 + 2/2 = 4.0. The ideal order 3, 2, 0 gives IDCG = 3 + 2/1.585 + 0 ≈ 4.26. NDCG@3 = 4.0 / 4.26 ≈ 0.94.",
+  "mixup": "The ideal ordering should be built from all items judged relevant for the query, not only the items the model returned. Using only the returned items inflates NDCG for a model that misses good results entirely.",
+  "related": [
+   "precision-at-k",
+   "mean-reciprocal-rank",
+   "learning-to-rank",
+   "offline-online-evaluation"
+  ]
+ },
+ {
+  "id": "precision-at-k",
+  "name": "Precision@k and recall@k",
+  "topic": "evaluation",
+  "aka": [
+   "precision@k",
+   "recall@k",
+   "P@k",
+   "R@k",
+   "precision at k",
+   "recall at k"
+  ],
+  "summary": "Precision@k is the share of the top k results that are relevant. Recall@k is the share of all relevant items that appear in the top k.",
+  "body": "For one query, precision@k = (relevant items in top k) / k and recall@k = (relevant items in top k) / (total relevant items). Scores are then averaged across queries or users.\n\nBoth ignore the order inside the top k, and neither uses graded relevance. Precision@k suits a fixed number of slots, such as 5 product tiles on a home page. Recall@k suits the first stage of a retrieval or RAG system, where the job is to get the right items into a candidate set that a reranker or LLM will use next.\n\nExample: a user has 4 relevant articles, and the top 10 recommendations contain 3 of them. Precision@10 = 3 / 10 = 0.30 and recall@10 = 3 / 4 = 0.75.",
+  "mixup": "Precision@k is capped when a query has fewer than k relevant items. With 2 relevant items, precision@10 can never pass 0.20. Recall@k has no such cap but rises as k grows, so always compare models at the same k.",
+  "related": [
+   "ndcg",
+   "mean-reciprocal-rank",
+   "retrieval-augmented-generation",
+   "two-stage-recommender",
+   "precision"
+  ]
+ },
+ {
+  "id": "mean-reciprocal-rank",
+  "name": "Mean reciprocal rank",
+  "topic": "evaluation",
+  "aka": [
+   "MRR",
+   "reciprocal rank",
+   "MRR@k"
+  ],
+  "summary": "The average, across queries, of one divided by the position of the first relevant result.",
+  "body": "For each query, find the rank of the first relevant item and take 1 / rank. A hit at position 1 scores 1, position 2 scores 0.5, position 4 scores 0.25, and no hit in the list scores 0. MRR is the mean of these across queries.\n\nIt fits tasks where the user needs one good answer: question answering, navigational search, or checking whether a RAG retriever puts a correct passage near the top. It ignores every relevant item after the first.\n\nExample: three queries have their first relevant result at rank 1, at rank 3, and nowhere in the list. MRR = (1 + 1/3 + 0) / 3 ≈ 0.44.",
+  "mixup": "MRR only sees the first relevant item, so it cannot tell whether the rest of the list is good. Use NDCG or recall@k when several results matter. Also, MRR is not one divided by the mean rank.",
+  "related": [
+   "ndcg",
+   "precision-at-k",
+   "retrieval-augmented-generation",
+   "learning-to-rank"
+  ]
+ },
+ {
+  "id": "ab-testing",
+  "name": "A/B testing",
+  "topic": "evaluation",
+  "aka": [
+   "A/B test",
+   "AB test",
+   "AB testing",
+   "split test",
+   "online experiment",
+   "controlled experiment"
+  ],
+  "summary": "An online experiment that randomly splits users between the current system and a change, then compares a chosen metric to see whether the change caused a real difference.",
+  "body": "Users or sessions are randomly assigned to control (A) or treatment (B). Randomization means the only systematic difference between the groups is the change, so a gap in the metric can be read as caused by it.\n\nBefore starting, fix the primary metric, guardrail metrics such as latency or complaints, the smallest effect worth detecting, and the sample size from a power calculation. Run for the planned duration, ideally whole weeks, then test the difference with a significance test or confidence interval.\n\nExample: a new ranking model goes to 50% of users for two weeks. Click-through rises from 4.0% to 4.2%, with a 95% confidence interval of +0.05 to +0.35 points, so the lift is unlikely to be noise.\n\nCommon traps are stopping early when the result looks good, checking many metrics without correction, novelty effects, and groups that affect each other, such as buyers sharing marketplace stock.",
+  "mixup": "A p-value below 0.05 does not mean a 95% chance the change works. It means a difference this large would be unlikely if there were no real effect. Statistical significance is also not business significance, so check the size of the effect.",
+  "related": [
+   "hypothesis-testing",
+   "statistical-power",
+   "p-value",
+   "offline-online-evaluation",
+   "multi-armed-bandit"
+  ]
+ },
+ {
+  "id": "offline-online-evaluation",
+  "name": "Offline vs online evaluation",
+  "topic": "evaluation",
+  "aka": [
+   "offline evaluation",
+   "online evaluation",
+   "offline metrics",
+   "online metrics",
+   "offline-online gap"
+  ],
+  "summary": "Offline evaluation scores a model on held-out historical data. Online evaluation measures its effect on real users or live traffic.",
+  "body": "Offline evaluation is cheap, fast and repeatable. You compute metrics such as AUC, NDCG or RMSE on a test set before anything ships. Online evaluation uses live traffic through A/B tests, interleaving, shadow or canary deployments, and measures outcomes such as conversion, retention or resolved tickets.\n\nThe two often disagree. Historical data was shaped by the old model through feedback loops and position bias, the offline metric may be a weak proxy for the business goal, and live features may differ from training features (training-serving skew).\n\nExample: a new recommender lifts offline NDCG by 4% but loses on click-through in an A/B test, because it keeps recommending items users have already bought. Offline wins decide what is worth testing online, not what ships.",
+  "mixup": "A better offline metric does not guarantee a better product. Treat offline evaluation as the gate that decides which candidates earn an online test, and treat the online result as the decision.",
+  "related": [
+   "ab-testing",
+   "shadow-deployment",
+   "training-serving-skew",
+   "feedback-loop",
+   "position-bias"
+  ]
+ },
+ {
+  "id": "slice-based-evaluation",
+  "name": "Slice-based evaluation",
+  "topic": "evaluation",
+  "aka": [
+   "sliced evaluation",
+   "slice analysis",
+   "subgroup analysis",
+   "segment analysis",
+   "data slicing"
+  ],
+  "summary": "Measuring a model's metrics separately on meaningful subgroups of the data, so weaknesses hidden by the overall average become visible.",
+  "body": "An overall score averages over everyone, and a model can be good on average while failing badly for one group. Slice-based evaluation splits the test set by things like country, device, new versus returning users, language or product category, and reports the metric for each slice with its sample size.\n\nIt is how you find problems before users do, check fairness across groups, and confirm a new model does not regress on an important segment even when its average improves.\n\nExample: a fraud model has recall 0.85 overall. Split by payment method, recall is 0.90 on cards but 0.40 on bank transfers, which are a small share of traffic but a large share of losses.\n\nSmall slices give noisy numbers, so show confidence intervals and do not chase every dip.",
+  "mixup": "Slice-based evaluation is not stratified sampling. Stratification controls how data is split, so each part keeps the class or group mix. Slicing is how you report results after the split. You often use both together.",
+  "related": [
+   "stratified-sampling",
+   "model-monitoring",
+   "demographic-parity",
+   "equal-opportunity",
+   "offline-online-evaluation"
+  ]
+ },
+ {
+  "id": "bleu-rouge",
+  "name": "BLEU and ROUGE",
+  "topic": "evaluation",
+  "aka": [
+   "BLEU",
+   "ROUGE",
+   "BLEU score",
+   "ROUGE score",
+   "ROUGE-L",
+   "ROUGE-N",
+   "ROUGE-1",
+   "n-gram overlap"
+  ],
+  "summary": "Two families of metrics that score generated text by its n-gram overlap with reference texts. BLEU is precision-based and ROUGE is recall-oriented.",
+  "body": "BLEU, built for machine translation, computes clipped n-gram precision for n = 1 to 4, takes their geometric mean, and multiplies by a brevity penalty so very short outputs cannot score well. It is usually reported over a whole corpus.\n\nROUGE, built for summarization, measures how much of the reference appears in the output. ROUGE-N counts overlapping n-grams and ROUGE-L uses the longest common subsequence. Most tools report ROUGE as an F-measure as well as recall.\n\nBoth are cheap and reproducible but reward surface wording. \"The meeting was cancelled\" and \"They called off the meeting\" mean the same yet share few n-grams. For open-ended LLM output, teams pair them with human review, semantic similarity or LLM-as-judge.\n\nExample: the output \"the cat sat on the mat\" against the reference \"the cat is on the mat\" matches 5 of its 6 words, so unigram precision is 5/6 ≈ 0.83.",
+  "mixup": "A higher BLEU or ROUGE does not mean a better answer. Both measure overlap with one or a few references, so a correct paraphrase can score low and a fluent but wrong answer that copies key phrases can score high.",
+  "related": [
+   "llm-as-judge",
+   "golden-dataset",
+   "groundedness",
+   "perplexity"
+  ]
+ }
+]

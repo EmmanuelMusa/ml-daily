@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 172" role="img">
+<title>Broadcasting stretches a (3,) row across a (3, 3) array so they can be added</title>
+<rect x="8" y="28" width="26" height="26" class="f-sheet s-muted"/>
+<text x="21" y="45" text-anchor="middle">1</text>
+<rect x="34" y="28" width="26" height="26" class="f-sheet s-muted"/>
+<text x="47" y="45" text-anchor="middle">2</text>
+<rect x="60" y="28" width="26" height="26" class="f-sheet s-muted"/>
+<text x="73" y="45" text-anchor="middle">3</text>
+<rect x="8" y="54" width="26" height="26" class="f-sheet s-muted"/>
+<text x="21" y="71" text-anchor="middle">4</text>
+<rect x="34" y="54" width="26" height="26" class="f-sheet s-muted"/>
+<text x="47" y="71" text-anchor="middle">5</text>
+<rect x="60" y="54" width="26" height="26" class="f-sheet s-muted"/>
+<text x="73" y="71" text-anchor="middle">6</text>
+<rect x="8" y="80" width="26" height="26" class="f-sheet s-muted"/>
+<text x="21" y="97" text-anchor="middle">7</text>
+<rect x="34" y="80" width="26" height="26" class="f-sheet s-muted"/>
+<text x="47" y="97" text-anchor="middle">8</text>
+<rect x="60" y="80" width="26" height="26" class="f-sheet s-muted"/>
+<text x="73" y="97" text-anchor="middle">9</text>
+<text x="97" y="72" text-anchor="middle" class="t-label">+</text>
+<rect x="108" y="28" width="26" height="26" class="f-sheet s-muted"/>
+<text x="121" y="45" text-anchor="middle">10</text>
+<rect x="134" y="28" width="26" height="26" class="f-sheet s-muted"/>
+<text x="147" y="45" text-anchor="middle">20</text>
+<rect x="160" y="28" width="26" height="26" class="f-sheet s-muted"/>
+<text x="173" y="45" text-anchor="middle">30</text>
+<rect x="108" y="54" width="26" height="26" class="s-line s-dash f-paper"/>
+<text x="121" y="71" text-anchor="middle" class="t-muted">10</text>
+<rect x="134" y="54" width="26" height="26" class="s-line s-dash f-paper"/>
+<text x="147" y="71" text-anchor="middle" class="t-muted">20</text>
+<rect x="160" y="54" width="26" height="26" class="s-line s-dash f-paper"/>
+<text x="173" y="71" text-anchor="middle" class="t-muted">30</text>
+<rect x="108" y="80" width="26" height="26" class="s-line s-dash f-paper"/>
+<text x="121" y="97" text-anchor="middle" class="t-muted">10</text>
+<rect x="134" y="80" width="26" height="26" class="s-line s-dash f-paper"/>
+<text x="147" y="97" text-anchor="middle" class="t-muted">20</text>
+<rect x="160" y="80" width="26" height="26" class="s-line s-dash f-paper"/>
+<text x="173" y="97" text-anchor="middle" class="t-muted">30</text>
+<text x="197" y="72" text-anchor="middle" class="t-label">=</text>
+<rect x="208" y="28" width="26" height="26" class="f-sheet s-ink"/>
+<text x="221" y="45" text-anchor="middle">11</text>
+<rect x="234" y="28" width="26" height="26" class="f-sheet s-ink"/>
+<text x="247" y="45" text-anchor="middle">22</text>
+<rect x="260" y="28" width="26" height="26" class="f-sheet s-ink"/>
+<text x="273" y="45" text-anchor="middle">33</text>
+<rect x="208" y="54" width="26" height="26" class="f-sheet s-ink"/>
+<text x="221" y="71" text-anchor="middle">14</text>
+<rect x="234" y="54" width="26" height="26" class="f-sheet s-ink"/>
+<text x="247" y="71" text-anchor="middle">25</text>
+<rect x="260" y="54" width="26" height="26" class="f-sheet s-ink"/>
+<text x="273" y="71" text-anchor="middle">36</text>
+<rect x="208" y="80" width="26" height="26" class="f-sheet s-ink"/>
+<text x="221" y="97" text-anchor="middle">17</text>
+<rect x="234" y="80" width="26" height="26" class="f-sheet s-ink"/>
+<text x="247" y="97" text-anchor="middle">28</text>
+<rect x="260" y="80" width="26" height="26" class="f-sheet s-ink"/>
+<text x="273" y="97" text-anchor="middle">39</text>
+<text x="47" y="20" text-anchor="middle" class="t-small t-bold">A</text>
+<text x="47" y="120" text-anchor="middle" class="t-small t-muted">(3, 3)</text>
+<text x="147" y="20" text-anchor="middle" class="t-small t-bold">b</text>
+<text x="147" y="120" text-anchor="middle" class="t-small t-muted">(3,)</text>
+<text x="247" y="20" text-anchor="middle" class="t-small t-bold">A + b</text>
+<text x="247" y="120" text-anchor="middle" class="t-small t-muted">(3, 3)</text>
+<text x="160" y="146" text-anchor="middle" class="t-small t-muted">Dashed rows: b repeated virtually, not copied.</text>
+<text x="160" y="162" text-anchor="middle" class="t-small t-muted">Shapes match from the right: 3 with 3.</text>
+</svg>

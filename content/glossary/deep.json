@@ -1,0 +1,495 @@
+[
+ {
+  "id": "multilayer-perceptron",
+  "name": "Multilayer perceptron",
+  "topic": "deep",
+  "aka": [
+   "MLP",
+   "feedforward neural network",
+   "feed-forward network",
+   "fully connected network",
+   "dense network",
+   "FFN"
+  ],
+  "summary": "A neural network made of stacked fully connected layers, each a linear map followed by a nonlinear activation.",
+  "body": "An MLP passes the input through a stack of layers. Each layer computes h = f(Wx + b), where W is a weight matrix, b a bias vector and f a nonlinear activation such as ReLU. The output layer has no activation for regression, or a sigmoid or softmax for classification.\n\nThe nonlinearity is what gives the network its power. With one wide enough hidden layer, an MLP can approximate any continuous function on a bounded input range (the universal approximation theorem), although that says nothing about how easy it is to train. MLPs are a common model for tabular inputs in deep pipelines, and one sits inside every transformer block as the feed-forward sublayer.\n\nExample: a churn model takes 20 features, has hidden layers of 64 and 32 units and one output unit. It has (20×64 + 64) + (64×32 + 32) + (32×1 + 1) = 1,344 + 2,080 + 33 = 3,457 parameters.",
+  "mixup": "Stacking linear layers without activations does not make a deep network. The product of the weight matrices is still one linear map, so the model can only learn what a single linear layer can.",
+  "related": [
+   "activation-function",
+   "backpropagation",
+   "softmax",
+   "weight-initialization"
+  ]
+ },
+ {
+  "id": "activation-function",
+  "name": "Activation function",
+  "topic": "deep",
+  "aka": [
+   "activation",
+   "nonlinearity",
+   "ReLU",
+   "GELU",
+   "SiLU",
+   "sigmoid",
+   "tanh",
+   "leaky ReLU"
+  ],
+  "summary": "A nonlinear function applied to each neuron's output so that stacked layers can learn curved, non-linear patterns.",
+  "body": "After a layer computes z = Wx + b, an activation f is applied to each element. Common choices:\n\n- ReLU: max(0, z). Cheap, and keeps gradients alive for positive inputs. A default in many CNNs and MLPs.\n- GELU and SiLU (also called Swish): smooth versions of ReLU, common in transformers.\n- Sigmoid: 1 / (1 + e⁻ᶻ), squashes to (0, 1). Used for binary outputs and gates.\n- Tanh: squashes to (−1, 1) and is zero-centred. Used in RNN cells.\n\nThe choice affects how gradients flow. Sigmoid and tanh saturate for large |z|, where their slope is near zero, which feeds vanishing gradients in deep stacks. A ReLU unit can get stuck outputting zero for every input, called a dying ReLU. Leaky ReLU, with a small slope such as 0.01 for z < 0, avoids that.\n\nExample: for z = [−2, 0.5, 3], ReLU gives [0, 0.5, 3].",
+  "mixup": "Softmax is often listed with activations, but it does not act on each element alone. It normalizes a whole vector into probabilities and belongs on the output layer, not inside hidden layers.",
+  "related": [
+   "multilayer-perceptron",
+   "vanishing-gradients",
+   "softmax",
+   "weight-initialization"
+  ],
+  "diagram": "activation-function"
+ },
+ {
+  "id": "softmax",
+  "name": "Softmax",
+  "topic": "deep",
+  "aka": [
+   "softmax function",
+   "normalized exponential",
+   "softargmax",
+   "log-softmax"
+  ],
+  "summary": "Turns a vector of raw scores, called logits, into probabilities that are all positive and sum to 1.",
+  "body": "softmax(zᵢ) = e^(zᵢ) / Σⱼ e^(zⱼ). Exponentiating makes every value positive, and dividing by the sum makes them add to 1. Larger logits get a disproportionately larger share.\n\nIt is the output layer of almost every multi-class classifier and of every language model, where it turns scores over the vocabulary into a next-token distribution. It also sits inside attention, turning similarity scores into weights.\n\nIn code you subtract the largest logit first. softmax(z) = softmax(z − max z), so the result is unchanged, but e^z can no longer overflow.\n\nExample: logits [2, 1, 0] give e² ≈ 7.39, e¹ ≈ 2.72 and e⁰ = 1. The sum is about 11.11, so the probabilities are about [0.67, 0.24, 0.09].",
+  "mixup": "Softmax is for picking one label out of many, where classes compete for probability. For multi-label problems, where an item can carry several labels at once, use an independent sigmoid on each output instead.",
+  "related": [
+   "cross-entropy-loss",
+   "temperature",
+   "activation-function",
+   "self-attention"
+  ]
+ },
+ {
+  "id": "cross-entropy-loss",
+  "name": "Cross-entropy loss",
+  "topic": "deep",
+  "aka": [
+   "cross entropy",
+   "categorical cross-entropy",
+   "CE loss",
+   "negative log-likelihood",
+   "NLL loss",
+   "binary cross-entropy",
+   "BCE"
+  ],
+  "summary": "The standard classification loss: the negative log of the probability the model gave to the correct class.",
+  "body": "For one example with true class y and predicted probabilities p, the loss is −log p_y. With one-hot or soft targets t it is −Σ tᵢ log pᵢ. The binary case is −[y log p + (1 − y) log(1 − p)]. Averaged over a dataset, it is the negative log-likelihood of the labels.\n\nIt punishes confident mistakes hard. Giving the true class 0.9 costs −ln 0.9 ≈ 0.105. Giving it 0.01 costs −ln 0.01 ≈ 4.6. Paired with softmax, its gradient with respect to the logits is simply p − t, which stays large when the model is badly wrong. That is why it trains much better than squared error on probabilities.\n\nMany framework loss functions take raw logits and apply log-softmax inside for numerical stability, so check the docs before applying softmax yourself. Language models use the same loss on every next token.",
+  "mixup": "Loss and accuracy can disagree. Cross-entropy can keep falling while accuracy stays flat, because the model grows more confident on examples it already gets right. Validation loss can also rise while accuracy holds, a sign of overconfident mistakes.",
+  "related": [
+   "softmax",
+   "log-loss",
+   "kl-divergence",
+   "maximum-likelihood-estimation",
+   "perplexity"
+  ]
+ },
+ {
+  "id": "backpropagation",
+  "name": "Backpropagation",
+  "topic": "deep",
+  "aka": [
+   "backprop",
+   "backward pass",
+   "reverse-mode autodiff",
+   "reverse-mode automatic differentiation"
+  ],
+  "summary": "The algorithm that computes the gradient of the loss with respect to every weight by applying the chain rule backwards through the network.",
+  "body": "Training has two passes. The forward pass computes each layer's output and the loss, storing intermediate activations. The backward pass starts from ∂L/∂output and moves layer by layer toward the input. At each layer it uses the chain rule to get the gradient for that layer's weights and the gradient to pass further back. An optimizer such as SGD or Adam then uses those gradients to update the weights.\n\nThe backward pass costs roughly twice the forward pass, and the stored activations are a main driver of training memory. That is why gradient checkpointing trades extra recomputation for lower memory.\n\nExample: for y = w·x with loss L = (y − t)², the gradient is ∂L/∂w = 2(y − t)·x. With w = 2, x = 3 and t = 5, the prediction is y = 6 and the gradient is 2 × 1 × 3 = 6.",
+  "mixup": "Backpropagation only computes gradients. Gradient descent, or another optimizer, is the separate step that uses them to change the weights. Saying backprop updates the weights blurs the two.",
+  "related": [
+   "chain-rule",
+   "gradient-descent",
+   "vanishing-gradients",
+   "pytorch-autograd",
+   "gradient-checkpointing"
+  ],
+  "diagram": "backpropagation"
+ },
+ {
+  "id": "vanishing-gradients",
+  "name": "Vanishing gradients",
+  "topic": "deep",
+  "aka": [
+   "vanishing gradient problem",
+   "exploding gradients",
+   "vanishing and exploding gradients"
+  ],
+  "summary": "Gradients shrink toward zero as they are passed back through many layers, so the early layers barely learn.",
+  "body": "Backpropagation multiplies one local derivative per layer. If those factors are mostly below 1, the product shrinks exponentially with depth. If they are mostly above 1, it blows up instead, which is the exploding-gradient problem.\n\nThe sigmoid's slope is at most 0.25, so ten sigmoid layers can scale a gradient by 0.25¹⁰ ≈ 10⁻⁶. The first layers then get almost no signal and the loss stalls. Plain RNNs suffer the same thing across time steps, which is why they struggle with long-range dependencies.\n\nThe fixes that made deep networks trainable are ReLU-family activations, careful initialization (Xavier or He), normalization layers, residual connections that give gradients a direct path, and gated cells such as LSTM and GRU for sequences. Exploding gradients are usually handled with gradient clipping.\n\nA sign in practice: gradient norms in the first layers are orders of magnitude smaller than in the last ones.",
+  "mixup": "A flat training loss is not proof of vanishing gradients. A learning rate that is too low, or a broken data pipeline, looks the same. Check per-layer gradient norms before changing the architecture.",
+  "related": [
+   "residual-connection",
+   "gradient-clipping",
+   "weight-initialization",
+   "activation-function",
+   "recurrent-neural-network"
+  ]
+ },
+ {
+  "id": "gradient-clipping",
+  "name": "Gradient clipping",
+  "topic": "deep",
+  "aka": [
+   "clip grad norm",
+   "clip_grad_norm",
+   "gradient norm clipping",
+   "clipping by value"
+  ],
+  "summary": "Capping the size of the gradient before each update so one bad batch cannot throw the weights far off course.",
+  "body": "The common form is clipping by global norm. Compute the L2 norm g of all gradients together. If g is above a threshold c, scale every gradient by c / g. The direction stays the same and only the step length shrinks. Clipping by value instead caps each element at ±c, which can change the direction.\n\nIt guards against exploding gradients, which show up as sudden loss spikes or NaNs. It is standard when training RNNs and transformers, and a threshold of 1.0 is a common default.\n\nExample: the global gradient norm is 8 and the threshold is 1. Every gradient is multiplied by 1 / 8 = 0.125, so the total norm becomes 1.\n\nLogging the norm before clipping is a cheap health check. If clipping fires on almost every step, the learning rate or the data probably needs a look.",
+  "mixup": "Clipping limits how big a step can be. It does nothing for vanishing gradients, which are too small rather than too large. Residual connections, normalization and good initialization address that problem.",
+  "related": [
+   "vanishing-gradients",
+   "learning-rate",
+   "recurrent-neural-network",
+   "mixed-precision-training"
+  ]
+ },
+ {
+  "id": "weight-initialization",
+  "name": "Weight initialization",
+  "topic": "deep",
+  "aka": [
+   "initialization",
+   "weight init",
+   "Xavier initialization",
+   "Glorot initialization",
+   "He initialization",
+   "Kaiming initialization"
+  ],
+  "summary": "Choosing the starting values of a network's weights so signals and gradients keep a stable size through every layer.",
+  "body": "If all weights start equal, every neuron in a layer computes the same thing and gets the same gradient, so they never become different. Random values break this symmetry. Their scale then decides whether activations shrink, stay steady or explode as they pass through the layers.\n\nThe standard rules set the variance from the layer's fan-in (number of inputs) and fan-out (number of outputs):\n\n- Xavier (Glorot): Var(w) = 2 / (fan_in + fan_out), suited to tanh and sigmoid.\n- He (Kaiming): Var(w) = 2 / fan_in, suited to ReLU, which zeroes about half its inputs.\n\nExample: a ReLU layer with 512 inputs under He initialization draws weights with standard deviation √(2/512) = 0.0625.\n\nBiases usually start at zero. Frameworks apply sensible defaults, but custom layers and very deep stacks often need deliberate choices, such as scaling down the last layer of each residual branch.",
+  "mixup": "Zero is a fine start for biases but not for weights. With all weights at zero, every neuron in a layer stays identical through training. Weights need small random values, with a scale matched to the layer size.",
+  "related": [
+   "vanishing-gradients",
+   "activation-function",
+   "batch-normalization",
+   "residual-connection"
+  ]
+ },
+ {
+  "id": "batch-normalization",
+  "name": "Batch normalization",
+  "topic": "deep",
+  "aka": [
+   "batch norm",
+   "BatchNorm",
+   "BN"
+  ],
+  "summary": "A layer that normalizes each feature using the mean and variance of the current mini-batch, then applies a learned scale and shift.",
+  "body": "For each feature, or each channel in a CNN, batch norm computes the batch mean μ and variance σ² and outputs y = γ(x − μ) / √(σ² + ε) + β, where γ and β are learned. This keeps activations in a steady range, which allows higher learning rates and makes training less sensitive to initialization.\n\nThe catch is that training and inference behave differently. In training it uses batch statistics and also keeps running averages of μ and σ². At inference it uses those fixed averages, so a prediction does not depend on what else is in the batch. Forgetting to switch the model to evaluation mode is a classic bug.\n\nIt works poorly with very small batches, where the statistics are noisy, and is awkward for variable-length sequences. That is why transformers use layer normalization instead.\n\nExample: a CNN layer with 64 channels has 64 values of γ and 64 of β.",
+  "mixup": "Batch norm normalizes each feature across the examples in a batch. Layer norm normalizes across the features of a single example. Only batch norm depends on batch size and needs separate training and inference behaviour.",
+  "related": [
+   "layer-normalization",
+   "eval-mode",
+   "batch-size",
+   "convolutional-neural-network"
+  ]
+ },
+ {
+  "id": "layer-normalization",
+  "name": "Layer normalization",
+  "topic": "deep",
+  "aka": [
+   "layer norm",
+   "LayerNorm",
+   "LN",
+   "pre-norm",
+   "RMSNorm"
+  ],
+  "summary": "Normalizes the features of each example on its own, using that example's mean and variance, then applies a learned scale and shift.",
+  "body": "For one token or example with d features, layer norm computes the mean μ and variance σ² across those d values and outputs y = γ(x − μ) / √(σ² + ε) + β. No other example in the batch is involved.\n\nSo it behaves the same in training and inference, works at any batch size including 1, and handles variable-length sequences. Transformers use it around every attention and feed-forward sublayer. Most modern LLMs put it before each sublayer (pre-norm) rather than after the residual add (post-norm), which trains more stably in deep stacks. Many also use RMSNorm, a cheaper variant that skips the mean subtraction and divides by the root mean square.\n\nExample: a token vector [2, 4, 6] has mean 4 and variance 8/3, so before γ and β it becomes about [−1.22, 0, 1.22].",
+  "mixup": "The name suggests it normalizes across a whole layer's outputs for the batch. It actually normalizes across the feature dimension of each example separately, which is why batch size does not affect it.",
+  "related": [
+   "batch-normalization",
+   "transformer-block",
+   "residual-connection"
+  ]
+ },
+ {
+  "id": "dropout",
+  "name": "Dropout",
+  "topic": "deep",
+  "aka": [
+   "dropout rate",
+   "dropout layer",
+   "dropout regularization",
+   "inverted dropout"
+  ],
+  "summary": "A regularizer that randomly zeroes a fraction of activations during training so the network cannot rely on any single unit.",
+  "body": "With dropout rate p, each activation is set to zero with probability p on every training step. In the usual inverted dropout, the kept activations are divided by (1 − p) so the expected value stays the same. At inference dropout is switched off and every unit is used, with no rescaling needed.\n\nBecause a different random subnetwork trains on each step, units cannot co-adapt, which reduces overfitting. It acts like cheaply averaging many thinned networks. Typical rates are 0.1 to 0.5. Large pretrained LLMs often use little or no dropout, since they see so much data that overfitting is less of a concern.\n\nExample: with p = 0.2, an activation of 1.0 becomes either 0 or 1.0 / 0.8 = 1.25 during training, and stays 1.0 at inference.\n\nForgetting to switch to evaluation mode leaves dropout on, which makes predictions noisy and different on every call.",
+  "mixup": "The dropout rate is the probability of dropping a unit, not of keeping it. Some older code and papers used a keep probability instead, so a value of 0.8 can mean opposite things.",
+  "related": [
+   "regularization",
+   "overfitting",
+   "eval-mode",
+   "weight-decay"
+  ]
+ },
+ {
+  "id": "residual-connection",
+  "name": "Residual connection",
+  "topic": "deep",
+  "aka": [
+   "skip connection",
+   "shortcut connection",
+   "residual block",
+   "ResNet",
+   "identity shortcut"
+  ],
+  "summary": "A shortcut that adds a block's input to its output, y = x + F(x), so the block only has to learn a correction.",
+  "body": "Instead of learning a full mapping, a residual block learns F(x), the change to apply, and outputs x + F(x). If the best move is to do nothing, the block only has to push F toward zero, which is easy.\n\nThe bigger benefit is gradient flow. The derivative of x + F(x) with respect to x is 1 + ∂F/∂x, so there is always a direct path for gradients back to early layers. This is what let image networks go from around 20 layers to well over 100, and every transformer block wraps both attention and the feed-forward sublayer in one.\n\nThe addition needs matching shapes. When a block changes the channel count or resolution, the shortcut uses a 1×1 convolution or a linear projection to match.\n\nExample: in a pre-norm transformer, the hidden state after the attention sublayer is h + Attention(LayerNorm(h)).",
+  "mixup": "Residual connections add the input to the output. DenseNet-style connections and U-Net skips concatenate features instead, which grows the channel count. Both get called skip connections, but they behave differently.",
+  "related": [
+   "vanishing-gradients",
+   "transformer-block",
+   "layer-normalization",
+   "convolutional-neural-network"
+  ],
+  "diagram": "residual-connection"
+ },
+ {
+  "id": "convolutional-neural-network",
+  "name": "Convolutional neural network",
+  "topic": "deep",
+  "aka": [
+   "CNN",
+   "ConvNet",
+   "convolutional network",
+   "conv net",
+   "convolution layer"
+  ],
+  "summary": "A network that slides small learned filters over grid data such as images, sharing weights across positions to detect local patterns.",
+  "body": "A convolution layer holds a set of small filters, say 3×3. Each filter slides across the input and computes a weighted sum at every position, producing a feature map. Because the same filter is reused everywhere, the layer has few parameters and spots a pattern wherever it appears. Stacking layers grows the receptive field, so early layers find edges and later ones find parts and objects. Pooling or strides shrink the spatial size along the way.\n\nOutput size per side is (n + 2p − k) / s + 1, with the division rounded down, for input size n, padding p, kernel size k and stride s.\n\nExample: a 32×32 RGB image through a 3×3 convolution with 64 filters, padding 1 and stride 1 gives a 32×32×64 output. Parameters: 3×3×3×64 + 64 = 1,792.\n\nCNNs remain strong for images, audio spectrograms and some time series, especially when data or compute is limited.",
+  "mixup": "Weight sharing gives translation equivariance, meaning a shifted input gives a shifted feature map. It does not by itself make the network translation invariant. Invariance comes only partly, from pooling and the final global aggregation.",
+  "related": [
+   "transfer-learning",
+   "data-augmentation",
+   "batch-normalization",
+   "residual-connection"
+  ],
+  "diagram": "convolutional-neural-network"
+ },
+ {
+  "id": "recurrent-neural-network",
+  "name": "Recurrent neural network",
+  "topic": "deep",
+  "aka": [
+   "RNN",
+   "LSTM",
+   "GRU",
+   "long short-term memory",
+   "gated recurrent unit",
+   "backpropagation through time",
+   "BPTT"
+  ],
+  "summary": "A network that reads a sequence one step at a time, carrying a hidden state that summarizes everything seen so far.",
+  "body": "At each step t a plain RNN computes hₜ = tanh(W·hₜ₋₁ + U·xₜ + b), using the same weights at every step. The hidden state hₜ is the network's memory and can be used to predict a label or the next item.\n\nTraining backpropagates through time across all steps, so gradients are multiplied by the same matrix again and again. They tend to vanish or explode, which makes long-range dependencies hard to learn. LSTM and GRU cells add gates that decide what to keep, forget and output, which keeps gradients alive over much longer spans.\n\nThe big limit is that steps must run in order, which blocks parallel training across the sequence. Transformers replaced RNNs for most language tasks largely for this reason. Recurrent designs still appear in streaming and on-device settings, where a fixed-size state per step is attractive.\n\nExample: a 100-word review is read in 100 sequential steps.",
+  "mixup": "An LSTM is a type of RNN, not an alternative to one. Its gates ease vanishing gradients but do not remove the step-by-step bottleneck, so it still trains slower than attention on long sequences.",
+  "related": [
+   "vanishing-gradients",
+   "self-attention",
+   "gradient-clipping",
+   "transformer-block"
+  ]
+ },
+ {
+  "id": "learning-rate",
+  "name": "Learning rate",
+  "topic": "deep",
+  "aka": [
+   "LR",
+   "step size",
+   "eta",
+   "η"
+  ],
+  "summary": "The number that scales each gradient step, and usually the most important hyperparameter to tune.",
+  "body": "Gradient descent updates weights as w ← w − η·∇L, where η is the learning rate. Too small and training crawls or stalls. Too large and the loss bounces around, spikes or becomes NaN.\n\nThe right value depends on the optimizer, the batch size and the model. Adam-style optimizers often use values around 10⁻⁴ to 10⁻³ when training from scratch and smaller ones for fine-tuning, while SGD with momentum often uses larger values such as 0.1. Rather than guess, run a short sweep on a log scale (10⁻⁵, 3×10⁻⁵, 10⁻⁴ and so on) and pair the chosen peak with a schedule.\n\nExample: with a weight of 0.5, a gradient of 2 and η = 0.1, the new weight is 0.5 − 0.1 × 2 = 0.3.",
+  "mixup": "The same learning rate means different things for different optimizers. With plain SGD the step is η times the gradient. With Adam each parameter's step is roughly bounded by η, whatever the gradient's scale, so values do not transfer between the two.",
+  "related": [
+   "learning-rate-schedule",
+   "adam-optimizer",
+   "batch-size",
+   "gradient-descent",
+   "hyperparameter-tuning"
+  ]
+ },
+ {
+  "id": "adam-optimizer",
+  "name": "Adam optimizer",
+  "topic": "deep",
+  "aka": [
+   "Adam",
+   "AdamW",
+   "adaptive moment estimation",
+   "Adam optimiser"
+  ],
+  "summary": "An optimizer that combines momentum with a per-parameter step size scaled by a running estimate of each gradient's squared size.",
+  "body": "Adam keeps two running averages per parameter: m, an average of the gradient g (momentum), and v, an average of g². At step t:\n\n- m ← β₁m + (1 − β₁)g\n- v ← β₂v + (1 − β₂)g²\n- w ← w − η · m̂ / (√v̂ + ε)\n\nHere m̂ = m / (1 − β₁ᵗ) and v̂ = v / (1 − β₂ᵗ) correct the bias from starting at zero. Defaults are β₁ = 0.9, β₂ = 0.999 and ε = 10⁻⁸.\n\nDividing by √v̂ gives parameters with small or rare gradients relatively bigger steps, so Adam works well with little tuning and is the default for transformers. The cost is memory: two extra values per parameter, so the optimizer state takes twice the memory of the weights at the same precision.\n\nAdding an L2 penalty to the gradient gets distorted by the adaptive scaling. AdamW fixes this by applying weight decay directly to the weights, and it is the version most people now use.",
+  "mixup": "Adam and AdamW differ once weight decay is set. In plain Adam an L2 penalty is rescaled per parameter, so it regularizes unevenly. AdamW decouples the decay, which is why the same decay value behaves differently in the two.",
+  "related": [
+   "learning-rate",
+   "weight-decay",
+   "learning-rate-schedule",
+   "gradient-descent"
+  ]
+ },
+ {
+  "id": "weight-decay",
+  "name": "Weight decay",
+  "topic": "deep",
+  "aka": [
+   "decoupled weight decay",
+   "wd",
+   "weight_decay"
+  ],
+  "summary": "A regularizer that shrinks every weight a little toward zero on each update, which discourages large weights and overfitting.",
+  "body": "On each step the optimizer subtracts η·λ·w from each weight, where λ is the decay strength. That is the same as multiplying the weight by a factor just under 1. The model is pushed toward smaller, smoother solutions.\n\nFor plain SGD this is exactly the same as adding an L2 penalty (λ/2)‖w‖² to the loss. For adaptive optimizers like Adam it is not, because the L2 gradient gets divided by the adaptive scale. Decoupled weight decay, as in AdamW, applies the shrink directly to the weights and is the standard choice.\n\nCommon practice is to skip decay on biases and normalization parameters. Typical values with AdamW are around 0.01 to 0.1.\n\nExample: with η = 0.001 and λ = 0.1, each step multiplies a weight by 1 − 0.0001 = 0.9999, alongside the usual gradient update.",
+  "mixup": "Weight decay and L2 regularization are often treated as one thing. They match only for plain SGD. With Adam they diverge, so a value tuned for one setup does not transfer to the other.",
+  "related": [
+   "l2-regularization",
+   "adam-optimizer",
+   "regularization",
+   "dropout"
+  ]
+ },
+ {
+  "id": "learning-rate-schedule",
+  "name": "Learning rate schedule",
+  "topic": "deep",
+  "aka": [
+   "LR schedule",
+   "learning rate scheduler",
+   "warmup",
+   "cosine decay",
+   "cosine annealing",
+   "step decay",
+   "LR decay"
+  ],
+  "summary": "A plan for changing the learning rate during training, usually a short warmup followed by a gradual decay.",
+  "body": "A fixed learning rate is rarely best. Early on, a high rate makes fast progress. Later, a lower rate lets the model settle into a good minimum instead of bouncing around it.\n\nCommon shapes:\n\n- Warmup: raise the rate linearly from near zero over the first few hundred or thousand steps. Adam's variance estimates are unreliable at the start, and transformers often diverge without warmup.\n- Cosine decay: follow half a cosine curve from the peak down to a small floor by the end of training.\n- Step decay: cut the rate by a fixed factor, such as 10, at set epochs.\n- Reduce on plateau: cut it when validation loss stops improving.\n\nExample: warm up over 1,000 steps to a peak of 3×10⁻⁴, then decay along a cosine to 3×10⁻⁵ over the remaining 99,000 steps.\n\nThe schedule's length should match the real run. Stopping halfway through a cosine schedule leaves the model at a high rate.",
+  "mixup": "Warmup is not the same as using a small learning rate throughout. It is a ramp that ends at a normal or even high peak. Its job is to avoid early instability, not to slow training down.",
+  "related": [
+   "learning-rate",
+   "adam-optimizer",
+   "batch-size",
+   "early-stopping"
+  ]
+ },
+ {
+  "id": "batch-size",
+  "name": "Batch size",
+  "topic": "deep",
+  "aka": [
+   "mini-batch size",
+   "minibatch",
+   "effective batch size",
+   "global batch size"
+  ],
+  "summary": "The number of examples used to compute one gradient estimate and one weight update.",
+  "body": "Each training step averages the gradient over a mini-batch. A bigger batch gives a less noisy estimate and uses the hardware more fully, so each epoch runs faster. But there are fewer updates per epoch, and past a point a bigger batch stops cutting the number of steps needed.\n\nBatch size and learning rate move together. A common heuristic for SGD is to scale the learning rate linearly with batch size, with warmup. For Adam, square-root scaling is a common starting point. Very large batches can generalize a little worse unless tuned carefully, while small batches add noise that acts as mild regularization.\n\nMemory sets the upper limit, since activations grow with batch size. Gradient accumulation reaches a larger effective batch on limited memory.\n\nExample: a per-device batch of 16, 4 accumulation steps and 8 GPUs give an effective batch of 16 × 4 × 8 = 512.\n\nAt inference, batch size trades latency for throughput instead.",
+  "mixup": "An epoch is one full pass over the data and a step is one batch. With 10,000 examples and a batch of 100, an epoch is 100 steps, so changing batch size changes how many updates an epoch contains.",
+  "related": [
+   "learning-rate",
+   "gradient-accumulation",
+   "batch-normalization",
+   "throughput-vs-latency"
+  ]
+ },
+ {
+  "id": "transfer-learning",
+  "name": "Transfer learning",
+  "topic": "deep",
+  "aka": [
+   "pretrained weights",
+   "feature extraction",
+   "linear probing",
+   "frozen backbone"
+  ],
+  "summary": "Reusing a model trained on a large general task as the starting point for a new, usually smaller, task.",
+  "body": "A model pretrained on lots of data has already learned useful general features, such as edges and shapes for images, or grammar and meaning for text. Instead of starting from random weights, you start from those.\n\nTwo common modes:\n\n- Feature extraction: freeze the pretrained layers and train only a new head on top. Fast and safe with little data.\n- Fine-tuning: also update some or all pretrained layers, usually with a smaller learning rate so the useful features are not destroyed.\n\nIt matters because labelled data is expensive. With a few thousand labelled images, a fine-tuned pretrained network usually beats one trained from scratch by a wide margin.\n\nExample: a clinic has 2,000 labelled skin images. Start from a network pretrained on a large photo dataset, replace its output layer with a 7-class layer, train the head first, then unfreeze the top blocks with a lower learning rate.\n\nIt works best when the source and target domains are related.",
+  "mixup": "Transfer learning is the broad idea and fine-tuning is one way to do it. Freezing the backbone and training only a head is also transfer learning, and with tiny datasets it is often the safer choice.",
+  "related": [
+   "supervised-fine-tuning",
+   "pretraining",
+   "catastrophic-forgetting",
+   "lora",
+   "embedding"
+  ]
+ },
+ {
+  "id": "data-augmentation",
+  "name": "Data augmentation",
+  "topic": "deep",
+  "aka": [
+   "augmentation",
+   "augmentations",
+   "image augmentation",
+   "text augmentation",
+   "back-translation"
+  ],
+  "summary": "Creating extra training examples by applying label-preserving changes, such as flips, crops or noise, to the data you already have.",
+  "body": "The model sees a slightly different version of each example every epoch, which teaches it which changes should not affect the answer. This reduces overfitting and improves robustness, especially with small datasets.\n\nCommon choices:\n\n- Images: random crops, flips, small rotations, colour jitter, mixup and cutout.\n- Audio: time shifts, added noise, speed changes, masking parts of a spectrogram.\n- Text: back-translation, synonym swaps, or paraphrases generated by an LLM.\n\nEach change must keep the label true. A horizontal flip is fine for cats but changes the meaning of a left-turn sign or of letters such as b and d. Augmentation is applied to the training set on the fly. Validation and test data stay unchanged so they reflect real inputs.\n\nExample: a defect detector trained on 500 photos gets random rotations and brightness changes, so it copes with factory lighting that varies through the day.",
+  "mixup": "Augmenting before splitting puts near-copies of the same example in both the training and test sets, which inflates test scores. Split first, then augment only the training part.",
+  "related": [
+   "overfitting",
+   "regularization",
+   "contrastive-learning",
+   "convolutional-neural-network",
+   "data-leakage"
+  ]
+ },
+ {
+  "id": "embedding",
+  "name": "Embedding",
+  "topic": "deep",
+  "aka": [
+   "embeddings",
+   "vector embedding",
+   "embedding vector",
+   "embedding layer",
+   "dense representation",
+   "sentence embedding"
+  ],
+  "summary": "A learned dense vector that represents an item, such as a word, product or user, so that similar items sit close together.",
+  "body": "An embedding layer is a lookup table: a matrix with one row per item ID. A vocabulary of 50,000 tokens with 768-dimensional embeddings is a 50,000 × 768 matrix, about 38 million parameters. The rows are learned during training, so items used in similar ways end up with similar vectors.\n\nEmbeddings replace sparse one-hot vectors with short dense ones that carry meaning. They show up everywhere: token inputs to transformers, user and item vectors in recommenders, and sentence or document embeddings for semantic search and RAG, where a separate model maps a whole text to one vector.\n\nCloseness is usually measured with cosine similarity or dot product. In a good text embedding space, 'refund my order' lands near 'I want my money back' even though they share no words.\n\nEmbeddings from different models live in different spaces and cannot be compared with each other.",
+  "mixup": "Token embeddings and sentence embeddings are different things. Token embeddings are the input rows of a language model. Sentence embeddings come from a model trained, often contrastively, to make whole texts comparable. Averaging raw token vectors is usually a poor substitute.",
+  "related": [
+   "cosine-similarity",
+   "contrastive-learning",
+   "one-hot-encoding",
+   "vector-database",
+   "two-tower-model"
+  ]
+ },
+ {
+  "id": "contrastive-learning",
+  "name": "Contrastive learning",
+  "topic": "deep",
+  "aka": [
+   "contrastive loss",
+   "InfoNCE",
+   "NT-Xent",
+   "triplet loss",
+   "in-batch negatives",
+   "hard negatives"
+  ],
+  "summary": "Learning embeddings by pulling matching pairs together and pushing non-matching pairs apart in vector space.",
+  "body": "You need pairs that should match, called positives: two augmented crops of the same photo, a question and its answer, an image and its caption. Other items act as negatives. The loss rewards high similarity for positives and low similarity for negatives.\n\nThe common InfoNCE loss treats it as classification. For an anchor a with positive p and negatives n₁ to nₖ, loss = −log( exp(s(a, p) / τ) / Σₓ exp(s(a, x) / τ) ), where the sum runs over p and all the negatives, s is cosine similarity and τ is a temperature. With in-batch negatives, every other item in the batch is a negative, so bigger batches give more negatives.\n\nIt is how most text and image embedding models for search and RAG are trained, and how image-text models learn a shared space. It needs no class labels, only a way to form positive pairs.\n\nHard negatives, items that look similar but do not match, teach the most.",
+  "mixup": "Contrastive learning is not a classifier with many fixed classes. It learns a similarity space, so at test time it can compare items it never saw in training, which a fixed classifier cannot do.",
+  "related": [
+   "embedding",
+   "cosine-similarity",
+   "data-augmentation",
+   "two-tower-model",
+   "cross-entropy-loss"
+  ]
+ }
+]

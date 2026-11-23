@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 178" role="img">
+<title>A router sends each token to its top 2 experts and mixes their outputs</title>
+<defs><marker id="mixture-of-experts-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-ink s-none"/></marker></defs>
+<rect x="4" y="63" width="46" height="28" rx="5" class="f-sheet s-muted"/>
+<text x="27" y="81" text-anchor="middle" class="t-small">token</text>
+<path d="M50,77 L68,77" class="s-ink" marker-end="url(#mixture-of-experts-ink)"/>
+<rect x="70" y="57" width="56" height="40" rx="5" class="f-sheet s-ink"/>
+<text x="98" y="81" text-anchor="middle" class="t-label">router</text>
+<path d="M126,77 L156,24" class="s-ink" marker-end="url(#mixture-of-experts-ink)"/>
+<rect x="158" y="12" width="60" height="24" rx="5" class="f-sheet s-ink s-thick"/>
+<text x="188" y="28" text-anchor="middle" class="t-small t-bold">expert 1</text>
+<path d="M218,24 L254,63.8" class="s-ink" marker-end="url(#mixture-of-experts-ink)"/>
+<text x="238" y="18" text-anchor="middle" class="t-small t-bold">0.7</text>
+<line x1="126" y1="77" x2="156" y2="58" class="s-line s-dash"/>
+<rect x="158" y="46" width="60" height="24" rx="5" class="f-paper s-line s-dash"/>
+<text x="188" y="62" text-anchor="middle" class="t-small t-muted">expert 2</text>
+<path d="M126,77 L156,92" class="s-ink" marker-end="url(#mixture-of-experts-ink)"/>
+<rect x="158" y="80" width="60" height="24" rx="5" class="f-sheet s-ink s-thick"/>
+<text x="188" y="96" text-anchor="middle" class="t-small t-bold">expert 3</text>
+<path d="M218,92 L254,80.8" class="s-ink" marker-end="url(#mixture-of-experts-ink)"/>
+<text x="238" y="104" text-anchor="middle" class="t-small t-bold">0.3</text>
+<line x1="126" y1="77" x2="156" y2="126" class="s-line s-dash"/>
+<rect x="158" y="114" width="60" height="24" rx="5" class="f-paper s-line s-dash"/>
+<text x="188" y="130" text-anchor="middle" class="t-small t-muted">expert 4</text>
+<circle cx="268" cy="77" r="13" class="f-paper s-ink"/>
+<text x="268" y="82" text-anchor="middle" class="t-label">+</text>
+<path d="M281,77 L300,77" class="s-ink" marker-end="url(#mixture-of-experts-ink)"/>
+<text x="310" y="81" text-anchor="middle" class="t-small">out</text>
+<text x="160" y="160" text-anchor="middle" class="t-small t-muted">Only the top 2 experts run; the rest stay idle.</text>
+<text x="160" y="173" text-anchor="middle" class="t-small t-muted">Output = weighted sum of the chosen experts.</text>
+</svg>

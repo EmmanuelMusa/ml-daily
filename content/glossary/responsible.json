@@ -1,0 +1,261 @@
+[
+ {
+  "id": "demographic-parity",
+  "name": "Demographic parity",
+  "topic": "responsible",
+  "aka": [
+   "statistical parity",
+   "group fairness",
+   "independence criterion",
+   "equal selection rate",
+   "demographic parity difference"
+  ],
+  "summary": "A fairness criterion that asks a model to give positive outcomes at the same rate to every group, whatever the true labels are.",
+  "body": "Demographic parity holds when P(ŷ = 1 | group A) = P(ŷ = 1 | group B). The model's selection rate is the same across groups, such as gender or age band. The gap is usually reported as a difference (rate A minus rate B) or as a ratio.\n\nExample: a loan model approves 300 of 1,000 applicants from group A (30%) and 180 of 1,000 from group B (18%). The parity difference is 12 percentage points, and the ratio is 0.18 / 0.30 = 0.6.\n\nIt suits settings where you believe outcomes should be equal and the historical labels themselves may be biased. But it ignores whether people actually qualified. If true repayment rates really differ between groups, forcing equal approval rates means accepting different error rates for each group.\n\nNo single criterion fits every case. Choose with the people affected and the legal context in mind, not by default.",
+  "mixup": "Demographic parity looks only at predictions, not labels. Equal opportunity conditions on the true label and compares true positive rates. A model can satisfy one and badly fail the other.",
+  "related": [
+   "equal-opportunity",
+   "disparate-impact",
+   "proxy-discrimination",
+   "slice-based-evaluation"
+  ]
+ },
+ {
+  "id": "equal-opportunity",
+  "name": "Equal opportunity and equalized odds",
+  "topic": "responsible",
+  "aka": [
+   "equalized odds",
+   "equalised odds",
+   "equal TPR",
+   "separation criterion",
+   "error rate parity"
+  ],
+  "summary": "Fairness criteria based on error rates: equal opportunity asks for equal true positive rates across groups, and equalized odds also asks for equal false positive rates.",
+  "body": "Both condition on the true label, so they compare the model's mistakes rather than its raw outputs.\n\n- **Equal opportunity**: among people who truly qualify (y = 1), each group is approved at the same rate. TPR is equal across groups.\n- **Equalized odds**: TPR and FPR are both equal across groups. Qualified people are caught equally often, and unqualified people are wrongly approved equally often.\n\nExample: in a hiring screen, 160 of 200 qualified group A candidates pass (TPR 0.80) but only 60 of 100 qualified group B candidates pass (TPR 0.60). Equal opportunity is violated by 20 points, even if overall pass rates look similar.\n\nThese criteria trust the labels, so they work badly when the labels are themselves biased, such as past arrests used as a stand-in for crime. A known result is that when base rates differ between groups, an imperfect classifier cannot satisfy equalized odds and be calibrated within each group at the same time.",
+  "mixup": "Equal opportunity is not demographic parity. Parity compares overall approval rates. Equal opportunity compares approval rates only among the truly qualified, so overall rates may differ when base rates differ.",
+  "related": [
+   "demographic-parity",
+   "recall",
+   "false-positive-rate",
+   "calibration",
+   "disparate-impact"
+  ]
+ },
+ {
+  "id": "disparate-impact",
+  "name": "Disparate impact",
+  "topic": "responsible",
+  "aka": [
+   "adverse impact",
+   "four-fifths rule",
+   "80% rule",
+   "disparate impact ratio",
+   "indirect discrimination"
+  ],
+  "summary": "When a rule or model that looks neutral harms one protected group much more than another, even with no intent to discriminate.",
+  "body": "The idea comes from anti-discrimination law: a practice can be unlawful because of its effect, not only its intent. In ML it is usually measured with a ratio of selection rates:\n\nDI = selection rate of the less favoured group / selection rate of the most favoured group\n\nIn US employment practice, the four-fifths rule treats a ratio below 0.8 as a sign of adverse impact worth investigating. It is a rule of thumb, not a legal bright line, and other places use different tests.\n\nExample: a CV screening model advances 50% of male applicants and 35% of female applicants. DI = 0.35 / 0.50 = 0.70, below 0.8, so the model needs review even though gender is not one of its inputs.\n\nRemoving the protected attribute does not prevent disparate impact, because other features can stand in for it. You have to audit outcomes by group, which can mean holding group data for testing even when the model never sees it.",
+  "mixup": "Disparate treatment means using the protected attribute directly or intentionally. Disparate impact means a neutral-looking practice has unequal effects. A model can show disparate impact without ever seeing the protected attribute.",
+  "related": [
+   "demographic-parity",
+   "proxy-discrimination",
+   "equal-opportunity",
+   "slice-based-evaluation"
+  ],
+  "asof": "2026-11-23"
+ },
+ {
+  "id": "proxy-discrimination",
+  "name": "Proxy discrimination",
+  "topic": "responsible",
+  "aka": [
+   "proxy variables",
+   "proxy features",
+   "proxies",
+   "redundant encoding",
+   "fairness through unawareness"
+  ],
+  "summary": "When a model treats groups unfairly through features that stand in for a protected attribute, even though that attribute was removed.",
+  "body": "Removing race, gender or age from the inputs, often called fairness through unawareness, rarely removes their influence. Other features correlate with them: postcode with ethnicity, first name with gender, graduation year with age. A model trained on these can partly rebuild the protected attribute and act on it.\n\nExample: a lender drops ethnicity but keeps postcode. In a city with strongly segregated neighbourhoods, postcode predicts ethnicity well, and the model approves applicants from some areas far less often. Outcomes differ by ethnicity almost as if the attribute were still there.\n\nWays to detect it:\n- Try to predict the protected attribute from the other features. High accuracy means strong proxies exist.\n- Measure outcomes and error rates by group.\n- Check which features drive the gaps, for example with SHAP.\n\nFixes range from removing or transforming features to fairness constraints during training and threshold changes after it. Each has legal and accuracy tradeoffs.",
+  "mixup": "Dropping every feature that correlates with a protected attribute is not automatically right. Some, such as income for a loan, are genuinely relevant. The question is whether the feature is justified for the decision, not only whether it correlates.",
+  "related": [
+   "disparate-impact",
+   "demographic-parity",
+   "shap-values",
+   "feature-importance"
+  ]
+ },
+ {
+  "id": "shap-values",
+  "name": "SHAP values",
+  "topic": "responsible",
+  "aka": [
+   "SHAP",
+   "SHapley Additive exPlanations",
+   "Shapley values",
+   "TreeSHAP",
+   "KernelSHAP",
+   "shap"
+  ],
+  "summary": "A method that splits one prediction into contributions from each feature, based on Shapley values from game theory, so the contributions add up to the prediction.",
+  "body": "SHAP treats features as players sharing a payout. A feature's value is its average marginal contribution to the prediction, taken over all the orders in which features could be added. The values are additive:\n\nprediction = base value + Σ SHAP values\n\nThe base value is the model's average output over a background dataset.\n\nExample: a churn model's average output is 0.20, and for one customer it predicts 0.65. SHAP gives \"month-to-month contract\" +0.30, \"3 support tickets last month\" +0.20 and \"4 years as a customer\" −0.05. Check: 0.20 + 0.30 + 0.20 − 0.05 = 0.65.\n\nExact Shapley values need every subset of features, which grows exponentially. TreeSHAP computes them exactly and fast for tree ensembles, and KernelSHAP estimates them by sampling for any model. Averaging absolute SHAP values over many rows gives a global feature importance.\n\nFor classifiers, SHAP often explains the log-odds rather than the probability, so check which output you are reading.",
+  "mixup": "SHAP explains the model, not the world. A large SHAP value means the model leans on that feature, not that changing it would change the real outcome. Correlated features can also split or swap credit in confusing ways.",
+  "related": [
+   "feature-importance",
+   "counterfactual-explanation",
+   "proxy-discrimination",
+   "model-card"
+  ]
+ },
+ {
+  "id": "counterfactual-explanation",
+  "name": "Counterfactual explanation",
+  "topic": "responsible",
+  "aka": [
+   "counterfactuals",
+   "counterfactual explanations",
+   "what-if explanation",
+   "algorithmic recourse",
+   "recourse"
+  ],
+  "summary": "An explanation that states the smallest realistic change to the input that would have changed the model's decision.",
+  "body": "Instead of listing feature weights, a counterfactual answers \"what would have had to be different for a different result?\" It searches for a nearby input that flips the prediction, preferring changes that are small, few and actually possible.\n\nExample: \"Your loan was declined. It would have been approved if your annual income were $4,000 higher or your credit card balance were $1,500 lower.\"\n\nPeople find these easy to act on, so they are popular for decisions about individuals, such as credit, hiring and benefits. The ability to change an outcome through realistic actions is often called recourse.\n\nGood counterfactuals respect reality:\n- Only change features the person can change. \"Be 10 years younger\" is useless.\n- Stay plausible, inside the range of real data.\n- Respect links between features. Gaining a degree also adds years of age.\n\nOne decision can have many valid counterfactuals, so systems often show a few different options.",
+  "mixup": "A counterfactual explanation describes the model's decision boundary, not real cause and effect. Raising income by $4,000 flips this model's output, but that does not prove income is what truly drives repayment.",
+  "related": [
+   "shap-values",
+   "model-card",
+   "decision-threshold",
+   "eu-ai-act"
+  ]
+ },
+ {
+  "id": "model-card",
+  "name": "Model card",
+  "topic": "responsible",
+  "aka": [
+   "model cards",
+   "model documentation",
+   "system card",
+   "model factsheet"
+  ],
+  "summary": "A short document published with a model that states what it is for, how it was trained and tested, where it performs poorly, and its known risks.",
+  "body": "A model card is like a nutrition label for a model. Typical sections:\n- Intended uses and out-of-scope uses.\n- Training data: sources, time range and known gaps.\n- Evaluation: metrics on named test sets, broken down by relevant groups and conditions.\n- Limitations, known failure modes and ethical considerations.\n- Version, owner and contact.\n\nIt matters because models get reused far from where they were built. Without a card, a team might deploy a skin lesion classifier trained mostly on lighter skin to a population it was never tested on.\n\nExample: a speech recognition model's card reports a word error rate of 6% on standard accents and 14% on one regional accent, and states that it is not intended for medical transcription. A downstream team reads that before deciding to use it.\n\nThe matching idea for data is a datasheet, which records how a dataset was collected and what it contains.",
+  "mixup": "A model card is not marketing or one headline accuracy number. Its value is in the breakdowns and the stated limits. A card that reports only overall metrics hides exactly the failures it exists to reveal.",
+  "related": [
+   "slice-based-evaluation",
+   "model-registry",
+   "reproducibility",
+   "eu-ai-act",
+   "shap-values"
+  ]
+ },
+ {
+  "id": "differential-privacy",
+  "name": "Differential privacy",
+  "topic": "responsible",
+  "aka": [
+   "DP",
+   "ε-differential privacy",
+   "epsilon-differential privacy",
+   "privacy budget",
+   "DP-SGD"
+  ],
+  "summary": "A mathematical guarantee that a result changes very little whether or not any one person's data was included, so it reveals little about any individual.",
+  "body": "A randomized algorithm M is ε-differentially private if, for any two datasets D and D′ that differ in one person's record, and any set of outputs S, P(M(D) ∈ S) ≤ exp(ε) × P(M(D′) ∈ S). Smaller ε means stronger privacy. The total ε spent across all queries is the privacy budget.\n\nIt is achieved by adding calibrated noise. For a count, one person changes the answer by at most 1, so adding Laplace noise with scale 1/ε is enough.\n\nExample: a hospital releases how many patients have a condition. The true count is 132. With ε = 0.5 it adds Laplace noise of scale 2 and publishes, say, 134. An attacker cannot reliably tell whether any single patient is in the data.\n\nIn training, DP-SGD clips each example's gradient and adds Gaussian noise, which limits how much the model can memorize any one record. The cost is accuracy, especially for small groups and rare cases.",
+  "mixup": "Differential privacy is a property of the algorithm, not of the data. Removing names or IDs gives no such guarantee, since people can often be re-identified by linking other fields. DP bounds what any output can reveal.",
+  "related": [
+   "federated-learning",
+   "pii-handling",
+   "model-card"
+  ]
+ },
+ {
+  "id": "pii-handling",
+  "name": "PII handling",
+  "topic": "responsible",
+  "aka": [
+   "PII",
+   "personally identifiable information",
+   "personal data",
+   "PII redaction",
+   "data minimization",
+   "GDPR"
+  ],
+  "summary": "Practices for collecting, storing, using and deleting information that can identify a person, so ML systems respect privacy and the law.",
+  "body": "PII includes direct identifiers such as names, emails, phone numbers and ID numbers, and quasi-identifiers such as postcode, birth date and gender, which together can single someone out. Privacy laws such as the EU's GDPR use the broader term personal data and set principles that carry over to ML work:\n- **Data minimization**: collect and keep only what the purpose needs.\n- **Purpose limitation**: do not reuse data for unrelated aims without a legal basis.\n- **Storage limits and deletion**: keep data only as long as needed and honour erasure requests.\n- **Security**: access control, encryption and audit logs.\n\nIn ML, personal data leaks into less obvious places: training sets, prompt logs, vector stores, eval sets and model memorization.\n\nExample: a support chatbot logs conversations for evaluation. A redaction step replaces card numbers, emails and phone numbers with tags like `[EMAIL]` before logging, and logs are deleted after 30 days.",
+  "mixup": "Removing names is not anonymization. Combinations such as postcode, birth date and gender can identify a large share of people. Pseudonymized data, with names swapped for IDs, is still personal data under GDPR if it can be linked back.",
+  "related": [
+   "differential-privacy",
+   "federated-learning",
+   "guardrails",
+   "agent-memory",
+   "eu-ai-act"
+  ],
+  "asof": "2026-11-23"
+ },
+ {
+  "id": "federated-learning",
+  "name": "Federated learning",
+  "topic": "responsible",
+  "aka": [
+   "FL",
+   "federated averaging",
+   "FedAvg",
+   "on-device learning",
+   "collaborative learning"
+  ],
+  "summary": "Training a shared model across many devices or organizations that keep their data locally, sending only model updates to a central server.",
+  "body": "Each round of federated averaging (FedAvg) works like this:\n- The server sends the current model to a sample of clients, such as phones or hospitals.\n- Each client trains for a few steps on its own data.\n- Clients send back updated weights, not data.\n- The server averages the updates, weighted by each client's number of examples, to form the new model.\n\nIt suits data that cannot or should not be pooled, such as typing on phones or patient records across hospitals.\n\nExample: three hospitals hold 1,000, 3,000 and 6,000 scans. In the weighted average their updates count for 0.1, 0.3 and 0.6.\n\nThe hard parts are clients with very different data (non-IID), unreliable devices that drop out, and communication cost.\n\nUpdates can still leak information about the training data, so federated learning is often combined with secure aggregation and differential privacy.",
+  "mixup": "Federated learning is not private by itself. Raw data stays local, but shared updates can sometimes be used to reconstruct examples or infer who took part. A formal privacy guarantee needs extra techniques.",
+  "related": [
+   "differential-privacy",
+   "pii-handling",
+   "data-parallelism",
+   "distribution-shift"
+  ]
+ },
+ {
+  "id": "eu-ai-act",
+  "name": "EU AI Act",
+  "topic": "responsible",
+  "aka": [
+   "AI Act",
+   "EU Artificial Intelligence Act",
+   "European AI Act",
+   "EU AIA"
+  ],
+  "summary": "The European Union's law that regulates AI systems by risk level, with banned uses, strict duties for high-risk systems, and transparency rules.",
+  "body": "The AI Act sorts AI uses by risk and sets duties to match:\n- **Unacceptable risk**: banned. Examples include social scoring, manipulative techniques that cause significant harm, and emotion recognition in workplaces and schools, with narrow exceptions.\n- **High risk**: allowed with strict duties. This covers AI used in areas such as hiring, education, credit scoring, access to essential services and law enforcement, and as safety components of regulated products. Duties include risk management, data governance, technical documentation, logging, human oversight, and accuracy and robustness testing.\n- **Transparency risk**: people must be told when they are talking to a chatbot, and deepfakes and other AI-generated content must be disclosed.\n- **Minimal risk**: most systems, such as spam filters, with no new duties.\n\nGeneral-purpose AI models carry their own duties, such as documentation, with extra ones for the most capable models. The Act reaches providers and deployers outside the EU when their systems are used in the EU, and its duties phase in over several years.",
+  "mixup": "The Act regulates uses, not techniques. The same model can be minimal risk in a game and high risk when it ranks job applicants. Risk depends on the purpose and setting, not on whether the system is a neural network or an LLM.",
+  "related": [
+   "human-in-the-loop",
+   "model-card",
+   "pii-handling",
+   "red-teaming",
+   "disparate-impact"
+  ],
+  "asof": "2026-11-23"
+ },
+ {
+  "id": "red-teaming",
+  "name": "Red teaming",
+  "topic": "responsible",
+  "aka": [
+   "red team",
+   "AI red teaming",
+   "adversarial testing",
+   "LLM red teaming",
+   "red-team"
+  ],
+  "summary": "Deliberately attacking your own AI system, as an adversary would, to find harmful behaviours and security holes before real users do.",
+  "body": "A red team tries to make the system fail. It pushes it to produce harmful or biased content, leak its system prompt or private data, follow injected instructions, take unsafe actions, or give dangerous advice in a high-stakes domain. Teams combine human experts, who bring creativity and domain knowledge, with automated attacks in which one model generates many adversarial prompts against another.\n\nThe output is not a pass mark. It is a list of concrete failures, each reproduced, rated for severity and fixed. Confirmed attacks then join a regression test set so every release is rechecked against them.\n\nExample: before launch, a team spends two weeks attacking a bank's chatbot. They find it reveals other customers' account types when a request is phrased as a staff query, and that a hidden instruction in an uploaded PDF makes it email a summary to an outside address. Both are fixed and added to the eval set.\n\nRepeat red teaming whenever the model, prompts or tools change.",
+  "mixup": "Red teaming is not standard evaluation. Evals measure typical performance on representative inputs. Red teaming hunts for the worst cases on purpose, so a system can score well on evals and still fail a red team badly.",
+  "related": [
+   "jailbreak",
+   "prompt-injection",
+   "guardrails",
+   "golden-dataset",
+   "eu-ai-act"
+  ]
+ }
+]

@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 186" role="img">
+<title>PCA finds new axes: PC1 along the direction of most variance, PC2 at right angles to it</title>
+<defs><marker id="pca-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-ink s-none"/></marker></defs>
+<circle cx="150.4" cy="98.7" r="2.5" class="f-muted s-none"/>
+<circle cx="145.6" cy="85.8" r="2.5" class="f-muted s-none"/>
+<circle cx="109.1" cy="107.1" r="2.5" class="f-muted s-none"/>
+<circle cx="222.2" cy="58.9" r="2.5" class="f-muted s-none"/>
+<circle cx="216.9" cy="58.4" r="2.5" class="f-muted s-none"/>
+<circle cx="182.3" cy="75.6" r="2.5" class="f-muted s-none"/>
+<circle cx="78.4" cy="143.4" r="2.5" class="f-muted s-none"/>
+<circle cx="190.7" cy="77" r="2.5" class="f-muted s-none"/>
+<circle cx="56.9" cy="106.2" r="2.5" class="f-muted s-none"/>
+<circle cx="109.2" cy="102.2" r="2.5" class="f-muted s-none"/>
+<circle cx="175.8" cy="74.7" r="2.5" class="f-muted s-none"/>
+<circle cx="182.6" cy="60" r="2.5" class="f-muted s-none"/>
+<circle cx="179.4" cy="81" r="2.5" class="f-muted s-none"/>
+<circle cx="138.3" cy="127.6" r="2.5" class="f-muted s-none"/>
+<circle cx="198.8" cy="85.8" r="2.5" class="f-muted s-none"/>
+<circle cx="121.4" cy="90.7" r="2.5" class="f-muted s-none"/>
+<circle cx="140.9" cy="92.1" r="2.5" class="f-muted s-none"/>
+<circle cx="195.4" cy="69.8" r="2.5" class="f-muted s-none"/>
+<circle cx="128.9" cy="82.7" r="2.5" class="f-muted s-none"/>
+<circle cx="141.9" cy="116.5" r="2.5" class="f-muted s-none"/>
+<circle cx="119.1" cy="110.3" r="2.5" class="f-muted s-none"/>
+<circle cx="171.1" cy="50.3" r="2.5" class="f-muted s-none"/>
+<circle cx="172.7" cy="101.7" r="2.5" class="f-muted s-none"/>
+<circle cx="50.8" cy="136.1" r="2.5" class="f-muted s-none"/>
+<circle cx="148" cy="75.1" r="2.5" class="f-muted s-none"/>
+<circle cx="185.9" cy="69.1" r="2.5" class="f-muted s-none"/>
+<circle cx="88.8" cy="137.3" r="2.5" class="f-muted s-none"/>
+<circle cx="202.8" cy="78.9" r="2.5" class="f-muted s-none"/>
+<circle cx="239.1" cy="48.7" r="2.5" class="f-muted s-none"/>
+<circle cx="156.3" cy="61.7" r="2.5" class="f-muted s-none"/>
+<circle cx="187.9" cy="57.8" r="2.5" class="f-muted s-none"/>
+<circle cx="126.2" cy="78.3" r="2.5" class="f-muted s-none"/>
+<circle cx="104.6" cy="103.5" r="2.5" class="f-muted s-none"/>
+<circle cx="212.5" cy="18.1" r="2.5" class="f-muted s-none"/>
+<circle cx="84.6" cy="128.5" r="2.5" class="f-muted s-none"/>
+<circle cx="240.9" cy="51.8" r="2.5" class="f-muted s-none"/>
+<circle cx="39.8" cy="100.8" r="2.5" class="f-muted s-none"/>
+<circle cx="173.2" cy="63.2" r="2.5" class="f-muted s-none"/>
+<circle cx="108.2" cy="129.8" r="2.5" class="f-muted s-none"/>
+<circle cx="219.6" cy="55.3" r="2.5" class="f-muted s-none"/>
+<line x1="40.6" y1="140.7" x2="152.4" y2="86.3" class="s-ink s-thin s-dash"/>
+<path d="M152.4,86.3 L264.3,31.8" class="s-ink s-thick" marker-end="url(#pca-ink)"/>
+<path d="M152.4,86.3 L137.6,55.8" class="s-ink s-thick" marker-end="url(#pca-ink)"/>
+<text x="268.3" y="25.8" text-anchor="middle" class="t-label">PC1</text>
+<text x="131.6" y="51.8" text-anchor="end" class="t-label">PC2</text>
+<text x="160" y="164" text-anchor="middle" class="t-small">PC1: most variance. PC2: next most, at 90°.</text>
+<text x="160" y="178" text-anchor="middle" class="t-small t-muted">Keep PC1 alone to go from 2D to 1D.</text>
+</svg>

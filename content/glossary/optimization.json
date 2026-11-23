@@ -1,0 +1,380 @@
+[
+ {
+  "id": "quantization",
+  "name": "Quantization",
+  "topic": "optimization",
+  "aka": [
+   "model quantization",
+   "INT8",
+   "INT4",
+   "4-bit quantization",
+   "post-training quantization",
+   "PTQ",
+   "quantization-aware training",
+   "QAT",
+   "weight quantization"
+  ],
+  "summary": "Storing a model's weights, and sometimes its activations, with fewer bits, such as 8 or 4 instead of 16, to cut memory and speed up inference.",
+  "body": "Quantization maps high-precision numbers onto a small grid of levels. A common scheme uses a scale s and a zero point z: q = round(x / s) + z, and the value comes back as x ≈ s × (q − z). Post-training quantization (PTQ) converts a trained model using a small calibration set. Quantization-aware training (QAT) simulates the rounding during training so the model learns to tolerate it.\n\nIt matters because LLM serving is often limited by memory size and memory bandwidth. Fewer bytes per weight means a bigger model fits on one GPU and each decode step reads less data.\n\nExample: a 7B-parameter model needs 7 × 10⁹ × 2 bytes = 14 GB of weights in FP16, 7 GB in INT8 and about 3.5 GB in 4-bit, before the KV cache and activations. Quality usually suffers first from outlier values and very low bit widths, so rerun your evals after quantizing.",
+  "mixup": "Weight-only quantization saves memory and speeds up memory-bound decoding, but the maths often still runs in 16-bit after the weights are unpacked. Faster compute needs the activations quantized too, plus hardware kernels for that format. Quantization is also different from mixed precision training, which keeps a full-precision master copy.",
+  "related": [
+   "mixed-precision-training",
+   "memory-bound-decoding",
+   "knowledge-distillation",
+   "pruning",
+   "kv-cache"
+  ]
+ },
+ {
+  "id": "knowledge-distillation",
+  "name": "Knowledge distillation",
+  "topic": "optimization",
+  "aka": [
+   "distillation",
+   "model distillation",
+   "teacher-student training",
+   "teacher student",
+   "KD",
+   "student model",
+   "teacher model"
+  ],
+  "summary": "Training a small student model to copy the outputs of a larger teacher model, so it keeps much of the quality at a fraction of the cost.",
+  "body": "The student learns from the teacher's soft outputs, not only the hard labels. The classic loss mixes cross-entropy on the true labels with a term that pulls the student's probabilities toward the teacher's, both softened by a temperature T:\n\nloss = α × CE(y, student) + (1 − α) × T² × KL(teacher_T ‖ student_T)\n\nSoft targets carry extra information, such as which wrong classes the teacher finds similar. The T² factor keeps the soft term's gradients at a sensible size as T grows.\n\nFor LLMs, a common form is to let the teacher generate answers and fine-tune the student on them, sometimes called sequence-level distillation.\n\nExample: a support bot runs on a large model that costs too much per query. You run the large model on 200,000 real tickets, fine-tune a small model on its replies and serve the small model, keeping the large one for the hardest cases.",
+  "mixup": "Distillation trains a new, smaller model. Quantization and pruning shrink the same model in place. They stack well: a distilled student can then be quantized. Distillation also needs the teacher's outputs, not just a copy of its weights.",
+  "related": [
+   "quantization",
+   "pruning",
+   "kl-divergence",
+   "softmax",
+   "model-cascade"
+  ]
+ },
+ {
+  "id": "pruning",
+  "name": "Pruning",
+  "topic": "optimization",
+  "aka": [
+   "weight pruning",
+   "model pruning",
+   "sparsity",
+   "structured pruning",
+   "unstructured pruning",
+   "magnitude pruning"
+  ],
+  "summary": "Removing weights, neurons, attention heads or whole layers that contribute little, to make a model smaller and sometimes faster.",
+  "body": "The simplest method is magnitude pruning: set the smallest weights to zero, then fine-tune briefly to recover accuracy. Unstructured pruning zeroes single weights anywhere in a matrix. Structured pruning removes whole units such as channels, attention heads or layers.\n\nThe difference matters in practice. Unstructured sparsity shrinks the model on paper, but dense GPU kernels still do the same work unless the hardware supports that sparse pattern, such as 2:4 sparsity, where 2 of every 4 weights are zero. Structured pruning gives real speedups on ordinary hardware because the matrices really get smaller.\n\nExample: pruning 50% of the weights of a 100M-parameter model leaves 50M nonzero weights. Stored as a dense matrix, it still uses the same memory and time. Remove half the channels of each layer instead and the matrix multiplies themselves shrink, so the model runs faster.",
+  "mixup": "A high sparsity figure does not mean a matching speedup. Unless the zeros fall in a pattern the hardware or a sparse kernel can skip, a 90% sparse model can run just as slowly as the dense one.",
+  "related": [
+   "quantization",
+   "knowledge-distillation",
+   "l1-regularization"
+  ]
+ },
+ {
+  "id": "mixed-precision-training",
+  "name": "Mixed precision training",
+  "topic": "optimization",
+  "aka": [
+   "mixed precision",
+   "AMP",
+   "automatic mixed precision",
+   "FP16 training",
+   "BF16 training",
+   "bfloat16",
+   "loss scaling"
+  ],
+  "summary": "Training with 16-bit numbers for most of the maths while keeping sensitive parts, such as a master copy of the weights, in 32-bit for stability.",
+  "body": "Most matrix multiplies run in FP16 or BF16, which halves activation memory and uses the GPU's fast tensor cores. Numerically sensitive steps, such as the weight update, large sums and softmax, stay in FP32, and the optimizer keeps FP32 master weights.\n\nThe two 16-bit formats differ. FP16 has 5 exponent bits, so small gradients can underflow to zero. Loss scaling fixes this: multiply the loss by a factor such as 1,024 before backprop, divide the gradients by it before the update, and skip any step that overflows. BF16 has 8 exponent bits, the same range as FP32, so it usually needs no loss scaling but has less precision.\n\nExample: Adam with mixed precision stores about 16 bytes per parameter: 2 for 16-bit weights, 2 for gradients, 4 for FP32 master weights and 8 for the two Adam moments. A 1B-parameter model needs about 16 GB before activations.",
+  "mixup": "Mixed precision does not shrink the memory for weights, gradients and optimizer state. With Adam it is about 16 bytes per parameter either way. The savings come from smaller activations and much faster tensor core maths. It is also different from quantizing a model for inference.",
+  "related": [
+   "quantization",
+   "adam-optimizer",
+   "gradient-checkpointing",
+   "sharded-data-parallel"
+  ]
+ },
+ {
+  "id": "gradient-checkpointing",
+  "name": "Gradient checkpointing",
+  "topic": "optimization",
+  "aka": [
+   "activation checkpointing",
+   "activation recomputation",
+   "rematerialization",
+   "gradient checkpoint"
+  ],
+  "summary": "Saving training memory by keeping only some activations from the forward pass and recomputing the rest during the backward pass.",
+  "body": "Backprop needs the activations from the forward pass. Normally all of them stay in memory, and with long sequences or big batches they can take more memory than the weights. With checkpointing you store activations only at chosen points, such as the input to each transformer block, and rerun the forward pass of a block when its gradients are needed.\n\nThe trade is compute for memory. Recomputing costs about one extra forward pass. Since a backward pass costs about twice a forward pass, a step goes from about 3 units of work to 4, roughly a third more.\n\nExample: a 24-layer model uses 1 GB of activations per block at your batch size, 24 GB in total. Suppose each block's input is 0.1 GB. Checkpointing every block keeps 24 × 0.1 = 2.4 GB of inputs plus about 1 GB for the block being recomputed, about 3.4 GB. The freed memory can hold a much bigger batch.",
+  "mixup": "Gradient checkpointing has nothing to do with saving model checkpoints to disk. It also saves only activation memory, not the memory for weights, gradients or optimizer state, which needs sharding or lower precision instead.",
+  "related": [
+   "backpropagation",
+   "gradient-accumulation",
+   "mixed-precision-training",
+   "sharded-data-parallel"
+  ]
+ },
+ {
+  "id": "gradient-accumulation",
+  "name": "Gradient accumulation",
+  "topic": "optimization",
+  "aka": [
+   "accumulating gradients",
+   "grad accumulation",
+   "accumulation steps",
+   "micro-batching",
+   "effective batch size"
+  ],
+  "summary": "Running several small micro-batches and adding up their gradients before one optimizer step, to train with a large effective batch that would not fit in memory.",
+  "body": "Instead of stepping the optimizer after every batch, you run forward and backward on k micro-batches, let the gradients add up, then take one step and reset them.\n\nEffective batch size = micro-batch size × accumulation steps × number of GPUs.\n\nIt is used when the batch size you want for stable training does not fit in GPU memory. It costs time, not memory: k micro-batches take about as long as k normal steps.\n\nExample: you want a batch of 256, only 32 fit per GPU, and you have 2 GPUs. Accumulate over 4 steps: 32 × 4 × 2 = 256.\n\nTwo details matter. Scale each micro-batch loss by 1/k, or the summed gradient is k times too large, which acts like a bigger learning rate. And batch normalization still sees only the micro-batch, so its statistics do not match a true large batch.",
+  "mixup": "Gradient accumulation matches a large batch for the gradient, but it does not make training faster. It is also different from gradient checkpointing, which trades extra compute for less activation memory inside a single step.",
+  "related": [
+   "batch-size",
+   "gradient-checkpointing",
+   "data-parallelism",
+   "learning-rate",
+   "batch-normalization"
+  ]
+ },
+ {
+  "id": "kv-cache",
+  "name": "KV cache",
+  "topic": "optimization",
+  "aka": [
+   "key-value cache",
+   "key value cache",
+   "KV caching",
+   "attention cache",
+   "past key values"
+  ],
+  "summary": "During generation, storing each earlier token's attention keys and values so every new token computes only its own, instead of reprocessing the whole sequence.",
+  "body": "In a decoder, each new token attends to all earlier tokens through their keys and values. These never change once computed, so the model caches them. Each decode step then runs the model on just the new token and reads the rest from the cache.\n\nThe cost is memory, which grows with sequence length and batch size:\n\nKV bytes = 2 × layers × KV heads × head dim × tokens × batch × bytes per value\n\nThe 2 counts keys and values.\n\nExample: 32 layers, 8 KV heads, head dim 128, FP16 (2 bytes). Per token that is 2 × 32 × 8 × 128 × 2 = 131,072 bytes, about 0.13 MB. A 4,096-token sequence needs about 0.54 GB, and a batch of 16 such sequences about 8.6 GB (1 GB = 10⁹ bytes). That memory, not compute, often caps how many requests a GPU can serve at once.",
+  "mixup": "The KV cache works within one generation, across decode steps. Prompt caching is different: it reuses the cache of a shared prefix across separate requests. Semantic caching is different again, since it reuses whole answers for similar questions.",
+  "related": [
+   "grouped-query-attention",
+   "memory-bound-decoding",
+   "prompt-caching",
+   "continuous-batching",
+   "self-attention"
+  ],
+  "diagram": "kv-cache"
+ },
+ {
+  "id": "continuous-batching",
+  "name": "Continuous batching",
+  "topic": "optimization",
+  "aka": [
+   "in-flight batching",
+   "inflight batching",
+   "iteration-level batching",
+   "iteration-level scheduling"
+  ],
+  "summary": "An LLM serving method that adds and removes requests from the running batch at every decode step, instead of waiting for the whole batch to finish.",
+  "body": "With static batching, a group of requests starts together and the GPU keeps going until the longest reply is done. Short replies finish early and their slots sit idle. Continuous batching schedules at the level of single decode steps. When a sequence emits its end token it leaves the batch, and a waiting request takes its slot at the next step.\n\nThis keeps the GPU busy and can raise throughput several times when reply lengths vary. It needs careful KV cache memory management, since sequences of different lengths come and go, which is why it is usually paired with paged allocation of the KV cache.\n\nExample: a batch of 8 has replies from 50 to 800 tokens long. Under static batching, the slots of the short replies sit idle until the 800-token reply finishes. Continuous batching fills each freed slot with a new request straight away.",
+  "mixup": "Dynamic batching, which waits a few milliseconds to group incoming requests, still runs each group to completion. Continuous batching changes the batch at every step. Also, packing more requests in raises total throughput but can slow each step a little, so per-user speed may drop.",
+  "related": [
+   "kv-cache",
+   "throughput-vs-latency",
+   "memory-bound-decoding",
+   "time-to-first-token"
+  ],
+  "diagram": "continuous-batching"
+ },
+ {
+  "id": "speculative-decoding",
+  "name": "Speculative decoding",
+  "topic": "optimization",
+  "aka": [
+   "speculative sampling",
+   "draft model decoding",
+   "assisted generation",
+   "draft and verify",
+   "draft-and-verify"
+  ],
+  "summary": "Speeding up generation by letting a small draft model propose several tokens, then having the large model check them all in one forward pass.",
+  "body": "Decoding is slow because the big model makes one token per pass and each pass is limited by reading its weights from memory. In speculative decoding a cheap draft model guesses the next k tokens. The target model then scores all k positions in a single pass, which takes about as long as one normal step. It accepts drafted tokens in order until one fails its check, then supplies one token of its own.\n\nWith greedy decoding the check is simply whether the target would pick the same token. With sampling, a rejection-sampling rule keeps the output distribution exactly the target model's. Quality does not change, only speed.\n\nExample: the draft proposes 4 tokens. The target accepts the first 3, rejects the 4th and puts its own token there. One large-model pass produced 4 tokens instead of 1. If drafts are usually rejected, you pay for the draft model and gain little.",
+  "mixup": "Speculative decoding is not an approximation like quantization or distillation. The big model still decides every token, so outputs follow its distribution. The speedup depends on the acceptance rate, so it helps most on predictable text such as code or templated replies.",
+  "related": [
+   "memory-bound-decoding",
+   "kv-cache",
+   "knowledge-distillation",
+   "throughput-vs-latency"
+  ],
+  "diagram": "speculative-decoding"
+ },
+ {
+  "id": "flash-attention",
+  "name": "FlashAttention",
+  "topic": "optimization",
+  "aka": [
+   "Flash Attention",
+   "flashattention",
+   "flash-attn",
+   "fused attention",
+   "memory-efficient attention",
+   "IO-aware attention"
+  ],
+  "summary": "An exact attention algorithm that works through the computation in tiles held in fast on-chip memory, so the full N × N score matrix is never written to GPU main memory.",
+  "body": "Standard attention computes the score matrix QKᵀ, writes it to the GPU's high-bandwidth memory (HBM), reads it back for softmax, writes again, then multiplies by V. For N tokens that matrix has N² entries, so memory use and memory traffic grow quadratically.\n\nFlashAttention splits Q, K and V into blocks that fit in on-chip SRAM. An online softmax keeps a running maximum and sum, so partial results from each block can be combined exactly. In the backward pass it recomputes the scores instead of storing them.\n\nThe output is the same as standard attention, but extra memory grows only linearly with N and far less data moves, which makes long contexts practical and training faster.\n\nExample: at N = 8,192 tokens, one head's score matrix has about 67 million entries, about 134 MB in FP16, for each head in each layer. FlashAttention never stores it.",
+  "mixup": "FlashAttention is exact, not an approximation like sparse or linear attention. It still does O(N²) arithmetic. It is faster because it cuts reads and writes to slow memory, not because it does fewer FLOPs.",
+  "related": [
+   "self-attention",
+   "context-window",
+   "gradient-checkpointing",
+   "memory-bound-decoding"
+  ]
+ },
+ {
+  "id": "grouped-query-attention",
+  "name": "Grouped-query attention",
+  "topic": "optimization",
+  "aka": [
+   "GQA",
+   "grouped query attention",
+   "multi-query attention",
+   "MQA"
+  ],
+  "summary": "An attention variant where groups of query heads share one key head and one value head, which shrinks the KV cache with little loss in quality.",
+  "body": "In standard multi-head attention (MHA), every query head has its own key and value heads. Multi-query attention (MQA) goes to the other extreme: all query heads share a single key head and value head. Grouped-query attention sits in between. With H query heads and G key-value groups, each group of H / G query heads shares one key-value pair.\n\nIt matters because decoding is limited by reading the KV cache, and the cache size is proportional to the number of KV heads. Fewer KV heads means less memory per token, so longer contexts and bigger batches fit.\n\nExample: a model with 32 query heads and 8 KV heads has a KV cache 32 / 8 = 4 times smaller than the same model with full multi-head attention. MQA, with 1 KV head, would make it 32 times smaller but tends to lose more quality.",
+  "mixup": "GQA keeps all the query heads, so it is not the same as using fewer attention heads. What shrinks is the number of stored key and value heads. G = H gives ordinary multi-head attention and G = 1 gives multi-query attention.",
+  "related": [
+   "kv-cache",
+   "multi-head-attention",
+   "memory-bound-decoding",
+   "flash-attention"
+  ]
+ },
+ {
+  "id": "data-parallelism",
+  "name": "Data parallelism",
+  "topic": "optimization",
+  "aka": [
+   "data parallel",
+   "DP",
+   "DDP",
+   "distributed data parallel",
+   "all-reduce training"
+  ],
+  "summary": "Training on many GPUs by giving each one a full copy of the model and a different slice of the batch, then averaging gradients before every update.",
+  "body": "Each GPU, or worker, holds the same weights, runs forward and backward on its own shard of the data and computes local gradients. An all-reduce operation then averages the gradients across workers, so every copy takes the same update and stays in sync. To save time, the all-reduce is overlapped with the backward pass.\n\nIt is the simplest way to scale training and works well when the model fits on one GPU. The global batch grows with the number of workers, so the learning rate and warmup may need retuning.\n\nExample: 8 GPUs with a batch of 32 each give a global batch of 256. Each step handles 8 times the data in about the time one GPU takes for 32 examples, plus the all-reduce cost.\n\nIts limit is memory, because every GPU stores the full weights, gradients and optimizer state.",
+  "mixup": "Data parallelism splits the data, model parallelism splits the model. If the model does not fit on one GPU, plain data parallelism cannot help, and you need sharded data parallelism or model parallelism.",
+  "related": [
+   "sharded-data-parallel",
+   "model-parallelism",
+   "gradient-accumulation",
+   "batch-size"
+  ]
+ },
+ {
+  "id": "model-parallelism",
+  "name": "Model parallelism",
+  "topic": "optimization",
+  "aka": [
+   "tensor parallelism",
+   "TP",
+   "pipeline parallelism",
+   "PP",
+   "model sharding",
+   "pipeline bubble"
+  ],
+  "summary": "Splitting one model across several GPUs, by layers or within layers, so a model too big for one device can be trained or served.",
+  "body": "There are two main kinds. Pipeline parallelism puts different layers on different GPUs, like stations on an assembly line. To keep every stage busy, the batch is cut into micro-batches that flow through in turn. Some idle time, called the pipeline bubble, remains at the start and end of each batch.\n\nTensor parallelism splits single weight matrices across GPUs, so each computes part of every layer's matrix multiply and they exchange results inside each layer. This needs very fast links between GPUs, so it usually stays within one server.\n\nLarge training runs often combine tensor, pipeline and data parallelism.\n\nExample: an 80B-parameter model needs 80 × 10⁹ × 2 bytes = 160 GB for its FP16 weights, so it cannot fit on one 80 GB GPU. Tensor parallelism across 4 GPUs puts 40 GB of weights on each, leaving room for the KV cache.",
+  "mixup": "Model parallelism splits the model, while data parallelism copies the model and splits the batch. Naive pipeline parallelism without micro-batches leaves all but one GPU idle at any moment, so it adds memory but not speed.",
+  "related": [
+   "data-parallelism",
+   "sharded-data-parallel",
+   "mixture-of-experts",
+   "kv-cache"
+  ],
+  "diagram": "model-parallelism"
+ },
+ {
+  "id": "sharded-data-parallel",
+  "name": "Sharded data parallelism",
+  "topic": "optimization",
+  "aka": [
+   "ZeRO",
+   "FSDP",
+   "fully sharded data parallel",
+   "sharded DDP",
+   "optimizer state sharding",
+   "sharded data parallel"
+  ],
+  "summary": "Data parallelism where each GPU stores only a slice of the weights, gradients and optimizer state, gathering a layer's full weights only while that layer runs.",
+  "body": "In plain data parallelism every GPU holds a full copy of everything, which wastes memory. Sharded data parallelism splits these across the N GPUs. The ZeRO stages describe how far it goes: stage 1 shards the optimizer state, stage 2 also shards gradients and stage 3 also shards the weights. Fully sharded data parallel (FSDP) works in the stage 3 style.\n\nBefore computing a layer, the GPUs all-gather its weights, use them, then free them. Gradients are reduce-scattered so each GPU keeps only its own slice. You pay extra communication to save memory.\n\nExample: mixed-precision Adam needs about 16 bytes per parameter, so a 7B model needs about 7 × 16 = 112 GB, which does not fit on one 80 GB GPU. Fully sharded across 8 GPUs, that is about 14 GB each, leaving room for activations.",
+  "mixup": "Sharded data parallelism is still data parallelism. Each GPU processes its own data and runs every layer in full, holding the complete weights only briefly. Tensor parallelism instead splits the maths of each layer across GPUs.",
+  "related": [
+   "data-parallelism",
+   "model-parallelism",
+   "mixed-precision-training",
+   "gradient-checkpointing"
+  ]
+ },
+ {
+  "id": "throughput-vs-latency",
+  "name": "Throughput vs latency",
+  "topic": "optimization",
+  "aka": [
+   "throughput",
+   "latency",
+   "tokens per second",
+   "requests per second",
+   "QPS",
+   "p99 latency",
+   "tail latency"
+  ],
+  "summary": "Latency is how long one request takes, while throughput is how many requests or tokens the system finishes per second, and raising one often hurts the other.",
+  "body": "In model serving the main lever is batching. Bigger batches use the GPU better, so total tokens per second rise. But each request may wait to join a batch and each step takes a little longer, so per-request latency rises.\n\nLLM serving uses finer measures: time to first token (TTFT), time per output token (TPOT), end-to-end latency, and total output tokens per second. Latency is reported as percentiles such as p50 and p99, because averages hide slow tail requests.\n\nExample: at batch size 1 a GPU takes 50 ms per decode step, which is 20 tokens per second. At batch 32 each step takes 80 ms. Each user now gets 1 / 0.08 = 12.5 tokens per second, but the GPU produces 32 / 0.08 = 400 tokens per second in total.\n\nThe product picks the operating point: a chat app needs low latency, an overnight scoring job wants maximum throughput.",
+  "mixup": "High throughput does not mean fast responses. A system can serve many tokens per second overall while each user waits longer. Little's law links them: average requests in flight = throughput × average latency.",
+  "related": [
+   "time-to-first-token",
+   "continuous-batching",
+   "memory-bound-decoding",
+   "service-level-objective",
+   "latency-budget"
+  ]
+ },
+ {
+  "id": "time-to-first-token",
+  "name": "Time to first token",
+  "topic": "optimization",
+  "aka": [
+   "TTFT",
+   "first token latency",
+   "time-to-first-token",
+   "prefill latency"
+  ],
+  "summary": "The delay between sending a request to an LLM and receiving its first generated token, the main measure of how responsive a streaming app feels.",
+  "body": "TTFT covers queueing, network time and the prefill phase, where the model processes the whole prompt in one pass and builds the KV cache. Prefill is compute-bound and grows with prompt length, so long prompts mean a long TTFT. After the first token, speed is measured as time per output token (TPOT), also called inter-token latency.\n\nEnd-to-end latency ≈ TTFT + TPOT × (output tokens − 1)\n\nExample: a RAG prompt of 6,000 tokens gives a TTFT of 600 ms, then the model streams at 25 ms per token. A 200-token answer takes about 0.6 + 0.025 × 199 ≈ 5.6 seconds in total, but the user starts reading after 0.6 seconds.\n\nWays to cut TTFT include shorter prompts, prompt caching for shared prefixes, and enough serving capacity that requests do not wait in a queue.",
+  "mixup": "TTFT and total latency answer different questions. Streaming makes a reply feel faster but does not make it finish sooner. A long prompt mostly hurts TTFT, while a long answer mostly hurts total time.",
+  "related": [
+   "throughput-vs-latency",
+   "kv-cache",
+   "prompt-caching",
+   "streaming-responses",
+   "memory-bound-decoding"
+  ]
+ },
+ {
+  "id": "memory-bound-decoding",
+  "name": "Memory-bound decoding",
+  "topic": "optimization",
+  "aka": [
+   "memory bandwidth bound",
+   "memory-bandwidth-bound",
+   "decode phase",
+   "arithmetic intensity",
+   "roofline model",
+   "prefill vs decode"
+  ],
+  "summary": "LLM token generation is usually limited by how fast the GPU can read weights and the KV cache from memory, not by how fast it can do arithmetic.",
+  "body": "Each decode step makes one new token per sequence but must read every weight once. At batch size 1 that is about 2 FLOPs per weight, roughly 1 FLOP per byte in FP16, while a modern GPU needs on the order of 100 or more FLOPs per byte to keep its compute units busy. This ratio of FLOPs to bytes moved is called arithmetic intensity. Prefill handles many tokens per weight read, so it is compute-bound. Decode is memory-bound.\n\nA quick bound: time per step ≥ bytes read / memory bandwidth.\n\nExample: a 7B model in FP16 has 14 GB of weights. On a GPU with 2 TB/s of bandwidth, one step needs at least 14 / 2,000 = 7 ms, so one sequence tops out near 140 tokens per second.\n\nThis explains the main serving tricks. Batching reuses each weight read across sequences, quantization reads fewer bytes, GQA shrinks the KV cache and speculative decoding checks several tokens per read.",
+  "mixup": "A faster GPU in FLOPs barely helps small-batch decoding, because memory bandwidth is the limit. Prefill and decode also behave differently: processing a long prompt is compute-bound, while generating tokens one at a time is memory-bound.",
+  "related": [
+   "kv-cache",
+   "quantization",
+   "speculative-decoding",
+   "continuous-batching",
+   "grouped-query-attention"
+  ]
+ }
+]

@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 170" role="img">
+<title>Backpropagation: forward pass to the loss, gradients flow back</title>
+<defs><marker id="backpropagation-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" class="f-ink s-none"/></marker></defs>
+<rect x="10" y="58" width="66" height="34" rx="4" class="s-line"/>
+<text x="43" y="79" text-anchor="middle">Input</text>
+<line x1="78" y1="75" x2="86" y2="75" class="s-ink s-thin" marker-end="url(#backpropagation-arrow)"/>
+<rect x="88" y="58" width="66" height="34" rx="4" class="f-sheet s-ink"/>
+<text x="121" y="79" text-anchor="middle">Layer 1</text>
+<line x1="156" y1="75" x2="164" y2="75" class="s-ink s-thin" marker-end="url(#backpropagation-arrow)"/>
+<rect x="166" y="58" width="66" height="34" rx="4" class="f-sheet s-ink"/>
+<text x="199" y="79" text-anchor="middle">Layer 2</text>
+<line x1="234" y1="75" x2="242" y2="75" class="s-ink s-thin" marker-end="url(#backpropagation-arrow)"/>
+<rect x="244" y="58" width="66" height="34" rx="4" class="f-sheet s-ink"/>
+<text x="277" y="79" text-anchor="middle">Loss</text>
+<line x1="20" y1="40" x2="300" y2="40" class="s-ink" marker-end="url(#backpropagation-arrow)"/>
+<text x="160" y="26" text-anchor="middle" class="t-small">forward: compute prediction and loss</text>
+<line x1="300" y1="128" x2="20" y2="128" class="s-ink s-dash" marker-end="url(#backpropagation-arrow)"/>
+<text x="121" y="110" text-anchor="middle" class="t-small t-bold">dL/dW1</text>
+<text x="199" y="110" text-anchor="middle" class="t-small t-bold">dL/dW2</text>
+<text x="160" y="148" text-anchor="middle" class="t-small">backward: chain rule sends the error back,</text>
+<text x="160" y="161" text-anchor="middle" class="t-small">giving each weight its gradient</text>
+</svg>

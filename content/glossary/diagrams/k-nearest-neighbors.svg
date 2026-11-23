@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 186" role="img">
+<title>k-nearest neighbours: a new point takes the majority class of its 3 closest points</title>
+<defs><marker id="k-nearest-neighbors-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" class="f-ink s-none"/></marker></defs>
+<rect x="6" y="8" width="200" height="164" rx="4" class="s-line s-thin"/>
+<circle cx="118" cy="80" r="5" class="f-ink s-none"/>
+<circle cx="84" cy="110" r="5" class="f-ink s-none"/>
+<circle cx="50" cy="40" r="5" class="f-ink s-none"/>
+<circle cx="40" cy="90" r="5" class="f-ink s-none"/>
+<circle cx="66" cy="145" r="5" class="f-ink s-none"/>
+<circle cx="30" cy="130" r="5" class="f-ink s-none"/>
+<circle cx="80" cy="30" r="5" class="f-ink s-none"/>
+<rect x="107" y="115" width="10" height="10" class="f-paper s-ink"/>
+<rect x="155" y="55" width="10" height="10" class="f-paper s-ink"/>
+<rect x="165" y="117" width="10" height="10" class="f-paper s-ink"/>
+<rect x="145" y="147" width="10" height="10" class="f-paper s-ink"/>
+<rect x="135" y="29" width="10" height="10" class="f-paper s-ink"/>
+<rect x="179" y="85" width="10" height="10" class="f-paper s-ink"/>
+<circle cx="100" cy="97" r="33" class="s-ink s-dash"/>
+<path d="M94,91 L106,103 M106,91 L94,103" class="s-ink s-thick"/>
+<text x="214" y="24" class="t-small">New point x</text>
+<text x="214" y="40" class="t-small">k = 3 nearest:</text>
+<circle cx="220" cy="56" r="5" class="f-ink s-none"/>
+<text x="230" y="60" class="t-small">2 votes</text>
+<rect x="215" y="71" width="10" height="10" class="f-paper s-ink"/>
+<text x="230" y="80" class="t-small">1 vote</text>
+<text x="214" y="104" class="t-label">Predict the</text>
+<text x="214" y="120" class="t-label">majority:</text>
+<circle cx="222" cy="136" r="5" class="f-ink s-none"/>
+<text x="214" y="166" class="t-small t-muted">Dashed ring = the</text>
+<text x="214" y="179" class="t-small t-muted">3 closest points</text>
+</svg>

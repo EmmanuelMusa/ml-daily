@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 176" role="img">
+<title>LoRA adds a small trainable low-rank update B times A to a frozen weight W</title>
+<defs><marker id="lora-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" class="f-ink s-none"/></marker></defs>
+<rect x="14" y="26" width="92" height="92" class="f-line s-line"/>
+<text x="60" y="70" text-anchor="middle" class="t-label">W</text>
+<text x="60" y="86" text-anchor="middle" class="t-small">frozen</text>
+<text x="60" y="132" text-anchor="middle" class="t-small t-muted">d × d</text>
+<text x="122" y="77" text-anchor="middle" class="t-label">+</text>
+<rect x="136" y="26" width="16" height="92" class="f-paper s-ink s-thick"/>
+<text x="144" y="76" text-anchor="middle" class="t-label">B</text>
+<text x="144" y="132" text-anchor="middle" class="t-small t-muted">d × r</text>
+<text x="162" y="40" text-anchor="middle" class="t-small">×</text>
+<rect x="172" y="26" width="92" height="16" class="f-paper s-ink s-thick"/>
+<text x="218" y="39" text-anchor="middle" class="t-label">A</text>
+<text x="218" y="56" text-anchor="middle" class="t-small t-muted">r × d</text>
+<rect x="176" y="76" width="12" height="10" class="f-line s-line"/>
+<text x="194" y="85" class="t-small">frozen</text>
+<rect x="176" y="96" width="12" height="10" class="f-paper s-ink s-thick"/>
+<text x="194" y="105" class="t-small">trained (small r)</text>
+<text x="14" y="154" class="t-small">Only A and B train: 2dr numbers instead of d².</text>
+<text x="14" y="168" class="t-small t-muted">d = 4096, r = 8: about 65k instead of 16.8M</text>
+</svg>

@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 188" role="img">
+<title>A support vector machine picks the boundary with the widest margin</title>
+<defs><marker id="support-vector-machine-arrow" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="8" markerHeight="8" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" class="f-ink s-none"/></marker></defs>
+<rect x="6" y="8" width="222" height="172" rx="4" class="s-line s-thin"/>
+<line x1="22" y1="172.4" x2="212" y2="20.4" class="s-ink s-thick"/>
+<line x1="14" y1="150.6" x2="190" y2="9.8" class="s-ink s-thin s-dash"/>
+<line x1="50" y1="178.2" x2="226" y2="37.4" class="s-ink s-thin s-dash"/>
+<circle cx="106" cy="77" r="5" class="f-ink s-none"/>
+<circle cx="70" cy="106" r="5" class="f-ink s-none"/>
+<circle cx="50" cy="60" r="5" class="f-ink s-none"/>
+<circle cx="90" cy="40" r="5" class="f-ink s-none"/>
+<circle cx="36" cy="112" r="5" class="f-ink s-none"/>
+<circle cx="130" cy="28" r="5" class="f-ink s-none"/>
+<circle cx="28" cy="40" r="5" class="f-ink s-none"/>
+<rect x="145" y="93" width="10" height="10" class="f-paper s-ink"/>
+<rect x="185" y="117" width="10" height="10" class="f-paper s-ink"/>
+<rect x="165" y="153" width="10" height="10" class="f-paper s-ink"/>
+<rect x="205" y="87" width="10" height="10" class="f-paper s-ink"/>
+<rect x="115" y="157" width="10" height="10" class="f-paper s-ink"/>
+<rect x="201" y="155" width="10" height="10" class="f-paper s-ink"/>
+<circle cx="106" cy="77" r="9" class="s-ink s-thin"/>
+<circle cx="70" cy="106" r="9" class="s-ink s-thin"/>
+<circle cx="150" cy="98" r="10" class="s-ink s-thin"/>
+<line x1="168" y1="30" x2="189" y2="57" class="s-ink s-thin" marker-start="url(#support-vector-machine-arrow)" marker-end="url(#support-vector-machine-arrow)"/>
+<text x="196" y="40" class="t-small">margin</text>
+<line x1="238" y1="40" x2="256" y2="40" class="s-ink s-thick"/>
+<text x="262" y="44" class="t-small">boundary</text>
+<line x1="238" y1="62" x2="256" y2="62" class="s-ink s-thin s-dash"/>
+<text x="262" y="66" class="t-small">margin edge</text>
+<circle cx="247" cy="86" r="8" class="s-ink s-thin"/>
+<text x="262" y="84" class="t-small">support</text>
+<text x="262" y="96" class="t-small">vector</text>
+<text x="238" y="130" class="t-small t-muted">Pick the line</text>
+<text x="238" y="143" class="t-small t-muted">with the widest</text>
+<text x="238" y="156" class="t-small t-muted">gap between</text>
+<text x="238" y="169" class="t-small t-muted">the classes</text>
+</svg>

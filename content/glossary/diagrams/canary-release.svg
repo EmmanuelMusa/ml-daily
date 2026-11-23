@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 178" role="img">
+<title>A canary release sends a small share of traffic to the new model and promotes or rolls back</title>
+<defs><marker id="canary-release-ink" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-ink s-none"/></marker><marker id="canary-release-muted" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" markerUnits="userSpaceOnUse" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" class="f-muted s-none"/></marker></defs>
+<rect x="4" y="50" width="54" height="30" rx="5" class="f-sheet s-muted"/>
+<text x="31" y="69" text-anchor="middle" class="t-small">users</text>
+<path d="M58,60 L112,26" class="s-ink s-thick" marker-end="url(#canary-release-ink)"/>
+<text x="80" y="32" text-anchor="middle" class="t-small t-bold">95%</text>
+<path d="M58,72 L112,86" class="s-ink" marker-end="url(#canary-release-ink)"/>
+<text x="84" y="92" text-anchor="middle" class="t-small t-bold">5%</text>
+<rect x="114" y="10" width="88" height="30" rx="5" class="f-sheet s-muted"/>
+<text x="158" y="29" text-anchor="middle" class="t-small">v1 stable</text>
+<rect x="114" y="72" width="88" height="30" rx="5" class="f-sheet s-ink"/>
+<text x="158" y="91" text-anchor="middle" class="t-small">v2 canary</text>
+<path d="M202,87 L224,87" class="s-ink" marker-end="url(#canary-release-ink)"/>
+<path d="M202,25 L268,25 L268,70" class="s-muted s-dash" marker-end="url(#canary-release-muted)"/>
+<text x="262" y="50" text-anchor="end" class="t-small t-muted">baseline</text>
+<rect x="226" y="72" width="88" height="30" rx="5" class="f-sheet s-muted"/>
+<text x="270" y="91" text-anchor="middle" class="t-small">compare metrics</text>
+<path d="M250,102 L200,128" class="s-ink" marker-end="url(#canary-release-ink)"/>
+<path d="M290,102 L290,128" class="s-ink" marker-end="url(#canary-release-ink)"/>
+<rect x="150" y="130" width="90" height="30" rx="5" class="f-right s-right"/>
+<text x="195" y="149" text-anchor="middle" class="t-small">promote to 100%</text>
+<rect x="250" y="130" width="66" height="30" rx="5" class="f-wrong s-wrong"/>
+<text x="283" y="149" text-anchor="middle" class="t-small">roll back</text>
+<text x="6" y="140" class="t-small t-muted">Few users see</text>
+<text x="6" y="152" class="t-small t-muted">a bad release.</text>
+</svg>
