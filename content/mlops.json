@@ -187,5 +187,449 @@
    "retraining-policy",
    "data-drift"
   ]
+ },
+ {
+  "id": "ops-0008",
+  "topic": "mlops",
+  "subtopic": "drift tests on huge samples",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "An ad-click model is checked each day with a two-sample Kolmogorov-Smirnov test per feature, comparing about 5 million of yesterday's requests with a 1 million row training sample. Most days, 40 of the 60 features come back with p < 0.001. Yet click-through rate and calibration are steady, and the flagged features' histograms look almost identical to training. What is the best change to the drift alerting?",
+  "options": [
+   "Alert on the size of each shift, such as PSI or a distribution distance, with a set threshold",
+   "Apply a Bonferroni correction across the 60 features so each test uses a much stricter cut-off",
+   "Retrain the model every day, since the tests show that most of the inputs keep drifting",
+   "Replace the KS test with a chi-squared test on binned values, which reacts less to noise"
+  ],
+  "answer": 0,
+  "explanation": "A p-value answers \"is there any difference at all?\", not \"is the difference big enough to matter?\". With samples this large the test can see tiny gaps. With 5 million rows against 1 million, a largest gap of only about 0.002 between the two CDFs already gives p < 0.001. Real traffic is never an exact copy of the training sample, so almost every feature gets flagged. The fix is to alert on an effect size, such as PSI or a distance between distributions, with a threshold tied to what has hurt the model before.\n\nBonferroni treats this as a many-tests problem. It moves the cut-off from 0.001 to about 0.00002, but with millions of rows the p-values for harmless shifts are far smaller than that, so most alerts stay. Daily retraining reacts to noise. Click-through rate and calibration are steady, so nothing shows the model is being hurt. A chi-squared test on bins is still a significance test, and it has the same problem as the sample grows.",
+  "deeper": "A good follow-up is to ask what threshold to use. Strong candidates calibrate it on history: replay past months, see what PSI or distance values came before real performance drops, and set the alert just below that. Some teams also run the test on a fixed-size random sample, which keeps its sensitivity steady as traffic grows.",
+  "tags": [
+   "drift",
+   "statistics"
+  ],
+  "concepts": [
+   "data-drift",
+   "hypothesis-testing",
+   "population-stability-index"
+  ]
+ },
+ {
+  "id": "ops-0009",
+  "topic": "mlops",
+  "subtopic": "largest gap between two CDFs",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "A logistics team wants to know whether the `delivery_distance_km` feature has shifted since training. Their test builds the empirical cumulative distribution function (CDF) of the training sample and of last week's sample, then uses the largest vertical gap between the two curves as its statistic. This two-sample test is the ______ test.",
+  "answer": "Kolmogorov-Smirnov",
+  "accept": [
+   "kolmogorov smirnov",
+   "ks",
+   "k-s",
+   "k s",
+   "ks test",
+   "kolmogorov-smirnov test",
+   "two-sample ks",
+   "two sample kolmogorov-smirnov",
+   "two-sample kolmogorov-smirnov test",
+   "kolmogorov-smirnoff",
+   "kolmogorov smirnoff",
+   "kolmogorov-smirnov two-sample"
+  ],
+  "explanation": "The two-sample Kolmogorov-Smirnov (KS) test compares two samples of a numeric feature through their empirical CDFs. At every value x it asks what share of each sample is at or below x, and the statistic D is the largest gap between those two shares anywhere on the axis. D runs from 0 (identical curves) to 1 (no overlap). It needs no bins and makes no assumption about the shape of the distribution, which is why it is a common default for numeric drift checks.\n\nThe usual mix-up is with tests that look similar. The Wasserstein or earth mover's distance uses the whole area between the two CDFs, not the single largest gap. The chi-squared test and PSI both work on binned counts, so their answer depends on how you choose the bins. Also keep in mind that KS is a significance test. On very large samples it flags gaps too small to matter, so teams often report D itself alongside the p-value.",
+  "deeper": "Interviewers may ask when KS is a poor fit. It is meant for continuous features, so ties in discrete or heavily rounded values make its p-values less reliable, and categorical features need a chi-squared test or PSI instead. It is also most sensitive near the middle of the distribution, so a shift only in the tails can slip past it.",
+  "tags": [
+   "drift",
+   "statistics"
+  ],
+  "concepts": [
+   "data-drift",
+   "hypothesis-testing"
+  ]
+ },
+ {
+  "id": "ops-0010",
+  "topic": "mlops",
+  "subtopic": "drift alerts that matter",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A home insurance pricing model uses 200 features. The team runs a daily drift test on every feature, and on-call engineers now get 15 to 30 drift alerts a day. They have learned to ignore them, and last month a broken upstream feed went unnoticed for two weeks. Claims take months to arrive, so true loss labels are slow. Design drift alerting that on-call people will actually act on.",
+  "answer": "I would split alerts into tiers. Data quality failures such as a feature going null, a schema change or a stale feed page someone at once, since a broken feed is a bug, not drift. For drift, I would measure the size of each shift with PSI or a distance rather than a p-value, and weight features by importance. Only the top 20 or so features can page, and only when the shift lasts across several daily windows. The other 180 go into a daily report. I would also watch the outputs: the predicted premium distribution and fast proxies such as quote conversion. A shift in those matters more than one in an unimportant input, so they get their own alerts. Each alert gets an owner, a runbook and a link to a dashboard. Every quarter I would replay past incidents to check the thresholds catch real problems and drop the noisy ones.",
+  "points": [
+   "Separate data quality checks (nulls, schema, staleness) and page on them at once",
+   "Alert on the size of the shift, not on a p-value alone",
+   "Weight or tier features by importance so only key features can page",
+   "Require the shift to persist over several windows before paging",
+   "Tie alerts to prediction drift and fast proxy metrics, not just inputs",
+   "Give each alert an owner and runbook, and tune thresholds against past incidents"
+  ],
+  "explanation": "Alert fatigue is a monitoring failure in its own right. When 30 alerts a day are mostly noise, people stop reading them, and the one real problem gets lost. In this story the real problem was a broken feed, which is a data quality issue. A simple check on null rates or freshness would have caught it on day one, so it deserves its own urgent tier.\n\nFor true drift, three filters cut noise. Effect size thresholds ignore shifts too small to matter. Importance weighting means a shift in a feature the model barely uses does not wake anyone. Persistence rules out one-day blips such as a holiday. Watching the prediction distribution and proxies such as quote conversion links alerts to what the business feels, which matters here because loss labels take months.\n\nThe common mistake is to fix the noise by simply raising every threshold. That quiets the pager but also hides real problems. The goal is fewer, better alerts, not fewer alerts at any cost.",
+  "deeper": "A strong candidate measures the alerting itself: what share of pages led to action, and how long real incidents took to detect. Interviewers often ask how you would pick the top features. Good answers use feature importance or SHAP values from the current model, and recompute the list on every retrain.",
+  "tags": [
+   "monitoring",
+   "alerting"
+  ],
+  "concepts": [
+   "model-monitoring",
+   "data-drift",
+   "data-validation"
+  ]
+ },
+ {
+  "id": "ops-0011",
+  "topic": "mlops",
+  "subtopic": "exposure during a canary",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A ride-hailing app sends 2% of its arrival-time prediction traffic to a new model as a canary. The service handles 500 requests per second in total. The new model has a bug that returns a bad estimate on 4% of the requests it serves. The canary runs for 45 minutes before the team rolls it back. How many requests received a bad estimate? Give a whole number.",
+  "answer": 1080,
+  "tolerance": 0.5,
+  "check": "rps = 500\nseconds = 45 * 60\ncanary_share = 0.02\nerror_rate = 0.04\nresult = rps * seconds * canary_share * error_rate",
+  "explanation": "Work out the total traffic first, then take the canary's share of it, then the share of that which went wrong.\n\n- Seconds in the canary: 45 × 60 = 2,700\n- Total requests: 500 × 2,700 = 1,350,000\n- Requests sent to the canary: 1,350,000 × 0.02 = 27,000\n- Bad estimates: 27,000 × 0.04 = 1,080\n\nThe common mistake is to forget the canary share and multiply total traffic by the error rate. That gives 54,000, which is what a full rollout of the same buggy model would have caused over 45 minutes. The gap between 1,080 and 54,000 is the point of a canary. It limits the damage while you learn whether the new model is safe. Another slip is mixing units, for example multiplying requests per second by 45 minutes without converting to seconds.",
+  "deeper": "In an interview, a strong answer adds the other side of the trade. A 2% canary limits harm but also collects data slowly, so a rare failure may need hours to show up. Teams often start at 1 to 5%, then step up to 25% and 50% once error rate and latency hold steady at each stage.",
+  "tags": [
+   "canary",
+   "deployment"
+  ],
+  "concepts": [
+   "canary-release"
+  ]
+ },
+ {
+  "id": "ops-0012",
+  "topic": "mlops",
+  "subtopic": "fast rollback",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "Twenty minutes after a new ranking model goes live for every user of a job board, applications per search fall by 12%. The on-call engineer needs the old model serving again within minutes. What makes that possible?",
+  "options": [
+   "The previous version is still kept in the model registry, so serving can point back to it",
+   "The old model's training code is tagged in git, so the pipeline can rebuild it on request",
+   "The old model's metrics and hyperparameters are logged in the experiment tracker for reuse",
+   "The new model can be fine-tuned on the last twenty minutes of live traffic to adapt"
+  ],
+  "answer": 0,
+  "explanation": "A rollback is only fast if the old model's trained artifact still exists and the serving system can load it by version. A model registry keeps every version's weights with its metadata, so rolling back means pointing serving at the previous version, often by moving a \"production\" label back to it. Nothing has to be trained. That takes minutes.\n\nRebuilding from tagged code means rerunning the full training pipeline. That can take hours, and the result may not match the old model if the data has changed since. The experiment tracker holds metrics and settings, which describe the old model but are not the model itself, so you would still need to retrain. Fine-tuning the new model on twenty minutes of traffic is fixing forward under pressure, with tiny, possibly unrepresentative data and no evaluation. The safe move in an incident is to restore the last known good version first, then investigate.",
+  "deeper": "Teams make rollback even faster by keeping the previous version deployed but idle for a while after launch, so traffic can switch back without even a load step. Interviewers like to hear that rollback is rehearsed, not just possible, and that the trigger is agreed before the launch.",
+  "tags": [
+   "rollback",
+   "deployment"
+  ],
+  "concepts": [
+   "model-registry",
+   "canary-release"
+  ]
+ },
+ {
+  "id": "ops-0013",
+  "topic": "mlops",
+  "subtopic": "where model versions live",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A team keeps every trained churn model in one central store. Each entry holds the model file, a version number, the training run it came from, its evaluation metrics, and a stage such as \"staging\" or \"production\". The serving system asks this store for the current production version at startup. This store is called a ______.",
+  "answer": "model registry",
+  "accept": [
+   "registry",
+   "ml model registry",
+   "model-registry",
+   "model version registry"
+  ],
+  "explanation": "A model registry is the system of record for trained models. It stores each version's artifact along with metadata such as metrics, lineage back to the training run, and a stage label. Because serving asks the registry for \"the production version\" rather than a hard-coded file path, promoting a new model or rolling back to an old one is a change of label, not a code change.\n\nThe common mix-ups are a feature store and an experiment tracker. A feature store holds input features for training and serving, not models. An experiment tracker logs every training run, including the many that never ship, with their parameters and metrics. The two often connect, since a registry entry links back to the run that produced it, but the registry is the curated list of models that are candidates for, or already in, production. A plain file bucket is also not a registry, because it has no stages, approvals or lineage.",
+  "deeper": "In interviews, a strong candidate describes the workflow around the registry: CI registers a candidate, evaluation and review move it to staging, and an approval moves it to production. Every stage change is logged with who made it, which is what auditors ask for later.",
+  "tags": [
+   "registry",
+   "versioning"
+  ],
+  "concepts": [
+   "model-registry"
+  ]
+ },
+ {
+  "id": "ops-0014",
+  "topic": "mlops",
+  "subtopic": "one feature definition, two stores",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "At a grocery delivery company, `avg_basket_value_30d` is computed by a SQL job for training and written again in the checkout service's own code for live scoring. The two versions have drifted apart. The team moves the feature into a feature store. How does the feature store keep training and serving values consistent?",
+  "options": [
+   "One feature definition fills both a history store for training and a fast lookup store for serving",
+   "Training and serving both read one shared table that keeps only the latest value for each customer",
+   "It compares training and serving values every night and retrains the model whenever the two disagree",
+   "It saves the model's predictions from training so checkout can reuse them instead of scoring live"
+  ],
+  "answer": 0,
+  "explanation": "The root cause was two pieces of code for one feature. A feature store removes that by having one definition, and the platform uses it to fill two stores. The offline store keeps timestamped history, so training can join each label to the feature value as it was at that moment. The online store keeps the latest value per customer in a fast key-value lookup, so checkout can fetch it in a few milliseconds. Same logic, two storage layouts for two access patterns.\n\nA single table with only the latest value breaks training. Old labels would be joined to today's feature values, which leaks the future into the past. Nightly comparison and retraining might detect skew, but it does not prevent it, and retraining cannot fix a feature that is computed two different ways. Reusing training-time predictions makes no sense for live checkout, where the basket and customer are new and must be scored now.",
+  "deeper": "A good follow-up is point-in-time correctness. When building a training set, the offline store must return the value as of each label's timestamp, not the latest value. Strong candidates also mention logging the features actually served, which lets you check online and offline values against each other.",
+  "tags": [
+   "feature-store",
+   "skew"
+  ],
+  "concepts": [
+   "feature-store",
+   "training-serving-skew"
+  ]
+ },
+ {
+  "id": "ops-0015",
+  "topic": "mlops",
+  "subtopic": "feature freshness",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A food delivery app predicts how long each order will take, within a 50 ms scoring budget. It uses three features: the restaurant's average prep time over the last 30 days, the number of orders the restaurant received in the last 10 minutes, and the straight-line distance from the assigned courier's current position to the restaurant. The order count is there to catch sudden rushes, so it must include orders from the last minute. Assume a streaming job costs more to run than a nightly batch job for the same feature. Which setup gives each feature the freshness it needs at the lowest cost?",
+  "options": [
+   "Prep time in a nightly batch job, recent orders by streaming, distance at request time",
+   "Prep time and recent orders from a streaming job, distance computed at request time",
+   "Prep time and recent orders from a nightly batch job, distance computed at request time",
+   "All three computed at request time by querying the raw orders and location tables"
+  ],
+  "answer": 0,
+  "explanation": "Match each feature's computation to how fast it changes. A 30-day average barely moves within a day, so a cheap nightly batch job is fresh enough. The count of orders in the last 10 minutes changes minute by minute and is the signal for a sudden rush, so it needs a streaming job that updates it within seconds. The courier's distance depends on where that courier is at the moment of the request, so it can only be computed at request time, which is cheap since it is one small calculation.\n\nStreaming the 30-day average meets every freshness need, but the prompt says streaming costs more, and a day-old 30-day average is almost the same number, so the extra cost buys nothing. Computing the recent order count nightly makes it hours stale, so the model never sees a lunch rush. Computing everything at request time means scanning 30 days of orders per request, which blows the 50 ms budget and loads the source databases.\n\nThere is also a consistency cost. Request-time and streaming features must be logged as served, or rebuilt point in time, so training sees the same values serving did.",
+  "deeper": "Interviewers often push on the streaming feature: what happens when the stream lags? A strong answer stores a timestamp with each value, has serving fall back to a default or flag it when the value is stale, and monitors stream lag as an operational metric.",
+  "tags": [
+   "features",
+   "freshness"
+  ],
+  "concepts": [
+   "feature-store",
+   "batch-vs-online-inference",
+   "training-serving-skew"
+  ]
+ },
+ {
+  "id": "ops-0016",
+  "topic": "mlops",
+  "subtopic": "batch or online scoring",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A bank's data team is deciding which of its models need a real-time prediction service and which can run as scheduled batch jobs. Which use case needs online serving?",
+  "options": [
+   "Scoring each card payment for fraud while the customer waits at the checkout page",
+   "Scoring every customer's churn risk for a retention email that goes out each Monday",
+   "Forecasting tomorrow's cash demand at each branch so cash can be delivered overnight",
+   "Scoring all credit card accounts each month to pick who gets a credit limit increase"
+  ],
+  "answer": 0,
+  "explanation": "The deciding question is when the prediction is needed and whether the inputs exist in advance. A fraud check at checkout must use details of a payment that did not exist a second ago, and the customer is waiting for an approve or decline. Only an online service that scores the request as it arrives can do that.\n\nThe other three can all be computed ahead of time. The Monday churn email needs scores once a week, so a weekly batch job scores every customer and the email system reads the results. The branch cash forecast is needed once a day, before overnight delivery, so a nightly job fits. The monthly limit review covers every account on a schedule, which is a classic batch workload. Batch scoring is usually cheaper and simpler to run, retry and audit, so it is the default when nothing forces real time.",
+  "deeper": "Many systems mix both. A strong candidate might precompute slow features or candidate lists in batch and do a light online step at request time. Interviewers also like the point that online serving adds latency targets, autoscaling and on-call duty, so it should be chosen for a reason.",
+  "tags": [
+   "serving",
+   "batch"
+  ],
+  "concepts": [
+   "batch-vs-online-inference"
+  ]
+ },
+ {
+  "id": "ops-0017",
+  "topic": "mlops",
+  "subtopic": "nightly batch job time",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A video streaming service scores 36 million subscribers each night for churn risk. Each worker scores 1,500 rows per second, and the job runs on 10 workers that split the rows evenly. Ignoring start-up time, how many minutes does the scoring take? Give a whole number.",
+  "answer": 40,
+  "tolerance": 0.5,
+  "check": "rows = 36_000_000\nrows_per_sec_per_worker = 1_500\nworkers = 10\nseconds = rows / (rows_per_sec_per_worker * workers)\nresult = seconds / 60",
+  "explanation": "Find the combined speed first, then divide the work by it, then convert units.\n\n- Combined speed: 1,500 × 10 = 15,000 rows per second\n- Time in seconds: 36,000,000 / 15,000 = 2,400 seconds\n- Time in minutes: 2,400 / 60 = 40 minutes\n\nThe most common mistake is to forget the workers and divide by 1,500 alone. That gives 24,000 seconds, or 400 minutes, ten times too long. The other slip is stopping at 2,400 and reporting seconds when the question asks for minutes.\n\nThis simple model assumes the work splits evenly and scales in a straight line. In practice, start-up, reading input data and writing scores also take time, and one slow worker can hold up the whole job, so real runs take longer than this estimate.",
+  "deeper": "Interviewers use this to see whether you can size a job against a deadline. If scores must be ready by 6 a.m. and upstream data lands at 4 a.m., 40 minutes leaves room for a retry. A strong answer also plans for growth and for a failed run that has to start again.",
+  "tags": [
+   "batch",
+   "capacity"
+  ],
+  "concepts": [
+   "batch-vs-online-inference"
+  ]
+ },
+ {
+  "id": "ops-0018",
+  "topic": "mlops",
+  "subtopic": "pre-deploy checks in CI",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A lender is building a CI pipeline that must pass before any new version of its loan approval model is deployed. Which checks belong in that pipeline? Select all that apply.",
+  "options": [
+   "Unit tests on feature code, such as how `debt_to_income` handles an income of zero",
+   "Validation of training data schema, null rates and value ranges against set rules",
+   "A comparison of the candidate and the production model on the same recent holdout",
+   "A check that model size and p99 latency on a test machine stay within serving limits",
+   "A check that the candidate's holdout predictions exactly match the production model's",
+   "A check that the candidate's training loss is lower than the production model's was"
+  ],
+  "answer": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "explanation": "Each true option guards a different way a model release can go wrong. Unit tests on feature code catch logic bugs, such as dividing by zero income, before they reach any model. Data validation stops a training run on broken data, such as a column that suddenly arrives empty. Comparing the candidate with the production model on the same recent holdout is the quality gate: a new model should ship only if it is at least as good on data both were tested on. Size and latency checks catch a model that is accurate but too big or too slow to serve within its limits.\n\nRequiring exact prediction matches would block every real improvement, since a better model must predict differently. That kind of check fits a refactor that should change nothing, not a new model. Comparing training loss is a trap. Lower training loss can simply mean more overfitting, and two models trained on different data have losses that are not comparable at all.",
+  "deeper": "A strong candidate adds slice checks to the quality gate, such as no drop above a set margin for any region or loan type, since an average can hide a group that got worse. For lending, many teams also run a fairness check across protected groups before deploy.",
+  "tags": [
+   "ci-cd",
+   "testing"
+  ],
+  "concepts": [
+   "ci-cd-for-ml",
+   "data-validation"
+  ]
+ },
+ {
+  "id": "ops-0019",
+  "topic": "mlops",
+  "subtopic": "champion and challenger",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A subscription app retrains its churn model each month. This month's retrained model scores 0.84 AUC on a random 20% split of its own training window. The production model scored 0.81 AUC on its test set when it launched a year ago. The team lead asks whether to promote the new model. What should happen first?",
+  "options": [
+   "Score both models on the same recent holdout that neither trained on, then decide",
+   "Promote the new model now, since 0.84 against 0.81 is a clear three-point AUC gain",
+   "Keep the production model, since a year of live use shows it is safer than a new one",
+   "Score both models on the launch test set from a year ago, since it is already labelled"
+  ],
+  "answer": 0,
+  "explanation": "The two AUC numbers come from different test sets, a year apart, drawn from different customers and conditions. A gap between them could come entirely from one test set being easier than the other. A fair champion-challenger comparison scores both models on the same data, which should be recent and later than either model's training data. The challenger is promoted only if it wins by a margin agreed in advance.\n\nPromoting on 0.84 against 0.81 trusts a comparison that is not like for like. The random split also mixes rows from the whole window, which tends to flatter the score compared with testing on later months. Keeping the production model because it has a track record ignores the chance that it has decayed over the year, which is why the team retrains at all. Reusing the year-old launch test set does put both models on the same data, but that data is stale. It shows how each would have done a year ago, not on today's customers, and if the new model's training window covers those months, it has already seen the test rows.",
+  "deeper": "Many teams automate this in the pipeline: the registry holds the champion, each retrain registers a challenger, and promotion needs a win on the shared holdout plus no big drop on key slices. Interviewers may ask what to do on a tie. A common answer is to keep the champion, since change has its own risk.",
+  "tags": [
+   "retraining",
+   "evaluation"
+  ],
+  "concepts": [
+   "retraining-policy",
+   "model-registry"
+  ]
+ },
+ {
+  "id": "ops-0020",
+  "topic": "mlops",
+  "subtopic": "how much history to train on",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A card issuer's fraud model is trained on 4 years of labelled transactions. Fraud tactics shift every few months, and the team suspects old rows now teach patterns that no longer hold. But the last 6 months alone contain only about 2,000 fraud cases. How should the team choose how much history to train on?",
+  "options": [
+   "Backtest options such as all history, the last year and recency-weighted rows on later months",
+   "Keep all 4 years, since the rare fraud class needs every example the team can give it",
+   "Keep only the last 6 months, since older rows teach tactics that fraudsters have dropped",
+   "Compare the options by 5-fold cross-validation over all 4 years, shuffled to spread the fraud"
+  ],
+  "answer": 0,
+  "explanation": "This is a real tradeoff with no answer that holds for every dataset. Old rows add fraud examples, which a rare class badly needs, but some of them teach tactics that no longer work. Recent rows match today but are few. Weighting recent rows more heavily is a middle path. The only way to know which wins is to test each choice the way it would be used: train on data up to a past cutoff, score the months after it, then repeat for several cutoffs and compare.\n\nKeeping all 4 years because fraud is rare assumes old examples always help. That ignores concept drift. Patterns that have reversed can make the model worse, not just add noise. Keeping only 6 months assumes old rows only hurt. It throws away most of the fraud examples, and 2,000 cases may be too few to learn reliable patterns, so it also needs testing rather than assuming. Shuffled cross-validation is the subtle trap. It mixes future rows into training folds, so the model is tested on periods it has already seen, and it hides exactly the drift the team is worried about.",
+  "deeper": "A strong candidate also asks whether the choice should be revisited. The best window can change as tactics shift, so teams rerun the backtest every few retrains. Another option is to keep old fraud rows but drop or down-weight old legitimate rows, which keeps rare examples while tracking current behaviour.",
+  "tags": [
+   "retraining",
+   "drift"
+  ],
+  "concepts": [
+   "retraining-policy",
+   "concept-drift",
+   "time-series-split"
+  ]
+ },
+ {
+  "id": "ops-0021",
+  "topic": "mlops",
+  "subtopic": "replaying the past",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "A retailer retrains its demand model every month. To test that policy, the team pretends it is the start of January, trains only on data from before then and scores January. Then it moves forward a month and repeats, so every month of the past year is scored by a model that saw only earlier data. This way of evaluating a model as if it had been deployed in the past is called ______.",
+  "answer": "backtesting",
+  "accept": [
+   "backtest",
+   "back testing",
+   "back-testing",
+   "a backtest",
+   "walk-forward validation",
+   "walk forward validation",
+   "walk-forward evaluation",
+   "walk-forward testing",
+   "rolling-origin evaluation",
+   "rolling origin evaluation",
+   "time series cross-validation",
+   "time-series cross-validation"
+  ],
+  "explanation": "Backtesting replays history in time order. At each past cutoff the model is trained only on what would have been known then, and tested on the period that followed. Because it repeats across many cutoffs, it shows how the whole retraining policy would have performed, including months when patterns shifted, not just how one model does on one test set. The terms walk-forward validation and time series cross-validation describe the same idea and are accepted.\n\nThe common mistake is to answer k-fold cross-validation. Standard k-fold shuffles rows into folds, so a model can be trained on March and tested on January, using the future to predict the past. That inflates scores for any problem where patterns change over time. Backtesting keeps the arrow of time, which is why its scores are usually lower and more honest.",
+  "deeper": "Interviewers may ask about gaps. If labels arrive late or features use trailing windows, leave a buffer between the training cutoff and the test period, matching the delay the live system will have. A strong candidate also reports the spread of scores across months, not just the average.",
+  "tags": [
+   "evaluation",
+   "time-series"
+  ],
+  "concepts": [
+   "time-series-split",
+   "retraining-policy"
+  ]
+ },
+ {
+  "id": "ops-0022",
+  "topic": "mlops",
+  "subtopic": "a reliability target",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A search team sets itself a goal: over each 30-day window, 99% of ranking requests must return in under 200 ms. No contract or customer penalty is attached. It is an internal target the team uses to decide when reliability work comes before new features. This target is called a ______.",
+  "answer": "service level objective",
+  "accept": [
+   "slo",
+   "service-level objective",
+   "service level objectives",
+   "an slo",
+   "a service level objective"
+  ],
+  "explanation": "A service level objective (SLO) is a target for a measured aspect of a service, such as latency or availability, over a time window. Here the target is that 99% of requests finish in under 200 ms across 30 days. The team uses it to steer its own work: while the service meets the SLO it can ship freely, and when it falls short, reliability work comes first.\n\nTwo neighbouring terms cause most of the mistakes. A service level indicator (SLI) is the measurement itself, such as the share of requests under 200 ms. The SLO is the target set on that measurement. A service level agreement (SLA) is a promise to customers with consequences, such as refunds, if it is missed. The prompt says there is no contract or penalty, which rules out SLA. SLAs are usually set looser than internal SLOs, so the team gets a warning before a customer promise is broken.",
+  "deeper": "For model services, interviewers like candidates who set SLOs on more than uptime. A ranking model can be up and fast while serving stale or broken scores. Some teams add a freshness SLO, such as features no older than one hour, alongside latency and error-rate SLOs.",
+  "tags": [
+   "reliability",
+   "slo"
+  ],
+  "concepts": [
+   "service-level-objective"
+  ]
+ },
+ {
+  "id": "ops-0023",
+  "topic": "mlops",
+  "subtopic": "error budget",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A fraud scoring service has an SLO that 99.95% of requests succeed over each 30-day month. It handles an average of 1,500 requests per second. How many failed requests can it have in a month and still meet the SLO? Give a whole number.",
+  "answer": 1944000,
+  "tolerance": 0.5,
+  "check": "rps = 1500\nseconds = 30 * 24 * 60 * 60\ntarget = 0.9995\nresult = round(rps * seconds * (1 - target))",
+  "explanation": "The error budget is the share of requests allowed to fail, applied to the month's total traffic.\n\n- Seconds in 30 days: 30 × 24 × 60 × 60 = 2,592,000\n- Requests in the month: 1,500 × 2,592,000 = 3,888,000,000\n- Allowed failure share: 1 − 0.9995 = 0.0005\n- Error budget: 3,888,000,000 × 0.0005 = 1,944,000 failed requests\n\nThe common mistake is reading 99.95% as leaving 0.5% to fail. That moves the decimal one place and gives 19,440,000, ten times too many. Another slip is using 0.05 instead of 0.0005 by forgetting to divide the percentage by 100.\n\nTwo million failures sounds large, but it is a fixed budget. A bad deploy failing 10% of requests would use 150 failures per second and burn the whole month's budget in about 3.6 hours.",
+  "deeper": "Teams use the budget to make decisions, not just to report. If half of it is gone in the first week, risky launches pause. A good interview answer also mentions burn-rate alerts, which fire when the budget is being spent fast enough to run out before the month ends.",
+  "tags": [
+   "reliability",
+   "slo"
+  ],
+  "concepts": [
+   "service-level-objective"
+  ]
+ },
+ {
+  "id": "ops-0024",
+  "topic": "mlops",
+  "subtopic": "operational health of a model service",
+  "format": "multi",
+  "difficulty": 1,
+  "prompt": "You are building the on-call dashboard for a live product search ranking service. Which metrics show whether the service, and the live data reaching it, are healthy right now? Select all that apply.",
+  "options": [
+   "p50, p95 and p99 latency of scoring requests",
+   "Share of requests that return an error or time out",
+   "Requests served per second, compared with normal levels",
+   "Share of requests with a missing value for each input",
+   "NDCG on the fixed offline test set, recomputed hourly",
+   "Final training loss of the model version now deployed"
+  ],
+  "answer": [
+   0,
+   1,
+   2,
+   3
+  ],
+  "explanation": "A live health dashboard needs numbers that change as the service runs. Latency percentiles show how slow requests are, and p99 matters because the slowest 1% are often what users notice and what breaks timeouts upstream. The error and timeout rate shows how many requests fail outright. Requests per second shows load, and a sudden drop can mean callers have stopped reaching the service. The missing-value rate per input catches a broken upstream feed, which can quietly wreck rankings while latency and errors look fine.\n\nNDCG on a fixed offline test set will give the same number every hour, because neither the model nor the data changes. It says nothing about live traffic. Final training loss is also a fixed fact about how the model was built. Both belong in the model's evaluation record, not on an on-call dashboard.",
+  "deeper": "Strong candidates add the distribution of predicted scores, which catches a model returning nearly the same output for everyone. They also tie each metric to an SLO and an alert, so the dashboard is used during an incident rather than only looked at afterwards.",
+  "tags": [
+   "monitoring",
+   "serving"
+  ],
+  "concepts": [
+   "model-monitoring",
+   "service-level-objective"
+  ]
  }
 ]
