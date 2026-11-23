@@ -7,7 +7,6 @@
    "leakage",
    "information leakage",
    "data leak",
-   "leaky features",
    "temporal leakage",
    "train-test contamination"
   ],
@@ -95,8 +94,7 @@
    "dedupe",
    "de-duplication",
    "near-duplicate detection",
-   "duplicate removal",
-   "MinHash"
+   "duplicate removal"
   ],
   "summary": "Finding and removing exact or near-duplicate records, so the same example does not appear in both training and test data or skew the training mix.",
   "body": "Duplicates come from repeated logging, pages copied across websites, merged data sources and augmentation. They cause two problems. Across splits they leak: the model is tested on rows it has already seen, so the score is inflated. Within training they overweight some examples, and in LLM pretraining heavy duplication encourages memorization.\n\nExact duplicates are found by hashing a normalized record. Near duplicates need fuzzy methods, such as MinHash with locality-sensitive hashing on text shingles, or embedding similarity above a threshold.\n\nGroup-aware splitting helps too. If one patient has 10 scans, keep all of them in the same split, for example with `GroupKFold`.\n\nExample: a ticket classifier scores 0.95, but 15% of the test tickets are copy-pasted templates that also appear in training. After deduplication the score falls to 0.88.",
@@ -164,7 +162,6 @@
   "aka": [
    "class weighting",
    "class_weight",
-   "cost-sensitive learning",
    "balanced class weights",
    "pos_weight"
   ],
@@ -342,7 +339,6 @@
   "aka": [
    "outlier",
    "extreme values",
-   "outlier detection",
    "IQR rule",
    "Tukey fences",
    "winsorizing"
@@ -474,9 +470,7 @@
    "data quality checks",
    "data checks",
    "schema validation",
-   "data tests",
-   "data contract",
-   "data contracts"
+   "data tests"
   ],
   "summary": "Automatic checks that data matches what the model expects, run before training and before serving, so bad data is caught before it reaches a model.",
   "body": "Typical checks:\n- **Schema**: expected columns exist with the right types.\n- **Ranges and values**: ages between 0 and 120, categories from a known set, no negative prices.\n- **Completeness**: null rates within limits and row counts close to normal.\n- **Uniqueness**: no duplicate keys.\n- **Distribution**: feature distributions close to a reference, measured with PSI or a statistical test.\n\nValidation is cheap insurance. Many production ML failures start as data problems: an upstream team renames a field, a unit changes from dollars to cents, or a pipeline silently writes nulls. Without checks, the model keeps serving confident predictions on broken inputs.\n\nExample: a nightly job checks that the null rate of device_type stays under 2%. After an app release it jumps to 60%, and the check blocks the retraining run instead of training a model on broken data.",

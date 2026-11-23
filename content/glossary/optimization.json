@@ -56,7 +56,6 @@
   "aka": [
    "weight pruning",
    "model pruning",
-   "sparsity",
    "structured pruning",
    "unstructured pruning",
    "magnitude pruning"
@@ -80,7 +79,6 @@
    "automatic mixed precision",
    "FP16 training",
    "BF16 training",
-   "bfloat16",
    "loss scaling"
   ],
   "summary": "Training with 16-bit numbers for most of the maths while keeping sensitive parts, such as a master copy of the weights, in 32-bit for stability.",
@@ -104,7 +102,7 @@
    "gradient checkpoint"
   ],
   "summary": "Saving training memory by keeping only some activations from the forward pass and recomputing the rest during the backward pass.",
-  "body": "Backprop needs the activations from the forward pass. Normally all of them stay in memory, and with long sequences or big batches they can take more memory than the weights. With checkpointing you store activations only at chosen points, such as the input to each transformer block, and rerun the forward pass of a block when its gradients are needed.\n\nThe trade is compute for memory. Recomputing costs about one extra forward pass. Since a backward pass costs about twice a forward pass, a step goes from about 3 units of work to 4, roughly a third more.\n\nExample: a 24-layer model uses 1 GB of activations per block at your batch size, 24 GB in total. Suppose each block's input is 0.1 GB. Checkpointing every block keeps 24 × 0.1 = 2.4 GB of inputs plus about 1 GB for the block being recomputed, about 3.4 GB. The freed memory can hold a much bigger batch.",
+  "body": "Backprop needs the activations from the forward pass. Normally all of them stay in memory, and with long sequences or big batches they can take more memory than the weights. With checkpointing you store activations only at chosen points, such as the input to each transformer block, and rerun the forward pass of a block when its gradients are needed.\n\nThe trade is compute for memory. Recomputing costs about one extra forward pass. Using the rule of thumb that a backward pass costs about twice a forward pass, a step goes from about 3 units of work to 4, roughly a third more.\n\nExample: a 24-layer model uses 1 GB of activations per block at your batch size, 24 GB in total. Suppose each block's input is 0.1 GB. Checkpointing every block keeps 24 × 0.1 = 2.4 GB of inputs plus about 1 GB for the block being recomputed, about 3.4 GB. The freed memory can hold a much bigger batch.",
   "mixup": "Gradient checkpointing has nothing to do with saving model checkpoints to disk. It also saves only activation memory, not the memory for weights, gradients or optimizer state, which needs sharding or lower precision instead.",
   "related": [
    "backpropagation",
@@ -120,9 +118,7 @@
   "aka": [
    "accumulating gradients",
    "grad accumulation",
-   "accumulation steps",
-   "micro-batching",
-   "effective batch size"
+   "accumulation steps"
   ],
   "summary": "Running several small micro-batches and adding up their gradients before one optimizer step, to train with a large effective batch that would not fit in memory.",
   "body": "Instead of stepping the optimizer after every batch, you run forward and backward on k micro-batches, let the gradients add up, then take one step and reset them.\n\nEffective batch size = micro-batch size × accumulation steps × number of GPUs.\n\nIt is used when the batch size you want for stable training does not fit in GPU memory. It costs time, not memory: k micro-batches take about as long as k normal steps.\n\nExample: you want a batch of 256, only 32 fit per GPU, and you have 2 GPUs. Accumulate over 4 steps: 32 × 4 × 2 = 256.\n\nTwo details matter. Scale each micro-batch loss by 1/k, or the summed gradient is k times too large, which acts like a bigger learning rate. And batch normalization still sees only the micro-batch, so its statistics do not match a true large batch.",
@@ -209,8 +205,6 @@
    "Flash Attention",
    "flashattention",
    "flash-attn",
-   "fused attention",
-   "memory-efficient attention",
    "IO-aware attention"
   ],
   "summary": "An exact attention algorithm that works through the computation in tiles held in fast on-chip memory, so the full N × N score matrix is never written to GPU main memory.",
@@ -249,7 +243,6 @@
   "topic": "optimization",
   "aka": [
    "data parallel",
-   "DP",
    "DDP",
    "distributed data parallel",
    "all-reduce training"
@@ -270,15 +263,13 @@
   "topic": "optimization",
   "aka": [
    "tensor parallelism",
-   "TP",
    "pipeline parallelism",
-   "PP",
    "model sharding",
    "pipeline bubble"
   ],
   "summary": "Splitting one model across several GPUs, by layers or within layers, so a model too big for one device can be trained or served.",
   "body": "There are two main kinds. Pipeline parallelism puts different layers on different GPUs, like stations on an assembly line. To keep every stage busy, the batch is cut into micro-batches that flow through in turn. Some idle time, called the pipeline bubble, remains at the start and end of each batch.\n\nTensor parallelism splits single weight matrices across GPUs, so each computes part of every layer's matrix multiply and they exchange results inside each layer. This needs very fast links between GPUs, so it usually stays within one server.\n\nLarge training runs often combine tensor, pipeline and data parallelism.\n\nExample: an 80B-parameter model needs 80 × 10⁹ × 2 bytes = 160 GB for its FP16 weights, so it cannot fit on one 80 GB GPU. Tensor parallelism across 4 GPUs puts 40 GB of weights on each, leaving room for the KV cache.",
-  "mixup": "Model parallelism splits the model, while data parallelism copies the model and splits the batch. Naive pipeline parallelism without micro-batches leaves all but one GPU idle at any moment, so it adds memory but not speed.",
+  "mixup": "Model parallelism splits the model, while data parallelism copies the model and splits the batch. Naive pipeline parallelism without micro-batches leaves all but one GPU idle at any moment, so it gives more total memory but no speedup.",
   "related": [
    "data-parallelism",
    "sharded-data-parallel",
@@ -315,7 +306,6 @@
   "topic": "optimization",
   "aka": [
    "throughput",
-   "latency",
    "tokens per second",
    "requests per second",
    "QPS",
@@ -363,7 +353,6 @@
    "memory-bandwidth-bound",
    "decode phase",
    "arithmetic intensity",
-   "roofline model",
    "prefill vs decode"
   ],
   "summary": "LLM token generation is usually limited by how fast the GPU can read weights and the KV cache from memory, not by how fast it can do arithmetic.",

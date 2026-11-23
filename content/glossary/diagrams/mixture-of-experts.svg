@@ -26,6 +26,6 @@
 <text x="268" y="82" text-anchor="middle" class="t-label">+</text>
 <path d="M281,77 L300,77" class="s-ink" marker-end="url(#mixture-of-experts-ink)"/>
 <text x="310" y="81" text-anchor="middle" class="t-small">out</text>
-<text x="160" y="160" text-anchor="middle" class="t-small t-muted">Only the top 2 experts run; the rest stay idle.</text>
+<text x="160" y="160" text-anchor="middle" class="t-small t-muted">Only the top 2 experts run. The rest stay idle.</text>
 <text x="160" y="173" text-anchor="middle" class="t-small t-muted">Output = weighted sum of the chosen experts.</text>
 </svg>

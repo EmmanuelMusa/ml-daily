@@ -21,8 +21,8 @@
 <circle cx="106" cy="77" r="9" class="s-ink s-thin"/>
 <circle cx="70" cy="106" r="9" class="s-ink s-thin"/>
 <circle cx="150" cy="98" r="10" class="s-ink s-thin"/>
-<line x1="168" y1="30" x2="189" y2="57" class="s-ink s-thin" marker-start="url(#support-vector-machine-arrow)" marker-end="url(#support-vector-machine-arrow)"/>
-<text x="196" y="40" class="t-small">margin</text>
+<line x1="166" y1="29" x2="193.5" y2="63.4" class="s-ink s-thin" marker-start="url(#support-vector-machine-arrow)" marker-end="url(#support-vector-machine-arrow)"/>
+<text x="194" y="80" class="t-small">margin</text>
 <line x1="238" y1="40" x2="256" y2="40" class="s-ink s-thick"/>
 <text x="262" y="44" class="t-small">boundary</text>
 <line x1="238" y1="62" x2="256" y2="62" class="s-ink s-thin s-dash"/>

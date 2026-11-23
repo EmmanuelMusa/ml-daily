@@ -45,9 +45,7 @@
   "name": "Reinforcement learning",
   "topic": "foundations",
   "aka": [
-   "RL",
-   "reward learning",
-   "policy learning"
+   "RL"
   ],
   "summary": "An agent learns which actions to take by trying them in an environment and receiving rewards, aiming to maximise its total reward over time.",
   "body": "In reinforcement learning an agent sees a state, picks an action, and the environment returns a reward and a new state. The goal is a **policy**, a rule for choosing actions, that maximises the expected sum of future rewards. Future rewards are usually discounted: G = r₁ + γr₂ + γ²r₃ + ..., with γ between 0 and 1.\n\nTwo things make it harder than supervised learning. Feedback can be delayed, so the agent must work out which earlier action earned a reward. And the agent must balance **exploration**, trying new actions, against **exploitation**, using what already works.\n\nIt is used in robotics, games, ad bidding and recommendations, and in LLM training through RLHF, where a reward model scores responses.\n\nExample: a warehouse robot gets +10 for delivering a box and −1 for each second spent. Over many episodes it learns short routes.",
@@ -253,7 +251,6 @@
    "grid search",
    "random search",
    "Bayesian optimization",
-   "hyperparameters",
    "GridSearchCV"
   ],
   "summary": "Searching for the settings fixed before training, such as learning rate or tree depth, by comparing the resulting models on validation data.",
@@ -342,7 +339,6 @@
   "topic": "foundations",
   "aka": [
    "early stop",
-   "patience",
    "EarlyStopping",
    "early_stopping_rounds"
   ],
@@ -408,9 +404,7 @@
   "name": "Curse of dimensionality",
   "topic": "foundations",
   "aka": [
-   "high-dimensional data",
-   "dimensionality curse",
-   "high dimensionality"
+   "dimensionality curse"
   ],
   "summary": "As the number of features grows, data becomes sparse and distances lose meaning, so models need far more data to learn reliably.",
   "body": "Each added feature adds a dimension, and the volume of the space grows exponentially. A fixed number of points therefore covers it more and more thinly.\n\nEffects you see in practice:\n- **Distances concentrate**: for random points, the nearest and farthest neighbours end up at similar distances. This hurts k-NN, k-means and other distance-based methods.\n- **Data needs explode**: to fill 10 bins per feature, 2 features need 100 cells but 10 features need 10 billion.\n- **Chance patterns multiply**: with many features and few rows, some feature will match the labels by luck, which drives overfitting.\n\nRemedies include feature selection, regularization, dimensionality reduction such as PCA, and learned embeddings. Real data often lies near a lower-dimensional structure, which is why high-dimensional models can still work.\n\nExample: k-NN on 500 raw gene expression features for 300 patients may do barely better than chance, and often improves after reducing to 20 principal components.",
@@ -438,7 +432,7 @@
    "OOD"
   ],
   "summary": "When the data a model meets in use differs from the data it was trained on, so the performance measured in development no longer holds.",
-  "body": "Models assume future data looks like training data. When it does not, accuracy can fall without any error being raised.\n\nThe main types, writing x for inputs and y for the target:\n- **Covariate shift**: P(x) changes but P(y | x) stays the same, such as a new customer segment arriving.\n- **Label shift**, or prior shift: P(y) changes while P(x | y) stays the same, such as the fraud rate jumping from 1% to 4% during an attack.\n- **Concept drift**: P(y | x) changes, so the same inputs now mean something different, such as fraudsters changing tactics.\n\nAlmost every production model faces some shift. Teams monitor input distributions and live metrics, validate on time-based splits, and retrain on fresh data.\n\nExample: a restaurant demand model trained on years of normal sales would overpredict badly in a sudden lockdown, because the link between day, weather and orders has changed.",
+  "body": "Models assume future data looks like training data. When it does not, accuracy can fall without any error being raised.\n\nThe main types, writing x for inputs and y for the target:\n- **Covariate shift**: P(x) changes but P(y | x) stays the same, such as a new customer segment arriving.\n- **Label shift**, or prior shift: P(y) changes while P(x | y) stays the same, such as flu jumping from 2% to 10% of clinic visits in winter while flu symptoms look the same as before.\n- **Concept drift**: P(y | x) changes, so the same inputs now mean something different, such as fraudsters changing tactics.\n\nAlmost every production model faces some shift. Teams monitor input distributions and live metrics, validate on time-based splits, and retrain on fresh data.\n\nExample: a restaurant demand model trained on years of normal sales would overpredict badly in a sudden lockdown, because the link between day, weather and orders has changed.",
   "mixup": "Drift in the inputs does not always hurt a model, and stable inputs do not prove it is fine. Covariate shift can be harmless, while concept drift can ruin accuracy even when input distributions look unchanged.",
   "related": [
    "data-drift",

@@ -29,8 +29,7 @@
    "axis argument",
    "axis=0",
    "axis=1",
-   "axis=-1",
-   "keepdims"
+   "axis=-1"
   ],
   "summary": "The axis argument tells a NumPy reduction which dimension to collapse. On a 2D array, axis=0 works down the rows and axis=1 works across the columns.",
   "body": "For a 2D array of shape (rows, cols), `a.sum(axis=0)` adds down each column and returns shape (cols,). `a.sum(axis=1)` adds across each row and returns shape (rows,). With no axis, the whole array reduces to one value. The general rule is that the axis you name is the one that disappears from the shape. `keepdims=True` keeps it as size 1 so the result broadcasts back against the original.\n\nYou need this constantly: column means for feature scaling (axis=0), normalising each row of scores in a softmax (axis=-1), and per-example losses in a batch.\n\nExample: for `a = np.array([[1, 2, 3], [4, 5, 6]])`, `a.sum(axis=0)` is [5, 7, 9] and `a.sum(axis=1)` is [6, 15]. `a.sum(axis=1, keepdims=True)` has shape (2, 1).",
@@ -54,7 +53,7 @@
    "array programming"
   ],
   "summary": "Writing a computation as whole-array operations that run in optimised compiled code, instead of looping over elements in Python.",
-  "body": "A Python loop pays interpreter overhead on every element. A NumPy or pandas operation on a whole array runs a single loop in compiled code, often using CPU vector instructions (SIMD), so it is usually tens to hundreds of times faster.\n\nIt is how you make feature engineering, metric computation and batch scoring fast. Deep learning uses the same idea: a whole batch goes through a layer as one matrix multiplication on a GPU instead of one example at a time.\n\nExample: computing mean squared error over 1,000,000 values with a Python loop over a NumPy array took about 0.3 seconds on one laptop, while `np.mean((y - y_hat) ** 2)` took under 0.01 seconds, roughly 40 times faster. The usual tools are broadcasting, boolean masks, `np.where`, and reductions with an `axis`.",
+  "body": "A Python loop pays interpreter overhead on every element. A NumPy or pandas operation on a whole array runs a single loop in compiled code, often using CPU vector instructions (SIMD), so it is often tens of times faster or more for simple arithmetic.\n\nIt is how you make feature engineering, metric computation and batch scoring fast. Deep learning uses the same idea: a whole batch goes through a layer as one matrix multiplication on a GPU instead of one example at a time.\n\nExample: in one run on a laptop, mean squared error over 1,000,000 values took about 0.3 seconds with a Python loop over a NumPy array and about 0.005 seconds with `np.mean((y - y_hat) ** 2)`, roughly 60 times faster. The ratio changes with the machine, the array size and the operation, so time your own code rather than quoting a fixed speedup. The usual tools are broadcasting, boolean masks, `np.where`, and reductions with an `axis`.",
   "mixup": "`np.vectorize` and `df.apply` with a Python function are not real vectorization. They still call Python once per element or row, so they run at roughly loop speed. The speed comes from built-in array operations, not from avoiding the word \"for\".",
   "related": [
    "numpy-broadcasting",
@@ -71,10 +70,7 @@
    "view",
    "copy",
    "view vs copy",
-   "array view",
-   ".copy()",
-   "shares memory",
-   "np.shares_memory"
+   "array view"
   ],
   "summary": "A NumPy view shares memory with the original array, so writing to it changes the original. A copy has its own memory.",
   "body": "Basic slicing such as `a[1:4]` or `a[:, 0]`, plus `a.T` and most `reshape` calls, return views. Fancy indexing with a list of positions (`a[[0, 2]]`) and boolean masks (`a[a > 0]`) always return copies. `np.shares_memory(a, b)` tells you which you have, and `.copy()` forces a copy.\n\nViews make slicing cheap even on huge arrays, but they cause silent bugs when you edit a slice and expect the original to stay the same.\n\nExample:\n```python\na = np.array([1, 2, 3, 4])\nb = a[1:3]\nb[0] = 99\nprint(a)  # [ 1 99  3  4]\nc = a[[1, 2]]\nc[0] = 0\nprint(a)  # still [ 1 99  3  4]\n```\n\npandas 3.x works differently: under copy-on-write, a derived DataFrame or Series always behaves like a copy when you write to it.",
@@ -117,8 +113,6 @@
    "float32",
    "float64",
    "int64",
-   "astype",
-   "type promotion",
    "object dtype"
   ],
   "summary": "The dtype is the single fixed type shared by every element of a NumPy array, such as int64 or float32, and it sets memory use, precision and behaviour.",
@@ -142,9 +136,7 @@
    ".iloc",
    "index alignment",
    "label-based indexing",
-   "position-based indexing",
-   "reset_index",
-   "set_index"
+   "position-based indexing"
   ],
   "summary": "pandas selects data by label with .loc or by position with .iloc, and arithmetic between objects matches rows by index label, not by position.",
   "body": "`.loc` uses labels and includes the end of a slice, so `df.loc[\"a\":\"c\"]` keeps rows a, b and c. `.iloc` uses integer positions and excludes the end like plain Python, so `df.iloc[0:2]` keeps two rows. In pandas 3.x, `s[0]` on a Series is always a label lookup, so on a string index it raises a KeyError. Use `s.iloc[0]` for the first position.\n\nAlignment means that when you add two Series, or assign a Series to a column, pandas lines up matching index labels. Labels present on only one side give NaN.\n\nExample: `s1` has values 1 and 2 at labels a and b, and `s2` has values 10 and 20 at labels b and c. `s1 + s2` gives a: NaN, b: 12, c: NaN, not [11, 22].",
@@ -163,10 +155,7 @@
   "aka": [
    "copy-on-write",
    "copy on write",
-   "CoW",
-   "chained assignment",
-   "SettingWithCopyWarning",
-   "ChainedAssignmentError"
+   "CoW"
   ],
   "summary": "In pandas 3.x, any DataFrame or Series derived from another behaves as an independent copy, so changing one never changes the other.",
   "body": "Under copy-on-write, indexing and most methods return objects that may share memory behind the scenes. A real copy is made only when one of them is modified. Results act like copies but stay cheap. It is the only mode from pandas 3.0, and the old SettingWithCopyWarning is gone because the ambiguity it warned about no longer exists.\n\nThe big consequence is that chained assignment never works. `df[\"price\"][df[\"qty\"] == 0] = 0` modifies a temporary object and leaves `df` unchanged, and pandas emits a ChainedAssignmentError warning. Write it as one `.loc` call: `df.loc[df[\"qty\"] == 0, \"price\"] = 0`.\n\nExample: `eu = df[df[\"region\"] == \"EU\"]` followed by `eu[\"discount\"] = 0.1` changes only `eu`, never `df`. Calling `.copy()` just to silence warnings is no longer needed.",
@@ -185,9 +174,7 @@
    "groupby",
    "group by",
    "df.groupby",
-   "split-apply-combine",
-   "agg",
-   "transform"
+   "split-apply-combine"
   ],
   "summary": "groupby splits a DataFrame into groups by key, applies a function to each group, and combines the results. This is the split-apply-combine pattern.",
   "body": "`df.groupby(\"user_id\")[\"amount\"].mean()` gives one row per user. `.agg` reduces each group to one value per statistic, as in `.agg([\"mean\", \"count\"])`. `.transform` returns a result the same length as the original frame, which is what you want when adding a group statistic as a feature: `df[\"user_avg\"] = df.groupby(\"user_id\")[\"amount\"].transform(\"mean\")`.\n\nThe group keys become the index of the result unless you pass `as_index=False` or call `reset_index()`. Rows with a missing key are dropped by default (`dropna=True`).\n\nExample: user A has amounts 10 and 30, and user B has 5. `.mean()` gives two rows, A: 20 and B: 5. `.transform(\"mean\")` gives three values, 20, 20 and 5, one per original row.\n\nGroup statistics of the target, or ones computed over all time, leak into training. Compute them on training folds or only from past rows.",
@@ -207,14 +194,9 @@
    "merge",
    "pd.merge",
    "df.merge",
-   "join",
-   "df.join",
-   "left join",
-   "inner join",
-   "SQL join",
-   "merge_asof"
+   "join"
   ],
-  "summary": "pd.merge combines two DataFrames by matching values in key columns, like a SQL join, with how set to inner, left, right, outer or cross.",
+  "summary": "pd.merge combines two DataFrames by matching values in key columns, like a SQL join, with how choosing the join type, such as inner, left, right or outer.",
   "body": "`orders.merge(users, on=\"user_id\", how=\"left\")` keeps every order and adds the user columns, with NaN where no user matches. `how=\"inner\"`, the default, keeps only keys found in both. `indicator=True` adds a `_merge` column showing where each row came from, and `validate=\"many_to_one\"` raises an error if the right-hand keys are not unique.\n\nMerges are where feature pipelines quietly break. Duplicate keys multiply rows, and key columns with different dtypes, such as int on one side and string on the other, raise an error. For time-based features, a plain merge can attach future values, while `pd.merge_asof` matches each row to the latest earlier record.\n\nExample: 3 orders for user 7 merged with a users table that holds 2 rows for user 7 gives 3 × 2 = 6 rows for that user.",
   "mixup": "A left join can still change the row count. If the right table has duplicate keys, each left row matches several times. Check `len()` before and after every merge, or pass `validate` so pandas raises an error instead.",
   "related": [
@@ -233,8 +215,7 @@
    "Pipeline",
    "make_pipeline",
    "sklearn pipeline",
-   "scikit-learn pipeline",
-   "ColumnTransformer"
+   "scikit-learn pipeline"
   ],
   "summary": "A scikit-learn Pipeline chains preprocessing steps and a final model into one estimator, so each step is fit only on the data the pipeline is given.",
   "body": "`Pipeline([(\"scale\", StandardScaler()), (\"model\", LogisticRegression())])` acts like one model. `fit` runs `fit_transform` on each step before the last, then fits the last step. `predict` runs `transform` on each step, then predicts. `ColumnTransformer` applies different preprocessing to different columns, such as scaling numbers and one-hot encoding categories.\n\nThe main reason to use one is leakage control. Inside `cross_val_score` or `GridSearchCV`, the scaler, imputer or encoder is refit on each training fold, so the validation fold never shapes the preprocessing. It also ships as one object, which cuts training-serving skew. Tune a step's settings with its name and a double underscore, as in `{\"model__C\": [0.1, 1, 10]}`.\n\nExample: scaling all 10,000 rows and then running 5-fold cross-validation lets each validation fold's statistics leak into training. The same scaler inside a pipeline is fit 5 times, once per training fold.",
@@ -253,8 +234,6 @@
   "topic": "python",
   "aka": [
    "estimator",
-   "fit_transform",
-   "predict_proba",
    "fit predict",
    "fit/predict",
    "sklearn API"
@@ -276,12 +255,7 @@
   "aka": [
    "autograd",
    "automatic differentiation",
-   "autodiff",
-   "backward()",
-   "loss.backward()",
-   "requires_grad",
-   "computational graph",
-   "zero_grad"
+   "autodiff"
   ],
   "summary": "PyTorch's automatic differentiation engine, which records tensor operations in the forward pass and computes gradients with the chain rule when you call backward().",
   "body": "Tensors with `requires_grad=True` are tracked, and model parameters have it on by default. Each operation adds a node to a graph that is built as the code runs. `loss.backward()` walks the graph backwards with the chain rule and stores each gradient in the `.grad` of the leaf tensors. `optimizer.step()` then reads `.grad` to update the weights.\n\nGradients accumulate: `backward()` adds to `.grad` instead of overwriting it. That is why a training loop calls `optimizer.zero_grad()` every step, and it is also how gradient accumulation works, by calling `backward()` on several mini-batches before one step.\n\nExample:\n```python\nx = torch.tensor(3.0, requires_grad=True)\ny = x ** 2 + 2 * x\ny.backward()\nprint(x.grad)  # tensor(8.)\n```\nThe derivative is 2x + 2, which is 8 at x = 3.",
@@ -300,13 +274,9 @@
   "topic": "python",
   "aka": [
    "model.eval()",
-   "model.train()",
    "eval mode",
-   "train mode",
    "torch.no_grad()",
-   "no_grad",
-   "torch.inference_mode()",
-   "inference_mode"
+   "no_grad"
   ],
   "summary": "model.eval() switches layers such as dropout and batch norm to inference behaviour, while torch.no_grad() stops gradient tracking. Inference usually needs both.",
   "body": "`model.eval()` sets a flag on every module. Dropout stops dropping units, and batch normalisation uses its stored running mean and variance instead of the current batch's statistics. It does not turn off gradients. `model.train()` switches back.\n\n`with torch.no_grad():` stops autograd from recording operations, which saves memory and time because no graph is kept for a backward pass. It does not change how dropout or batch norm behave. `torch.inference_mode()` is a stricter and slightly faster version for pure inference.\n\nExample: a model with dropout 0.5 left in train mode gives different scores each time it sees the same input, and its batch norm outputs depend on whatever else is in the batch. A validation loop should look like this:\n```python\nmodel.eval()\nwith torch.no_grad():\n    preds = model(x_val)\nmodel.train()\n```",

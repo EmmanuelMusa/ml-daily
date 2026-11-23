@@ -5,7 +5,6 @@
   "topic": "responsible",
   "aka": [
    "statistical parity",
-   "group fairness",
    "independence criterion",
    "equal selection rate",
    "demographic parity difference"
@@ -28,8 +27,7 @@
    "equalized odds",
    "equalised odds",
    "equal TPR",
-   "separation criterion",
-   "error rate parity"
+   "separation criterion"
   ],
   "summary": "Fairness criteria based on error rates: equal opportunity asks for equal true positive rates across groups, and equalized odds also asks for equal false positive rates.",
   "body": "Both condition on the true label, so they compare the model's mistakes rather than its raw outputs.\n\n- **Equal opportunity**: among people who truly qualify (y = 1), each group is approved at the same rate. TPR is equal across groups.\n- **Equalized odds**: TPR and FPR are both equal across groups. Qualified people are caught equally often, and unqualified people are wrongly approved equally often.\n\nExample: in a hiring screen, 160 of 200 qualified group A candidates pass (TPR 0.80) but only 60 of 100 qualified group B candidates pass (TPR 0.60). Equal opportunity is violated by 20 points, even if overall pass rates look similar.\n\nThese criteria trust the labels, so they work badly when the labels are themselves biased, such as past arrests used as a stand-in for crime. A known result is that when base rates differ between groups, an imperfect classifier cannot satisfy equalized odds and be calibrated within each group at the same time.",
@@ -48,8 +46,6 @@
   "topic": "responsible",
   "aka": [
    "adverse impact",
-   "four-fifths rule",
-   "80% rule",
    "disparate impact ratio",
    "indirect discrimination"
   ],
@@ -71,9 +67,7 @@
   "aka": [
    "proxy variables",
    "proxy features",
-   "proxies",
-   "redundant encoding",
-   "fairness through unawareness"
+   "redundant encoding"
   ],
   "summary": "When a model treats groups unfairly through features that stand in for a protected attribute, even though that attribute was removed.",
   "body": "Removing race, gender or age from the inputs, often called fairness through unawareness, rarely removes their influence. Other features correlate with them: postcode with ethnicity, first name with gender, graduation year with age. A model trained on these can partly rebuild the protected attribute and act on it.\n\nExample: a lender drops ethnicity but keeps postcode. In a city with strongly segregated neighbourhoods, postcode predicts ethnicity well, and the model approves applicants from some areas far less often. Outcomes differ by ethnicity almost as if the attribute were still there.\n\nWays to detect it:\n- Try to predict the protected attribute from the other features. High accuracy means strong proxies exist.\n- Measure outcomes and error rates by group.\n- Check which features drive the gaps, for example with SHAP.\n\nFixes range from removing or transforming features to fairness constraints during training and threshold changes after it. Each has legal and accuracy tradeoffs.",
@@ -94,8 +88,7 @@
    "SHapley Additive exPlanations",
    "Shapley values",
    "TreeSHAP",
-   "KernelSHAP",
-   "shap"
+   "KernelSHAP"
   ],
   "summary": "A method that splits one prediction into contributions from each feature, based on Shapley values from game theory, so the contributions add up to the prediction.",
   "body": "SHAP treats features as players sharing a payout. A feature's value is its average marginal contribution to the prediction, taken over all the orders in which features could be added. The values are additive:\n\nprediction = base value + Σ SHAP values\n\nThe base value is the model's average output over a background dataset.\n\nExample: a churn model's average output is 0.20, and for one customer it predicts 0.65. SHAP gives \"month-to-month contract\" +0.30, \"3 support tickets last month\" +0.20 and \"4 years as a customer\" −0.05. Check: 0.20 + 0.30 + 0.20 − 0.05 = 0.65.\n\nExact Shapley values need every subset of features, which grows exponentially. TreeSHAP computes them exactly and fast for tree ensembles, and KernelSHAP estimates them by sampling for any model. Averaging absolute SHAP values over many rows gives a global feature importance.\n\nFor classifiers, SHAP often explains the log-odds rather than the probability, so check which output you are reading.",
@@ -114,9 +107,7 @@
   "aka": [
    "counterfactuals",
    "counterfactual explanations",
-   "what-if explanation",
-   "algorithmic recourse",
-   "recourse"
+   "what-if explanation"
   ],
   "summary": "An explanation that states the smallest realistic change to the input that would have changed the model's decision.",
   "body": "Instead of listing feature weights, a counterfactual answers \"what would have had to be different for a different result?\" It searches for a nearby input that flips the prediction, preferring changes that are small, few and actually possible.\n\nExample: \"Your loan was declined. It would have been approved if your annual income were $4,000 higher or your credit card balance were $1,500 lower.\"\n\nPeople find these easy to act on, so they are popular for decisions about individuals, such as credit, hiring and benefits. The ability to change an outcome through realistic actions is often called recourse.\n\nGood counterfactuals respect reality:\n- Only change features the person can change. \"Be 10 years younger\" is useless.\n- Stay plausible, inside the range of real data.\n- Respect links between features. Gaining a degree also adds years of age.\n\nOne decision can have many valid counterfactuals, so systems often show a few different options.",
@@ -134,9 +125,7 @@
   "topic": "responsible",
   "aka": [
    "model cards",
-   "model documentation",
-   "system card",
-   "model factsheet"
+   "model documentation"
   ],
   "summary": "A short document published with a model that states what it is for, how it was trained and tested, where it performs poorly, and its known risks.",
   "body": "A model card is like a nutrition label for a model. Typical sections:\n- Intended uses and out-of-scope uses.\n- Training data: sources, time range and known gaps.\n- Evaluation: metrics on named test sets, broken down by relevant groups and conditions.\n- Limitations, known failure modes and ethical considerations.\n- Version, owner and contact.\n\nIt matters because models get reused far from where they were built. Without a card, a team might deploy a skin lesion classifier trained mostly on lighter skin to a population it was never tested on.\n\nExample: a speech recognition model's card reports a word error rate of 6% on standard accents and 14% on one regional accent, and states that it is not intended for medical transcription. A downstream team reads that before deciding to use it.\n\nThe matching idea for data is a datasheet, which records how a dataset was collected and what it contains.",
@@ -157,7 +146,6 @@
    "DP",
    "ε-differential privacy",
    "epsilon-differential privacy",
-   "privacy budget",
    "DP-SGD"
   ],
   "summary": "A mathematical guarantee that a result changes very little whether or not any one person's data was included, so it reveals little about any individual.",
@@ -176,10 +164,7 @@
   "aka": [
    "PII",
    "personally identifiable information",
-   "personal data",
-   "PII redaction",
-   "data minimization",
-   "GDPR"
+   "personal data"
   ],
   "summary": "Practices for collecting, storing, using and deleting information that can identify a person, so ML systems respect privacy and the law.",
   "body": "PII includes direct identifiers such as names, emails, phone numbers and ID numbers, and quasi-identifiers such as postcode, birth date and gender, which together can single someone out. Privacy laws such as the EU's GDPR use the broader term personal data and set principles that carry over to ML work:\n- **Data minimization**: collect and keep only what the purpose needs.\n- **Purpose limitation**: do not reuse data for unrelated aims without a legal basis.\n- **Storage limits and deletion**: keep data only as long as needed and honour erasure requests.\n- **Security**: access control, encryption and audit logs.\n\nIn ML, personal data leaks into less obvious places: training sets, prompt logs, vector stores, eval sets and model memorization.\n\nExample: a support chatbot logs conversations for evaluation. A redaction step replaces card numbers, emails and phone numbers with tags like `[EMAIL]` before logging, and logs are deleted after 30 days.",
@@ -200,9 +185,7 @@
   "aka": [
    "FL",
    "federated averaging",
-   "FedAvg",
-   "on-device learning",
-   "collaborative learning"
+   "FedAvg"
   ],
   "summary": "Training a shared model across many devices or organizations that keep their data locally, sending only model updates to a central server.",
   "body": "Each round of federated averaging (FedAvg) works like this:\n- The server sends the current model to a sample of clients, such as phones or hospitals.\n- Each client trains for a few steps on its own data.\n- Clients send back updated weights, not data.\n- The server averages the updates, weighted by each client's number of examples, to form the new model.\n\nIt suits data that cannot or should not be pooled, such as typing on phones or patient records across hospitals.\n\nExample: three hospitals hold 1,000, 3,000 and 6,000 scans. In the weighted average their updates count for 0.1, 0.3 and 0.6.\n\nThe hard parts are clients with very different data (non-IID), unreliable devices that drop out, and communication cost.\n\nUpdates can still leak information about the training data, so federated learning is often combined with secure aggregation and differential privacy.",

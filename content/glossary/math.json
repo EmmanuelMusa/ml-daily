@@ -10,7 +10,7 @@
   ],
   "summary": "The probability that one event happens given that another event is known to have happened.",
   "body": "P(A | B) = P(A and B) / P(B), defined when P(B) > 0. Knowing B shrinks the world to the cases where B is true, and you ask what share of those cases also have A.\n\nIt is everywhere in ML. A classifier's score estimates P(class | features), a language model predicts P(next token | earlier tokens), and precision is P(really positive | flagged).\n\nExample: of 1,000 support tickets, 200 mention \"refund\" and 150 of those are urgent. P(urgent | refund) = 150 / 200 = 0.75. If 300 tickets in total are urgent, then P(refund | urgent) = 150 / 300 = 0.50. Same overlap, different denominator, different answer.",
-  "mixup": "P(A | B) and P(B | A) are different numbers. The chance that a fraud case triggers an alert is not the chance that an alert is fraud. Treating them as equal is the base-rate fallacy, and Bayes' theorem is the fix.",
+  "mixup": "P(A | B) and P(B | A) are different numbers. The chance that a fraud case triggers an alert is not the chance that an alert is fraud. Treating them as equal ignores the base rate and is called confusion of the inverse. Bayes' theorem is the fix.",
   "related": [
    "bayes-theorem",
    "naive-bayes",
@@ -27,8 +27,7 @@
    "Bayes' rule",
    "Bayes theorem",
    "Bayes law",
-   "Bayes formula",
-   "posterior probability"
+   "Bayes formula"
   ],
   "summary": "A rule that reverses a conditional probability, turning a prior and P(evidence | hypothesis) into P(hypothesis | evidence).",
   "body": "P(H | E) = P(E | H) × P(H) / P(E), where P(E) = P(E | H) × P(H) + P(E | not H) × P(not H). P(H) is the prior, P(E | H) is the likelihood, and P(H | E) is the posterior.\n\nIt matters whenever the thing you are looking for is rare, as in medical screening, fraud and anomaly alerts. It is also the basis of naive Bayes classifiers.\n\nExample: a disease affects 1% of people. A test catches 90% of sick people and wrongly flags 5% of healthy people. P(positive) = 0.90 × 0.01 + 0.05 × 0.99 = 0.009 + 0.0495 = 0.0585. So P(sick | positive) = 0.009 / 0.0585 ≈ 0.154. Only about 15% of people who test positive are sick, because healthy people vastly outnumber sick ones.",
@@ -72,9 +71,7 @@
    "var",
    "stdev",
    "σ",
-   "σ²",
-   "Bessel's correction",
-   "ddof"
+   "σ²"
   ],
   "summary": "Variance is the average squared distance of values from their mean. Standard deviation is its square root, so it is in the original units.",
   "body": "Var(X) = E[(X − μ)²] = E[X²] − (E[X])², and σ = √Var(X). Squaring makes every deviation positive and weights large ones more. Two useful rules: Var(aX + b) = a² × Var(X), and for independent X and Y, Var(X + Y) = Var(X) + Var(Y).\n\nFor a sample, dividing the sum of squares by n − 1 instead of n gives an unbiased estimate of the population variance (Bessel's correction). NumPy's `np.var` and `np.std` divide by n by default (ddof=0), while pandas `.var()` and `.std()` divide by n − 1 (ddof=1).\n\nExample: latencies of 2, 4, 4, 4, 5, 5, 7 and 9 ms have mean 5. The squared deviations add to 9 + 1 + 1 + 1 + 0 + 0 + 4 + 16 = 32. Dividing by 8 gives variance 4 and σ = 2 ms. Dividing by 7 gives about 4.57.",
@@ -97,8 +94,7 @@
    "bell curve",
    "normal",
    "standard normal",
-   "N(μ, σ²)",
-   "68-95-99.7 rule"
+   "N(μ, σ²)"
   ],
   "summary": "A symmetric bell-shaped distribution set by its mean μ and standard deviation σ, and the most common model for noise and for averages.",
   "body": "Its density is f(x) = exp(−(x − μ)² / (2σ²)) / (σ√(2π)). About 68% of values fall within 1σ of the mean, about 95% within 2σ (1.96σ exactly), and about 99.7% within 3σ. Any normal value converts to the standard normal with z = (x − μ) / σ.\n\nIt matters because averages of many independent pieces tend to be normal, by the central limit theorem. That is what confidence intervals and most A/B test maths rely on. Squared-error loss is the maximum likelihood choice when noise is normal, and weight initialisation often draws from a normal distribution.\n\nExample: delivery times have μ = 30 minutes and σ = 5. A 40-minute delivery has z = (40 − 30) / 5 = 2, so only about 2.3% of deliveries take longer than that.",
@@ -119,9 +115,7 @@
   "aka": [
    "binomial",
    "Bin(n, p)",
-   "B(n, p)",
-   "Bernoulli distribution",
-   "Bernoulli trials"
+   "B(n, p)"
   ],
   "summary": "The distribution of the number of successes in n independent yes-or-no trials that each succeed with the same probability p.",
   "body": "P(X = k) = C(n, k) × pᵏ × (1 − p)ⁿ⁻ᵏ, where C(n, k) = n! / (k! (n − k)!). The mean is np and the variance is np(1 − p). One single trial (n = 1) is a Bernoulli distribution.\n\nIt models clicks out of impressions, conversions in an A/B test, or correct answers on a test set. For large n it is close to a normal distribution with the same mean and variance. That is why an observed rate p̂ gets a standard error of √(p̂(1 − p̂) / n).\n\nExample: an email has a 10% open rate and goes to 5 people. P(exactly 2 opens) = C(5, 2) × 0.1² × 0.9³ = 10 × 0.01 × 0.729 = 0.0729. The expected number of opens is 5 × 0.1 = 0.5.",
@@ -158,11 +152,7 @@
   "topic": "math",
   "aka": [
    "MLE",
-   "maximum likelihood",
-   "likelihood",
-   "log-likelihood",
-   "negative log-likelihood",
-   "NLL"
+   "maximum likelihood"
   ],
   "summary": "Choosing the model parameters that make the observed data most probable under the model.",
   "body": "Given data x₁ to xₙ and a model p(x | θ), MLE picks θ̂ = argmax Σ log p(xᵢ | θ). Taking the log turns a product of probabilities into a sum, which is easier to optimise and avoids numerical underflow.\n\nMany training losses are negative log-likelihoods in disguise. Minimising log loss or cross-entropy is MLE for binary or categorical labels, which is how logistic regression is fit. Mean squared error is MLE when the noise is normal with a fixed variance. Adding an L2 penalty turns MLE into MAP estimation with a Gaussian prior on the weights.\n\nExample: a coin shows 7 heads in 10 flips. The log-likelihood is 7 log p + 3 log(1 − p). Setting its derivative 7/p − 3/(1 − p) to zero gives p̂ = 7 / 10 = 0.7.",
@@ -182,13 +172,9 @@
   "aka": [
    "significance test",
    "statistical test",
-   "null hypothesis",
-   "H0",
    "NHST",
    "t-test",
-   "z-test",
-   "Type I error",
-   "Type II error"
+   "z-test"
   ],
   "summary": "A procedure for deciding whether data give enough evidence to reject a default assumption, the null hypothesis, while controlling the false positive rate.",
   "body": "You state a null hypothesis H₀ (usually no difference) and an alternative H₁, fix a significance level α such as 0.05, compute a test statistic from the data, and reject H₀ if the p-value is below α.\n\nTwo errors are possible. A Type I error is a false positive, which happens with probability α when H₀ is true. A Type II error is a false negative, with probability β. Power is 1 − β.\n\nIn ML work this decides whether an A/B test winner is real, or whether one model's gain over another is more than noise.\n\nExample: a new ranking model lifts click-through from 5.0% to 5.3% with 100,000 users per arm. A two-proportion z-test gives z ≈ 3.04 and a two-sided p ≈ 0.002, which is below 0.05, so you reject H₀.",
@@ -229,9 +215,7 @@
   "aka": [
    "CI",
    "95% CI",
-   "interval estimate",
-   "margin of error",
-   "error bars"
+   "interval estimate"
   ],
   "summary": "A range computed from sample data by a method that captures the true value a set share of the time, such as 95%, over repeated samples.",
   "body": "For a mean, a 95% interval is roughly x̄ ± 1.96 × SE, where SE = s / √n. For a proportion, SE = √(p̂(1 − p̂) / n). The width shrinks with √n, so four times the data halves it.\n\nIntervals say more than a bare p-value because they show both the size of an effect and how sure you are about it. Report a model metric with an interval when the test set is small, and treat overlapping results with care before calling a winner.\n\nExample: a model is right on 850 of 1,000 test cases. p̂ = 0.85 and SE = √(0.85 × 0.15 / 1000) ≈ 0.0113. The 95% interval is 0.85 ± 1.96 × 0.0113 = 0.85 ± 0.022, so about 0.828 to 0.872.",
@@ -252,10 +236,7 @@
    "power",
    "power analysis",
    "1 − β",
-   "1 - beta",
-   "sample size calculation",
-   "minimum detectable effect",
-   "MDE"
+   "1 - beta"
   ],
   "summary": "The probability that a test detects a real effect of a given size. Power = 1 − β, where β is the chance of a false negative.",
   "body": "Power rises with a larger true effect, a bigger sample, less noise and a looser α. The usual target is 80%. A power analysis before an experiment finds the sample size needed to detect the smallest effect worth acting on, the minimum detectable effect (MDE).\n\nUnderpowered tests waste traffic and mislead. They usually miss real gains, and the wins they do report tend to overstate the true effect.\n\nExample: to detect a conversion lift from 10% to 11% with α = 0.05 (two-sided) and 80% power, the standard formula is n ≈ (1.96 + 0.84)² × (0.10 × 0.90 + 0.11 × 0.89) / 0.01². That is 7.84 × 0.1879 / 0.0001, about 14,700 users per arm. Halving the lift to detect needs about four times as many users.",
@@ -275,15 +256,7 @@
   "aka": [
    "multiple testing",
    "multiple comparisons problem",
-   "multiple hypothesis testing",
-   "Bonferroni correction",
-   "Benjamini-Hochberg",
-   "false discovery rate",
-   "FDR",
-   "family-wise error rate",
-   "FWER",
-   "p-hacking",
-   "peeking"
+   "multiple hypothesis testing"
   ],
   "summary": "Running many statistical tests raises the chance that at least one looks significant purely by chance, so the error rate must be controlled across all of them.",
   "body": "If you run m independent tests at α = 0.05 and every null is true, the chance of at least one false positive is 1 − 0.95ᵐ. For 20 tests that is 1 − 0.95²⁰ ≈ 0.64.\n\nIt shows up when an A/B test tracks many metrics, slices results by many segments, or is checked daily and stopped as soon as it looks significant (peeking). Fixes include the Bonferroni correction, which tests each at α / m and controls the family-wise error rate, the Benjamini-Hochberg procedure, which controls the false discovery rate and keeps more power, naming one primary metric in advance, and sequential testing methods built for repeated looks.\n\nExample: with 10 metrics and Bonferroni, each metric needs p < 0.05 / 10 = 0.005 to count as significant.",
@@ -370,11 +343,7 @@
   "topic": "math",
   "aka": [
    "convex function",
-   "convex optimisation",
-   "convex optimization",
-   "convex loss",
-   "non-convex",
-   "nonconvex"
+   "convex loss"
   ],
   "summary": "A function is convex if the straight line between any two points on its graph never dips below the graph, so every local minimum is a global minimum.",
   "body": "Formally, f(λa + (1 − λ)b) ≤ λf(a) + (1 − λ)f(b) for all a and b and 0 ≤ λ ≤ 1. For a twice-differentiable function of one variable this means f″(x) ≥ 0 everywhere. With many variables, the Hessian must be positive semidefinite.\n\nIt matters because gradient descent on a convex loss cannot get stuck in a bad local minimum. Linear regression with squared error, logistic regression with log loss and linear SVMs are convex, and adding an L1 or L2 penalty keeps them convex. Neural network losses are not convex.\n\nExample: f(x) = x² is convex. Take x = −1 and x = 3. The chord's midpoint sits at height (1 + 9) / 2 = 5 above x = 1, while f(1) = 1, so the chord stays above the curve.",
@@ -417,8 +386,7 @@
   "aka": [
    "PCA",
    "principal components",
-   "principal component analysis",
-   "explained variance ratio"
+   "principal component analysis"
   ],
   "summary": "A linear method that finds new perpendicular axes ordered by how much of the data's variance each one captures, so you can keep just the first few.",
   "body": "Centre the data, then find the directions of greatest variance. These are the eigenvectors of the covariance matrix, usually computed with a singular value decomposition. The first component captures the most variance, the second captures the most of what remains while staying perpendicular to the first, and so on. Each component's eigenvalue divided by the sum of all eigenvalues is its explained variance ratio.\n\nPCA compresses features, removes correlated inputs, reduces noise and lets you plot high-dimensional data in 2D. Standardise features first, or a feature measured in large units will dominate the components.\n\nExample: eigenvalues of 6, 3 and 1 give explained variance ratios of 0.6, 0.3 and 0.1. Keeping two components keeps 90% of the variance while dropping a third of the columns.",
@@ -462,8 +430,7 @@
    "Kullback Leibler",
    "relative entropy",
    "KL(P||Q)",
-   "D_KL",
-   "KL penalty"
+   "D_KL"
   ],
   "summary": "A measure of how different a probability distribution Q is from a reference distribution P, equal to the extra surprise from using Q when the truth is P.",
   "body": "KL(P ‖ Q) = Σ P(x) log (P(x) / Q(x)). It is always 0 or more and equals 0 only when P and Q match. Cross-entropy H(P, Q) = H(P) + KL(P ‖ Q), so when P is the fixed label distribution, minimising cross-entropy is the same as minimising KL.\n\nIt turns up in many places. Knowledge distillation pulls a student's outputs toward a teacher's. RLHF adds a KL penalty to keep the tuned model close to a reference model, and DPO is derived from that same KL-constrained objective. Variational autoencoders use it as a regulariser, and the population stability index is a symmetric form of KL used for drift checks.\n\nExample: P = (0.5, 0.5) and Q = (0.9, 0.1). KL(P ‖ Q) = 0.5 ln(0.5/0.9) + 0.5 ln(0.5/0.1) ≈ −0.294 + 0.805 = 0.511 nats. KL(Q ‖ P) = 0.9 ln 1.8 + 0.1 ln 0.2 ≈ 0.529 − 0.161 = 0.368 nats.",

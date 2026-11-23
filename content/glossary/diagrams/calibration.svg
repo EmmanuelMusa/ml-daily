@@ -27,5 +27,5 @@
 <text x="188" y="78" class="t-label">This model is</text>
 <text x="188" y="94" class="t-label">overconfident</text>
 <text x="188" y="116" class="t-small">circled: says 90%,</text>
-<text x="188" y="129" class="t-small">right 72% of the time</text>
+<text x="188" y="129" class="t-small">happens 72% of the time</text>
 </svg>

@@ -4,8 +4,7 @@
   "name": "Confusion matrix",
   "topic": "evaluation",
   "aka": [
-   "error matrix",
-   "contingency table"
+   "error matrix"
   ],
   "summary": "A table that counts a classifier's predictions against the true labels, so you can see exactly which kinds of mistakes it makes.",
   "body": "For a binary problem it has four cells: true positives (TP), false positives (FP), false negatives (FN) and true negatives (TN). Rows usually hold the true class and columns the predicted class, as in scikit-learn's `confusion_matrix`, but some tools flip this, so always read the axis labels.\n\nNearly every classification metric is built from these four counts: accuracy, precision, recall, specificity and F1. For k classes it becomes a k × k grid, and the large off-diagonal cells show which pairs of classes get confused.\n\nExample: a fraud model scores 1,000 transactions. 30 are fraud and it catches 24 (TP = 24, FN = 6). Of the 970 good ones it wrongly flags 16 (FP = 16, TN = 954). Precision is 24 / 40 = 0.60 and recall is 24 / 30 = 0.80.",
@@ -243,7 +242,7 @@
    "expected calibration error"
   ],
   "summary": "How well a model's predicted probabilities match real frequencies. Of all cases scored 0.8, about 80% should turn out positive.",
-  "body": "A model can rank cases well and still be badly calibrated. You check it with a reliability diagram: bin predictions by score, then plot each bin's mean predicted probability against its observed positive rate. A calibrated model sits on the diagonal. Expected calibration error (ECE) sums the gaps, weighted by bin size.\n\nCalibration matters whenever the probability itself is used: expected-cost decisions, ad bidding, risk scores shown to clinicians, or combining models.\n\nFixes are fitted on held-out data: Platt scaling (a logistic regression on the scores), isotonic regression, or temperature scaling for neural networks. Modern deep networks are often overconfident, and oversampling or class weights push probabilities away from real rates.\n\nExample: a credit model's cases scored between 0.10 and 0.20 average a prediction of 0.15, but 30% of them default. The model underestimates risk in that band.",
+  "body": "A model can rank cases well and still be badly calibrated. You check it with a reliability diagram: bin predictions by score, then plot each bin's mean predicted probability against its observed positive rate. A calibrated model sits on the diagonal. Expected calibration error (ECE) averages the absolute gaps, weighted by bin size.\n\nCalibration matters whenever the probability itself is used: expected-cost decisions, ad bidding, risk scores shown to clinicians, or combining models.\n\nFixes are fitted on held-out data: Platt scaling (a logistic regression on the scores), isotonic regression, or temperature scaling for neural networks. Modern deep networks are often overconfident, and oversampling or class weights push probabilities away from real rates.\n\nExample: a credit model's cases scored between 0.10 and 0.20 average a prediction of 0.15, but 30% of them default. The model underestimates risk in that band.",
   "mixup": "Good AUC does not mean good calibration. AUC only checks ranking, so halving every score leaves AUC unchanged while ruining calibration. Log loss and the Brier score do reward calibrated probabilities.",
   "related": [
    "log-loss",
@@ -262,7 +261,8 @@
    "logarithmic loss",
    "logloss",
    "binary cross-entropy",
-   "log-likelihood loss"
+   "log-likelihood loss",
+   "BCE"
   ],
   "summary": "The average negative log of the probability a model gave to the true label. Confident correct predictions cost little and confident wrong ones cost a lot.",
   "body": "For binary labels, log loss = −(1/N) Σ [y ln p + (1 − y) ln(1 − p)], where p is the predicted probability of the positive class. A perfect model scores 0, and there is no upper limit.\n\nThe penalty grows fast as a wrong prediction gets more confident. Giving the true class 0.9 costs −ln 0.9 ≈ 0.11. Giving it 0.01 costs −ln 0.01 ≈ 4.6. One very confident mistake can outweigh many good predictions, which is why log loss is sensitive to calibration. A useful baseline is the log loss of always predicting the base rate.\n\nExample: a click model predicts 0.8, 0.3 and 0.6 for three impressions with labels 1, 0 and 1. The losses are 0.22, 0.36 and 0.51, so log loss ≈ 0.36.",
@@ -341,7 +341,6 @@
   "aka": [
    "macro average",
    "micro average",
-   "weighted average",
    "macro-F1",
    "micro-F1",
    "macro F1",
@@ -499,8 +498,7 @@
    "ROUGE score",
    "ROUGE-L",
    "ROUGE-N",
-   "ROUGE-1",
-   "n-gram overlap"
+   "ROUGE-1"
   ],
   "summary": "Two families of metrics that score generated text by its n-gram overlap with reference texts. BLEU is precision-based and ROUGE is recall-oriented.",
   "body": "BLEU, built for machine translation, computes clipped n-gram precision for n = 1 to 4, takes their geometric mean, and multiplies by a brevity penalty so very short outputs cannot score well. It is usually reported over a whole corpus.\n\nROUGE, built for summarization, measures how much of the reference appears in the output. ROUGE-N counts overlapping n-grams and ROUGE-L uses the longest common subsequence. Most tools report ROUGE as an F-measure as well as recall.\n\nBoth are cheap and reproducible but reward surface wording. \"The meeting was cancelled\" and \"They called off the meeting\" mean the same yet share few n-grams. For open-ended LLM output, teams pair them with human review, semantic similarity or LLM-as-judge.\n\nExample: the output \"the cat sat on the mat\" against the reference \"the cat is on the mat\" matches 5 of its 6 words, so unigram precision is 5/6 ≈ 0.83.",

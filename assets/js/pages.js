@@ -61,7 +61,7 @@ export function renderConcept(ctx, id) {
     <header class="concept-head">
       <p class="concept-topic">${escapeHtml(topic)}</p>
       <h2 id="concept-name" tabindex="-1">${escapeHtml(c.name)}</h2>
-      ${c.aka?.length ? `<p class="aka">Also called ${c.aka.map(escapeHtml).join(', ')}</p>` : ''}
+      ${c.aka?.length ? `<p class="aka">Other names and variants: ${c.aka.map(escapeHtml).join(', ')}</p>` : ''}
       <button type="button" class="btn ${saved ? '' : 'quiet'} save-btn" data-act="save-concept" aria-pressed="${saved}">
         ${ctx.icon(saved ? 'bookmarkFilled' : 'bookmark')}<span>${saved ? 'Saved' : 'Save for later'}</span></button>
     </header>

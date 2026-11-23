@@ -4,7 +4,6 @@
   "name": "Data drift",
   "topic": "mlops",
   "aka": [
-   "covariate shift",
    "feature drift",
    "input drift",
    "distribution drift",
@@ -111,7 +110,6 @@
    "reproducible ML",
    "reproducible training",
    "determinism",
-   "lineage",
    "data versioning"
   ],
   "summary": "Being able to rebuild the same model, or explain any difference, from recorded code, data, configuration and environment.",
@@ -304,7 +302,6 @@
   "aka": [
    "LLM monitoring",
    "LLM tracing",
-   "LLMOps",
    "AI observability",
    "trace logging"
   ],
@@ -326,9 +323,7 @@
   "aka": [
    "SLO",
    "SLI",
-   "SLA",
    "service level indicator",
-   "service level agreement",
    "error budget"
   ],
   "summary": "A target for how well a service must perform over a time window, such as 99.9% of requests answered within 300 ms over 30 days.",

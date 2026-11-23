@@ -122,7 +122,7 @@
    "RankNet"
   ],
   "summary": "Training a model to order a list of items by relevance for a query or user, optimizing the quality of the ordering rather than each prediction on its own.",
-  "body": "There are three main approaches. Pointwise treats each item alone and predicts a score or label, such as click probability, with ordinary regression or classification. Pairwise learns which of two items should rank higher, with a loss on pairs, as in RankNet. Listwise uses a loss over the whole list that is tied to a ranking metric such as NDCG, as in LambdaMART and softmax-based list losses.\n\nRanking metrics care most about the top positions, which pointwise losses treat no differently from the rest. Pairwise and listwise methods focus learning on the order.\n\nTraining data comes from human relevance grades or from clicks, which must be corrected for position bias.\n\nExample: a help-centre search has 50 candidate articles for \"reset router password\". A pairwise model learns from clicks that the official setup guide should beat an old forum thread, and the list is sorted by its scores.",
+  "body": "There are three main approaches. Pointwise scores each item alone, such as predicting click probability with ordinary regression or classification. Pairwise learns which of two items should rank higher, with a loss on pairs, as in RankNet. Listwise uses a loss over the whole list, such as a softmax over the list's scores. LambdaMART, a common gradient-boosted ranker, is usually described as pairwise with a listwise target. Its gradients come from pairs, each weighted by how much swapping the two items would change a metric such as NDCG.\n\nRanking metrics care most about the top positions, which pointwise losses treat like any other. Metric-weighted methods such as LambdaMART put the most effort into the top of the list.\n\nTraining data comes from human relevance grades or from clicks, which must be corrected for position bias.\n\nExample: a help-centre search has 50 candidate articles for \"reset router password\". A pairwise model learns from clicks that the official setup guide should beat an old forum thread, and the list is sorted by its scores.",
   "mixup": "Better pointwise accuracy does not guarantee a better ranking. A model can predict click rates well on average yet order the top few items poorly. Judge ranking models with ranking metrics such as NDCG or MRR.",
   "related": [
    "ndcg",
@@ -212,7 +212,7 @@
    "QPS estimation"
   ],
   "summary": "Rough calculations of the traffic, compute, memory and storage a system will need, used to size hardware and spot bottlenecks before building.",
-  "body": "Start from users and their behaviour, convert to requests per second, then to resources. Average QPS = daily requests / 86,400. Plan for the peak, often 2 to 5 times the average, then add headroom. Divide by what one server or GPU can handle, using throughput measured at your latency target.\n\nFor LLMs, estimate tokens, not just requests: QPS × (input + output tokens), plus memory for weights and the KV cache.\n\nExample: 10 million daily users each send 5 requests, so 50 million requests a day, about 580 QPS on average. With a peak of 3 times, that is about 1,740 QPS. If one GPU replica handles 60 QPS within the latency target, you need 1,740 / 60 = 29 replicas, then a few more for redundancy, say 35.\n\nStorage works the same way: 50 million logged requests at 2 KB each is 100 GB per day.\n\nWrite down every assumption. Interviewers care more about clear, checkable steps than exact numbers.",
+  "body": "Start from users and their behaviour, convert to requests per second, then to resources. Average QPS = daily requests / 86,400. Plan for the peak, which as a rule of thumb is often 2 to 5 times the average, then add headroom. Divide by what one server or GPU can handle, using throughput measured at your latency target.\n\nFor LLMs, estimate tokens, not just requests: QPS × (input + output tokens), plus memory for weights and the KV cache.\n\nExample: 10 million daily users each send 5 requests, so 50 million requests a day, about 580 QPS on average. With a peak of 3 times, that is about 1,740 QPS. If one GPU replica handles 60 QPS within the latency target, you need 1,740 / 60 = 29 replicas, then a few more for redundancy, say 35.\n\nStorage works the same way: 50 million logged requests at 2 KB each is 100 GB per day.\n\nWrite down every assumption. Interviewers care more about clear, checkable steps than exact numbers.",
   "mixup": "Sizing for average load is a classic mistake. Peaks and bursts decide how much capacity you need, and running servers close to 100% utilization makes queueing delay, and so latency, rise sharply.",
   "related": [
    "throughput-vs-latency",
@@ -248,7 +248,6 @@
   "name": "Model cascade",
   "topic": "design",
   "aka": [
-   "cascade",
    "cascading models",
    "LLM cascade",
    "tiered models",

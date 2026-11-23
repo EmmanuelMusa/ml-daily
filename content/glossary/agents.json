@@ -5,10 +5,7 @@
   "topic": "agents",
   "aka": [
    "agentic loop",
-   "LLM agent",
-   "AI agent",
-   "tool-use loop",
-   "agent"
+   "tool-use loop"
   ],
   "summary": "The cycle in which a model picks an action, your code runs it, and the result goes back to the model, repeating until the task is done.",
   "body": "An agent is a model using tools in a loop. Each turn:\n- The model sees the goal, the history so far and the available tools.\n- It either gives a final answer or asks to call a tool with some arguments.\n- Your code runs the tool and appends the result to the history.\n- The loop repeats.\n\nThe model chooses the path at run time, which is what makes it an agent and not a fixed pipeline. Your code owns the loop, so it also owns the stop conditions: a final answer, a maximum number of steps, a budget on tokens or time, or a human stopping it.\n\nExample: \"Find out why order 812 was refunded twice.\" Step 1 calls `get_order(812)`. Step 2 calls `list_refunds(812)` and sees two refunds 3 seconds apart. Step 3 pulls logs for that window and finds a retried payment call. The model then writes its answer and the loop ends.",
@@ -28,9 +25,6 @@
   "topic": "agents",
   "aka": [
    "workflow or agent",
-   "agentic workflow",
-   "deterministic workflow",
-   "LLM pipeline",
    "chain vs agent"
   ],
   "summary": "A workflow runs LLM calls along a path fixed in code, while an agent lets the model choose its own next steps at run time.",
@@ -51,8 +45,7 @@
    "function calling",
    "tool use",
    "tool calls",
-   "function call",
-   "tools"
+   "function call"
   ],
   "summary": "Letting a model ask your code to run a named function with arguments it fills in, then feeding the result back to it.",
   "body": "You describe each tool to the model with a name, a description and a JSON Schema for its parameters. When the model decides a tool would help, it outputs a structured call such as `get_order_status({\"order_id\": \"A123\"})` instead of plain text. Your code validates the arguments, runs the function, and returns the result as a new message. The model then continues, perhaps calling more tools.\n\nThis is how LLMs reach live data and take actions: search, databases, calculators, ticket systems and code execution. Tool definitions sit in the prompt, so they use context tokens.\n\nExample: on 23 November a user asks \"Is my order late?\" The model calls the order status tool, gets back `{\"eta\": \"2026-11-20\", \"status\": \"in_transit\"}`, and replies that the order is 3 days late and still in transit.\n\nTreat the arguments the model produces as untrusted input, just like anything a user types.",
@@ -115,10 +108,7 @@
   "topic": "agents",
   "aka": [
    "plan-then-execute",
-   "planner-executor",
-   "plan and solve",
-   "planning agent",
-   "planner"
+   "planner-executor"
   ],
   "summary": "An agent design where one step writes a whole plan up front and later steps carry out its parts, re-planning when needed.",
   "body": "A planner, usually a strong model, turns the goal into an ordered list of steps. An executor, which can be a cheaper model or plain code, carries out each step with tools. When steps finish or fail, a re-planning step can revise what remains.\n\nCompared with a ReAct loop that decides one step at a time, planning first has several benefits:\n- Long tasks stay on track, since the whole goal is considered once.\n- Independent steps can run in parallel.\n- It can cost less, since the big model is not called at every step.\n- A human can review the plan before anything runs.\n\nThe risk is a plan built on wrong assumptions. If step 2 reveals something new and nothing triggers a re-plan, later steps do the wrong thing.\n\nExample: \"Compare our churn in Q2 and Q3 and draft a summary.\" Plan: query Q2 churn, query Q3 churn, compute the change, draft the summary. The first two steps run in parallel.",
@@ -160,9 +150,6 @@
    "multi-agent",
    "multi-agent architecture",
    "orchestrator-worker",
-   "supervisor agent",
-   "subagents",
-   "sub-agents",
    "MAS"
   ],
   "summary": "A system in which several model-driven agents, each with its own role, context or tools, work together on a task under some form of coordination.",
@@ -205,11 +192,8 @@
   "name": "Agent memory",
   "topic": "agents",
   "aka": [
-   "long-term memory",
-   "short-term memory",
-   "working memory",
    "conversation memory",
-   "agent state"
+   "LLM memory"
   ],
   "summary": "How an agent keeps information beyond one model call: the working history in its context, plus longer-term stores it can save to and read from.",
   "body": "A model has no memory between calls. Everything it should know must be in the context window each time. Agents build memory on top of that:\n- **Short-term or working memory**: the current conversation and tool results, kept in context. When it grows too long, older parts are summarized or dropped.\n- **Long-term memory**: facts saved outside the model, such as user preferences, past decisions or notes on a long task, kept in files, a database or a vector store and retrieved when relevant.\n\nThe hard parts are deciding what is worth saving, keeping it correct when facts change, and retrieving the right piece later without flooding the context.\n\nExample: a travel assistant saves \"prefers aisle seats and vegetarian meals\" after one chat. A month later it retrieves that note while booking and does not ask again.\n\nMemory carries risk too. A wrong or injected memory persists and is trusted in later sessions, and stored personal data needs consent and deletion rules.",
@@ -229,9 +213,7 @@
   "aka": [
    "context management",
    "context window management",
-   "context curation",
-   "context compaction",
-   "compaction"
+   "context curation"
   ],
   "summary": "Deciding what information goes into a model's context window at each step, and in what form, so it has what it needs and little else.",
   "body": "Context engineering widens prompt engineering from wording one prompt to managing everything the model sees across many steps: system instructions, tool definitions, retrieved documents, memory, conversation history and tool results.\n\nIt matters because context is limited and costs money, and models tend to use information less reliably as the context grows long and cluttered. Irrelevant text distracts, and details buried in the middle of a long context can be missed.\n\nCommon techniques:\n- Retrieve information just in time instead of loading everything up front.\n- Trim or summarize old tool results, keeping IDs and conclusions. This is often called compaction.\n- Let the agent keep notes in a file it can re-read.\n- Give sub-agents clean contexts and take back only their summaries.\n\nExample: after 40 steps, an agent's context holds 120,000 tokens, mostly raw logs it has already read. Replacing those logs with a 2,000-token summary of findings keeps the key facts and frees room for the next steps.",
@@ -252,9 +234,7 @@
    "HITL",
    "human approval",
    "human review",
-   "human oversight",
-   "human-on-the-loop",
-   "approval gate"
+   "human oversight"
   ],
   "summary": "Building points into an AI system where a person reviews, approves, corrects or takes over before or after the system acts.",
   "body": "Not every decision should be fully automated. Human-in-the-loop design puts a person at the points where a mistake is costly, hard to undo or legally sensitive.\n\nCommon forms:\n- **Approval gates**: the agent proposes an action, such as sending money or deleting data, and waits for a yes.\n- **Confidence routing**: low-confidence predictions go to a review queue.\n- **Escalation**: a bot hands the conversation to a person.\n- **Feedback**: human corrections become labels for evaluation and training.\n\nThe design questions are which actions need approval, what the reviewer sees so they can judge quickly, and how many cases the review team can actually handle.\n\nExample: an insurance claims model auto-approves claims under $500 when its confidence is above 0.95. Everything else, about 15% of claims, goes to an adjuster along with the model's reasons.\n\nWatch for automation bias. Reviewers who approve 99% of items start clicking yes without reading.",
@@ -297,8 +277,7 @@
    "sandbox",
    "sandboxed execution",
    "isolated execution",
-   "code sandbox",
-   "container isolation"
+   "code sandbox"
   ],
   "summary": "Running untrusted actions, such as code a model wrote, in an isolated environment that limits what they can read, change or reach.",
   "body": "Agents often run code or shell commands that a model wrote. That code might be buggy, or steered by injected instructions. A sandbox runs it where damage cannot spread.\n\nTypical limits:\n- Isolation through containers, lightweight virtual machines or WebAssembly runtimes, with a separate filesystem.\n- No network access, or only an allow list of hosts.\n- No secrets or production credentials inside.\n- CPU, memory and time caps, so an endless loop gets killed.\n- A fresh, throwaway environment for each task.\n\nExample: a data analysis agent writes Python to read an uploaded CSV. It runs in a container with only that file mounted, no network and a 60-second limit. If the code tries to read `~/.ssh` or contact an outside server, it simply fails.\n\nSandboxing pairs with least privilege. One limits where the code runs, and the other limits which credentials and tools it holds.",
@@ -316,9 +295,7 @@
   "topic": "agents",
   "aka": [
    "idempotent",
-   "idempotency key",
-   "idempotent operation",
-   "safe retries"
+   "idempotent operation"
   ],
   "summary": "An operation is idempotent if doing it twice has the same effect as doing it once, which makes retries safe.",
   "body": "Networks fail in ways where you cannot tell whether a request went through. The call may have succeeded and only the reply was lost. Retry a non-idempotent action such as \"charge $50\" and the customer may pay twice.\n\nCommon ways to make actions idempotent:\n- **Idempotency keys**: the client sends a unique ID with the request and the server records it. A repeat with the same key returns the first result instead of acting again.\n- **Set, not add**: `set balance = 100` is idempotent, `add 10 to balance` is not.\n- **Check before acting**: create the ticket only if none exists with this external ID.\n\nThis matters for agents because they retry, repeat steps after errors, and sometimes call the same tool twice by mistake.\n\nExample: an agent calls `issue_refund(order_id=812, key=\"r-812-1\")`, the call times out, and it retries. The payment service sees key r-812-1 again and returns the original refund instead of paying out a second time.",
@@ -336,10 +313,7 @@
   "topic": "agents",
   "aka": [
    "trajectory eval",
-   "agent evaluation",
-   "trace evaluation",
-   "process evaluation",
-   "tool-call evaluation"
+   "trace evaluation"
   ],
   "summary": "Judging an agent on the path it took, its sequence of steps and tool calls, not only on whether the final answer was right.",
   "body": "An agent can reach the right answer by a bad path, with 30 wasted calls, a risky action or plain luck. It can also follow a sensible path and stumble at the last step. Looking only at the final output hides both.\n\nTrajectory evaluation inspects the full trace. Typical checks:\n- Did it call the required tools, with valid arguments?\n- Did it avoid forbidden actions, such as deleting data?\n- How many steps, tokens and seconds did it use?\n- Did it recover from tool errors?\n- Does the sequence match a reference path, exactly, in order, or as a set of required steps?\n\nThe outcome still matters most. Many valid paths can solve a task, so demanding one exact path punishes good alternatives.\n\nExample: two agent versions both solve 85 of 100 tasks. Version B averages 6 tool calls against A's 14 and never calls `delete_record`. The traces show B is clearly the better choice, which the success rate alone could not.",
@@ -359,7 +333,6 @@
   "aka": [
    "error compounding",
    "cascading errors",
-   "error propagation",
    "error accumulation"
   ],
   "summary": "In a multi-step agent, small per-step error rates multiply, so the chance of finishing a long task with no mistakes falls quickly.",

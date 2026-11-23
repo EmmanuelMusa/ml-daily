@@ -10,11 +10,10 @@
    "byte-pair encoding",
    "subword tokenization",
    "WordPiece",
-   "SentencePiece",
-   "token count"
+   "SentencePiece"
   ],
   "summary": "Splitting text into the units a language model actually reads, usually subword pieces from a fixed vocabulary, each mapped to an integer ID.",
-  "body": "Models do not see characters or words. A tokenizer maps text to a list of token IDs from a vocabulary of tens of thousands to a few hundred thousand entries. Most use subword methods such as byte-pair encoding (BPE), which starts from bytes or characters and repeatedly merges the most frequent adjacent pair. Common words become one token and rare words split into pieces, so no input is ever out of vocabulary.\n\nTokens are the unit of cost, latency and context limits. In English a token averages roughly three quarters of a word, but code, numbers and many non-English languages need more tokens for the same content. Tokenization also explains odd failures such as miscounting the letters in a word, since the model sees chunks rather than letters.\n\nExample: 'unbelievable' might become 'un', 'believ' and 'able'. A tokenizer must match its model exactly, since the IDs mean nothing to any other model.",
+  "body": "Models do not see characters or words. A tokenizer maps text to a list of token IDs from a vocabulary of tens of thousands to a few hundred thousand entries. Most use subword methods such as byte-pair encoding (BPE), which starts from bytes or characters and repeatedly merges the most frequent adjacent pair. Common words become one token and rare words split into pieces, so no input is ever out of vocabulary.\n\nTokens are the unit of cost, latency and context limits. A common rule of thumb is that an English token averages about three quarters of a word, but code, numbers and many non-English languages need more tokens for the same content. Tokenization also explains odd failures such as miscounting the letters in a word, since the model sees chunks rather than letters.\n\nExample: 'unbelievable' might become 'un', 'believ' and 'able'. A tokenizer must match its model exactly, since the IDs mean nothing to any other model.",
   "mixup": "Token counts are not word counts. In English, tokens usually run about a third higher than words, and far higher for code or languages the tokenizer was not built around. Budgeting context or cost by words underestimates both.",
   "related": [
    "embedding",
@@ -101,7 +100,7 @@
   ],
   "summary": "Information about each token's position added to a transformer, because attention by itself ignores word order.",
   "body": "Attention treats its input as a set, so 'dog bites man' and 'man bites dog' would look the same without a position signal. The main approaches:\n\n- Sinusoidal: add fixed sine and cosine waves of different frequencies to each token embedding. Used in the original transformer.\n- Learned absolute: add a trained vector per position. Simple, but it cannot handle positions beyond the trained maximum.\n- Rotary (RoPE): rotate the query and key vectors by an angle that depends on position, so their dot product depends on the distance between the tokens. Widely used in modern LLMs.\n- ALiBi: add a penalty to attention scores that grows with distance.\n\nPosition handling is central to long-context work. Extending a model beyond its training length usually means rescaling RoPE frequencies and then fine-tuning on longer sequences.\n\nExample: with RoPE, the positional effect between tokens 5 and 8 is the same as between tokens 105 and 108, since only the gap of 3 matters.",
-  "mixup": "Absolute encodings tell the model where a token sits. Relative methods such as RoPE tell attention how far apart two tokens are. Relative methods cope better when the same text appears at different positions, which is why they now dominate.",
+  "mixup": "Absolute encodings tell the model where a token sits. Relative methods such as RoPE tell attention how far apart two tokens are. Relative methods cope better when the same text appears at different positions, which is one reason they are widely used.",
   "related": [
    "self-attention",
    "context-window",
@@ -115,13 +114,12 @@
   "topic": "llm",
   "aka": [
    "transformer layer",
-   "transformer",
    "decoder block",
    "encoder block",
    "feed-forward sublayer"
   ],
   "summary": "The repeated unit of a transformer: self-attention then a feed-forward network, each wrapped in normalization and a residual connection.",
-  "body": "A transformer is a stack of identical blocks. In the common pre-norm form, each block computes:\n\n- h = x + Attention(Norm(x))\n- out = h + FFN(Norm(h))\n\nAttention mixes information across tokens. The feed-forward network (FFN) is an MLP applied to each token separately, usually expanding the width about 4× and projecting back, often with a gated activation such as SwiGLU. The residual connections keep gradients flowing through dozens of layers, and the norms keep activations stable.\n\nIn a standard design the attention weights take about 4d² and the FFN about 8d², so the FFN holds about two thirds of each block.\n\nExample: with d = 1,024, one block has about 4 × 1,024² ≈ 4.2 million attention weights and 8 × 1,024² ≈ 8.4 million FFN weights, about 12.6 million in total. A 24-layer model then has roughly 300 million block parameters, before embeddings.",
+  "body": "A transformer is a stack of identical blocks. In the common pre-norm form, each block computes:\n\n- h = x + Attention(Norm(x))\n- out = h + FFN(Norm(h))\n\nAttention mixes information across tokens. The feed-forward network (FFN) is an MLP applied to each token separately, usually expanding the width about 4× and projecting back. Gated versions such as SwiGLU use three matrices with a smaller expansion, about 8/3×, which keeps a similar parameter count. The residual connections keep gradients flowing through dozens of layers, and the norms keep activations stable.\n\nIn a standard design the attention weights take about 4d² and the FFN about 8d², so the FFN holds about two thirds of each block.\n\nExample: with d = 1,024, one block has about 4 × 1,024² ≈ 4.2 million attention weights and 8 × 1,024² ≈ 8.4 million FFN weights, about 12.6 million in total. A 24-layer model then has roughly 300 million block parameters, before embeddings.",
   "mixup": "Attention gets the attention, but it is not where most of the weights are. The feed-forward layers hold most of the parameters, and they are where mixture-of-experts designs add capacity.",
   "related": [
    "self-attention",
@@ -142,8 +140,6 @@
    "encoder-decoder",
    "seq2seq",
    "sequence-to-sequence",
-   "BERT-style",
-   "GPT-style",
    "cross-attention"
   ],
   "summary": "The three transformer layouts: encoders read text with full attention, decoders generate left to right, and encoder-decoders read an input then generate an output.",
@@ -211,7 +207,7 @@
    "pretrained model"
   ],
   "summary": "The first and largest stage of training, where a model learns general knowledge from huge amounts of unlabelled data with a self-supervised objective.",
-  "body": "For an LLM, pretraining means next-token prediction over trillions of tokens of web text, books, code and other sources. No human labels are needed, since the text supplies its own targets. This stage uses the vast majority of the total training compute.\n\nThe result is a base model. It continues text well and holds broad knowledge, but it does not reliably follow instructions or hold a conversation. Post-training stages such as supervised fine-tuning and preference tuning shape that raw ability into an assistant.\n\nData quality matters as much as size. Pipelines filter low-quality pages, remove duplicates, strip personal data and balance the mix of domains. Deduplication also reduces memorization and helps keep benchmark test sets out of the training data.\n\nExample: asked 'What is the capital of Peru?', a base model may carry on with more quiz questions instead of answering, because that is what similar text on the web looks like.",
+  "body": "For an LLM, pretraining means next-token prediction over trillions of tokens of web text, books, code and other sources. No human labels are needed, since the text supplies its own targets. This stage usually takes most of the total training compute.\n\nThe result is a base model. It continues text well and holds broad knowledge, but it does not reliably follow instructions or hold a conversation. Post-training stages such as supervised fine-tuning and preference tuning shape that raw ability into an assistant.\n\nData quality matters as much as size. Pipelines filter low-quality pages, remove duplicates, strip personal data and balance the mix of domains. Deduplication also reduces memorization and helps keep benchmark test sets out of the training data.\n\nExample: asked 'What is the capital of Peru?', a base model may carry on with more quiz questions instead of answering, because that is what similar text on the web looks like.",
   "mixup": "Applied teams rarely pretrain their own LLM. In most jobs, training a model means fine-tuning or prompting an existing pretrained one. Pretraining from scratch needs data and compute far beyond most projects.",
   "related": [
    "next-token-prediction",
@@ -228,12 +224,10 @@
   "aka": [
    "SFT",
    "instruction tuning",
-   "instruction fine-tuning",
-   "fine-tuning",
-   "full fine-tuning"
+   "instruction fine-tuning"
   ],
   "summary": "Further training a pretrained model on example prompts paired with good responses, so it learns to follow instructions or a specific task format.",
-  "body": "SFT uses the same next-token loss as pretraining, but on a curated set of (prompt, response) pairs. Usually the loss is computed only on the response tokens, so the model learns to produce answers rather than to imitate prompts.\n\nIt is the step that turns a base model into an assistant. In applied work it is how teams teach a model a narrow skill: a house writing style, a fixed output schema, a domain's jargon, or a small model copying a larger one's outputs.\n\nQuality beats quantity. A few thousand clean, varied, correct examples often do more than a large noisy set. A low learning rate and few epochs are typical, which also limits forgetting of general skills. Parameter-efficient methods such as LoRA make it affordable on a single GPU.\n\nExample: 3,000 support tickets paired with the best agent replies, formatted in the model's chat template, used to train a model to answer in the team's tone.",
+  "body": "SFT uses the same next-token loss as pretraining, but on a curated set of (prompt, response) pairs. Usually the loss is computed only on the response tokens, so the model learns to produce answers rather than to imitate prompts.\n\nIt is the step that turns a base model into an assistant. In applied work it is how teams teach a model a narrow skill: a house writing style, a fixed output schema, a domain's jargon, or a small model copying a larger one's outputs.\n\nQuality beats quantity. A few thousand clean, varied, correct examples often do more than a large noisy set. A low learning rate and few epochs are typical, which also limits forgetting of general skills. Parameter-efficient methods such as LoRA can make it fit on a single GPU for small and mid-sized models.\n\nExample: 3,000 support tickets paired with the best agent replies, formatted in the model's chat template, used to train a model to answer in the team's tone.",
   "mixup": "Fine-tuning teaches behaviour and format well but is a poor way to add facts that change. For knowledge that must stay current or be cited, retrieval is usually the better tool.",
   "related": [
    "pretraining",
@@ -251,8 +245,6 @@
    "reinforcement learning from human feedback",
    "reward model",
    "reward modeling",
-   "PPO",
-   "preference tuning",
    "RLAIF"
   ],
   "summary": "Training a model to produce answers people prefer, by learning a reward model from human comparisons and then optimizing the model against it.",
@@ -273,9 +265,7 @@
   "topic": "llm",
   "aka": [
    "DPO",
-   "direct preference optimisation",
-   "preference optimization",
-   "preference pairs"
+   "direct preference optimisation"
   ],
   "summary": "A way to tune a model on preference pairs directly with a classification-style loss, without training a separate reward model or running reinforcement learning.",
   "body": "DPO uses the same data as RLHF: prompts x, each with a chosen answer y_w and a rejected answer y_l. It also keeps a frozen reference model π_ref, usually the SFT model. The loss is\n\nL = −log σ( β [ log(π(y_w|x) / π_ref(y_w|x)) − log(π(y_l|x) / π_ref(y_l|x)) ] )\n\nHere σ is the sigmoid. In words, raise the probability of the chosen answer relative to the reference, lower the rejected one, and let β control how far the model may move from the reference.\n\nThe derivation shows this targets the same KL-constrained objective as RLHF, with the reward folded into the policy's own log-probabilities. In practice it is simpler and more stable: ordinary supervised training, with no sampling during training and no reward model to serve.\n\nExample: a support team collects 5,000 pairs where agents marked one draft reply as better, and trains with β = 0.1.\n\nIt learns only from fixed pairs, so it cannot explore new answers the way online RL can.",
@@ -294,9 +284,6 @@
   "aka": [
    "low-rank adaptation",
    "QLoRA",
-   "adapters",
-   "PEFT",
-   "parameter-efficient fine-tuning",
    "LoRA adapter"
   ],
   "summary": "A fine-tuning method that freezes the original weights and trains a small low-rank update added to selected weight matrices.",
@@ -317,8 +304,7 @@
   "aka": [
    "catastrophic interference",
    "forgetting",
-   "capability regression",
-   "replay"
+   "capability regression"
   ],
   "summary": "When training a model on a new task makes it lose skills or knowledge it had before.",
   "body": "Fine-tuning moves the same weights that stored earlier abilities. If the new data is narrow and training is aggressive, the model can get very good at the new task while getting worse at everything else.\n\nIn applied work it shows up as regressions: a model fine-tuned on legal summaries stops following general instructions well, or a model tuned for a strict JSON format loses some reasoning quality.\n\nWays to limit it:\n\n- A lower learning rate and fewer epochs.\n- Mixing some general data in with the task data, often called replay.\n- Parameter-efficient methods such as LoRA, which change far fewer weights.\n- Penalizing movement away from the original weights, as elastic weight consolidation does for the weights that mattered most.\n\nThe check is simple: keep a fixed set of general evaluations and run it before and after every fine-tune, not just the task metric.\n\nExample: after SFT on 10,000 SQL queries, scores on a general reasoning benchmark drop by several points.",
@@ -400,7 +386,6 @@
   "aka": [
    "ICL",
    "few-shot prompting",
-   "few-shot learning",
    "zero-shot prompting",
    "one-shot prompting",
    "few-shot examples"
@@ -424,8 +409,7 @@
    "chain-of-thought prompting",
    "step-by-step reasoning",
    "think step by step",
-   "reasoning tokens",
-   "reasoning models"
+   "reasoning tokens"
   ],
   "summary": "Having a model write out intermediate reasoning steps before its final answer, which tends to improve multi-step problems.",
   "body": "A model generates one token at a time, and each token gets a fixed amount of computation. Writing out intermediate steps gives the model more tokens to work through a problem, and each step can build on the ones already written.\n\nIt can be triggered by an instruction such as 'work through this step by step', by few-shot examples that show worked reasoning, or it can be built into a model trained to reason before answering. Gains are largest on arithmetic, logic, planning and multi-hop questions, and small or absent on simple lookups.\n\nThe cost is more output tokens, so more latency and spend. In production, ask for the reasoning in a separate field or section and parse out only the final answer.\n\nExample: 'A crate holds 12 boxes and each box holds 8 parts. How many parts are in 7 crates?' Writing 12 × 8 = 96, then 96 × 7 = 672, is less error-prone than jumping straight to a number.",
@@ -467,7 +451,6 @@
    "neural scaling laws",
    "compute-optimal scaling",
    "compute-optimal training",
-   "Chinchilla scaling",
    "power law scaling"
   ],
   "summary": "Empirical rules showing that model loss falls smoothly and predictably, as a power law, when parameters, data and compute grow.",
@@ -490,7 +473,6 @@
    "sparse MoE",
    "expert routing",
    "gating network",
-   "router",
    "top-k routing"
   ],
   "summary": "A layer with many parallel expert networks where a router sends each token to only a few of them, adding capacity without adding much compute per token.",

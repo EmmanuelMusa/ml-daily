@@ -29,9 +29,9 @@
 <path d="M200,16 L210,26 M210,16 L200,26" class="s-ink s-thick"/>
 <text x="216" y="25" class="t-small">centroid (k = 3)</text>
 <text x="200" y="52" class="t-small">1. Assign each point</text>
-<text x="212" y="65" class="t-small">to its nearest centroid</text>
+<text x="208" y="65" class="t-small">to its nearest centroid</text>
 <text x="200" y="88" class="t-small">2. Move each centroid</text>
-<text x="212" y="101" class="t-small">to the mean of its points</text>
+<text x="208" y="101" class="t-small">to the mean of its points</text>
 <text x="200" y="124" class="t-small">3. Repeat until</text>
-<text x="212" y="137" class="t-small">nothing moves</text>
+<text x="208" y="137" class="t-small">nothing moves</text>
 </svg>

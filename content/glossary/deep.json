@@ -75,9 +75,7 @@
    "categorical cross-entropy",
    "CE loss",
    "negative log-likelihood",
-   "NLL loss",
-   "binary cross-entropy",
-   "BCE"
+   "NLL loss"
   ],
   "summary": "The standard classification loss: the negative log of the probability the model gave to the correct class.",
   "body": "For one example with true class y and predicted probabilities p, the loss is −log p_y. With one-hot or soft targets t it is −Σ tᵢ log pᵢ. The binary case is −[y log p + (1 − y) log(1 − p)]. Averaged over a dataset, it is the negative log-likelihood of the labels.\n\nIt punishes confident mistakes hard. Giving the true class 0.9 costs −ln 0.9 ≈ 0.105. Giving it 0.01 costs −ln 0.01 ≈ 4.6. Paired with softmax, its gradient with respect to the logits is simply p − t, which stays large when the model is badly wrong. That is why it trains much better than squared error on probabilities.\n\nMany framework loss functions take raw logits and apply log-softmax inside for numerical stability, so check the docs before applying softmax yourself. Language models use the same loss on every next token.",
@@ -101,7 +99,7 @@
    "reverse-mode automatic differentiation"
   ],
   "summary": "The algorithm that computes the gradient of the loss with respect to every weight by applying the chain rule backwards through the network.",
-  "body": "Training has two passes. The forward pass computes each layer's output and the loss, storing intermediate activations. The backward pass starts from ∂L/∂output and moves layer by layer toward the input. At each layer it uses the chain rule to get the gradient for that layer's weights and the gradient to pass further back. An optimizer such as SGD or Adam then uses those gradients to update the weights.\n\nThe backward pass costs roughly twice the forward pass, and the stored activations are a main driver of training memory. That is why gradient checkpointing trades extra recomputation for lower memory.\n\nExample: for y = w·x with loss L = (y − t)², the gradient is ∂L/∂w = 2(y − t)·x. With w = 2, x = 3 and t = 5, the prediction is y = 6 and the gradient is 2 × 1 × 3 = 6.",
+  "body": "Training has two passes. The forward pass computes each layer's output and the loss, storing intermediate activations. The backward pass starts from ∂L/∂output and moves layer by layer toward the input. At each layer it uses the chain rule to get the gradient for that layer's weights and the gradient to pass further back. An optimizer such as SGD or Adam then uses those gradients to update the weights.\n\nAs a rule of thumb, the backward pass costs about twice the forward pass, and the stored activations are a main driver of training memory. That is why gradient checkpointing trades extra recomputation for lower memory.\n\nExample: for y = w·x with loss L = (y − t)², the gradient is ∂L/∂w = 2(y − t)·x. With w = 2, x = 3 and t = 5, the prediction is y = 6 and the gradient is 2 × 1 × 3 = 6.",
   "mixup": "Backpropagation only computes gradients. Gradient descent, or another optimizer, is the separate step that uses them to change the weights. Saying backprop updates the weights blurs the two.",
   "related": [
    "chain-rule",
@@ -143,7 +141,7 @@
    "clipping by value"
   ],
   "summary": "Capping the size of the gradient before each update so one bad batch cannot throw the weights far off course.",
-  "body": "The common form is clipping by global norm. Compute the L2 norm g of all gradients together. If g is above a threshold c, scale every gradient by c / g. The direction stays the same and only the step length shrinks. Clipping by value instead caps each element at ±c, which can change the direction.\n\nIt guards against exploding gradients, which show up as sudden loss spikes or NaNs. It is standard when training RNNs and transformers, and a threshold of 1.0 is a common default.\n\nExample: the global gradient norm is 8 and the threshold is 1. Every gradient is multiplied by 1 / 8 = 0.125, so the total norm becomes 1.\n\nLogging the norm before clipping is a cheap health check. If clipping fires on almost every step, the learning rate or the data probably needs a look.",
+  "body": "The common form is clipping by global norm. Compute the L2 norm g of all gradients together. If g is above a threshold c, scale every gradient by c / g. The direction stays the same and only the step length shrinks. Clipping by value instead caps each element at ±c, which can change the direction.\n\nIt guards against exploding gradients, which show up as sudden loss spikes or NaNs. It is standard when training RNNs and transformers, and as a rule of thumb a threshold of 1.0 is a common starting point.\n\nExample: the global gradient norm is 8 and the threshold is 1. Every gradient is multiplied by 1 / 8 = 0.125, so the total norm becomes 1.\n\nLogging the norm before clipping is a cheap health check. If clipping fires on almost every step, the learning rate or the data probably needs a look.",
   "mixup": "Clipping limits how big a step can be. It does nothing for vanishing gradients, which are too small rather than too large. Residual connections, normalization and good initialization address that problem.",
   "related": [
    "vanishing-gradients",
@@ -157,7 +155,6 @@
   "name": "Weight initialization",
   "topic": "deep",
   "aka": [
-   "initialization",
    "weight init",
    "Xavier initialization",
    "Glorot initialization",
@@ -224,7 +221,7 @@
    "inverted dropout"
   ],
   "summary": "A regularizer that randomly zeroes a fraction of activations during training so the network cannot rely on any single unit.",
-  "body": "With dropout rate p, each activation is set to zero with probability p on every training step. In the usual inverted dropout, the kept activations are divided by (1 − p) so the expected value stays the same. At inference dropout is switched off and every unit is used, with no rescaling needed.\n\nBecause a different random subnetwork trains on each step, units cannot co-adapt, which reduces overfitting. It acts like cheaply averaging many thinned networks. Typical rates are 0.1 to 0.5. Large pretrained LLMs often use little or no dropout, since they see so much data that overfitting is less of a concern.\n\nExample: with p = 0.2, an activation of 1.0 becomes either 0 or 1.0 / 0.8 = 1.25 during training, and stays 1.0 at inference.\n\nForgetting to switch to evaluation mode leaves dropout on, which makes predictions noisy and different on every call.",
+  "body": "With dropout rate p, each activation is set to zero with probability p on every training step. In the usual inverted dropout, the kept activations are divided by (1 − p) so the expected value stays the same. At inference dropout is switched off and every unit is used, with no rescaling needed.\n\nBecause a different random subnetwork trains on each step, units cannot co-adapt, which reduces overfitting. It acts like cheaply averaging many thinned networks. As a rule of thumb, rates of 0.1 to 0.5 are typical. Large pretrained LLMs often use little or no dropout, since they see so much data that overfitting is less of a concern.\n\nExample: with p = 0.2, an activation of 1.0 becomes either 0 or 1.0 / 0.8 = 1.25 during training, and stays 1.0 at inference.\n\nForgetting to switch to evaluation mode leaves dropout on, which makes predictions noisy and different on every call.",
   "mixup": "The dropout rate is the probability of dropping a unit, not of keeping it. Some older code and papers used a keep probability instead, so a value of 0.8 can mean opposite things.",
   "related": [
    "regularization",
@@ -311,7 +308,7 @@
    "η"
   ],
   "summary": "The number that scales each gradient step, and usually the most important hyperparameter to tune.",
-  "body": "Gradient descent updates weights as w ← w − η·∇L, where η is the learning rate. Too small and training crawls or stalls. Too large and the loss bounces around, spikes or becomes NaN.\n\nThe right value depends on the optimizer, the batch size and the model. Adam-style optimizers often use values around 10⁻⁴ to 10⁻³ when training from scratch and smaller ones for fine-tuning, while SGD with momentum often uses larger values such as 0.1. Rather than guess, run a short sweep on a log scale (10⁻⁵, 3×10⁻⁵, 10⁻⁴ and so on) and pair the chosen peak with a schedule.\n\nExample: with a weight of 0.5, a gradient of 2 and η = 0.1, the new weight is 0.5 − 0.1 × 2 = 0.3.",
+  "body": "Gradient descent updates weights as w ← w − η·∇L, where η is the learning rate. Too small and training crawls or stalls. Too large and the loss bounces around, spikes or becomes NaN.\n\nThe right value depends on the optimizer, the batch size and the model. As rough rules of thumb, Adam-style optimizers often use values around 10⁻⁴ to 10⁻³ when training from scratch and smaller ones for fine-tuning, while SGD with momentum often uses larger values such as 0.1. Rather than guess, run a short sweep on a log scale (10⁻⁵, 3×10⁻⁵, 10⁻⁴ and so on) and pair the chosen peak with a schedule.\n\nExample: with a weight of 0.5, a gradient of 2 and η = 0.1, the new weight is 0.5 − 0.1 × 2 = 0.3.",
   "mixup": "The same learning rate means different things for different optimizers. With plain SGD the step is η times the gradient. With Adam each parameter's step is roughly bounded by η, whatever the gradient's scale, so values do not transfer between the two.",
   "related": [
    "learning-rate-schedule",
@@ -351,7 +348,7 @@
    "weight_decay"
   ],
   "summary": "A regularizer that shrinks every weight a little toward zero on each update, which discourages large weights and overfitting.",
-  "body": "On each step the optimizer subtracts η·λ·w from each weight, where λ is the decay strength. That is the same as multiplying the weight by a factor just under 1. The model is pushed toward smaller, smoother solutions.\n\nFor plain SGD this is exactly the same as adding an L2 penalty (λ/2)‖w‖² to the loss. For adaptive optimizers like Adam it is not, because the L2 gradient gets divided by the adaptive scale. Decoupled weight decay, as in AdamW, applies the shrink directly to the weights and is the standard choice.\n\nCommon practice is to skip decay on biases and normalization parameters. Typical values with AdamW are around 0.01 to 0.1.\n\nExample: with η = 0.001 and λ = 0.1, each step multiplies a weight by 1 − 0.0001 = 0.9999, alongside the usual gradient update.",
+  "body": "On each step the optimizer subtracts η·λ·w from each weight, where λ is the decay strength. That is the same as multiplying the weight by a factor just under 1. The model is pushed toward smaller, smoother solutions.\n\nFor plain SGD this is exactly the same as adding an L2 penalty (λ/2)‖w‖² to the loss. For adaptive optimizers like Adam it is not, because the L2 gradient gets divided by the adaptive scale. Decoupled weight decay, as in AdamW, applies the shrink directly to the weights and is the standard choice.\n\nCommon practice is to skip decay on biases and normalization parameters. As a rule of thumb, values with AdamW are around 0.01 to 0.1.\n\nExample: with η = 0.001 and λ = 0.1, each step multiplies a weight by 1 − 0.0001 = 0.9999, alongside the usual gradient update.",
   "mixup": "Weight decay and L2 regularization are often treated as one thing. They match only for plain SGD. With Adam they diverge, so a value tuned for one setup does not transfer to the other.",
   "related": [
    "l2-regularization",
@@ -409,7 +406,6 @@
   "topic": "deep",
   "aka": [
    "pretrained weights",
-   "feature extraction",
    "linear probing",
    "frozen backbone"
   ],

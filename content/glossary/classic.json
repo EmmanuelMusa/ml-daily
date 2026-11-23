@@ -8,7 +8,6 @@
    "ordinary least squares",
    "least squares regression",
    "least squares",
-   "linear model",
    "multiple regression",
    "LinearRegression"
   ],
@@ -143,8 +142,7 @@
    "random forests",
    "RF",
    "RandomForestClassifier",
-   "RandomForestRegressor",
-   "forest of trees"
+   "RandomForestRegressor"
   ],
   "summary": "An ensemble of decision trees, each trained on a bootstrap sample and limited to a random subset of features at each split, with predictions averaged.",
   "body": "A random forest is bagged decision trees with one extra twist. At every split a tree may only choose from a random subset of features, often √p of the p features for classification. This stops every tree from splitting on the same strong feature first, so the trees are less correlated and averaging them cuts variance further.\n\nTrees are usually grown deep, and the averaging controls overfitting. Adding more trees does not cause overfitting, it just stops helping after a point. Out-of-bag rows give a built-in validation score.\n\nIt works well with little tuning, handles mixed features without scaling, and is a strong default for tabular data. A well-tuned gradient boosting model often scores a little higher.\n\nExample: a churn forest has 500 trees and 30 features, and each split chooses among about 5 random features (√30 ≈ 5.5). The predicted churn probability is the average of the trees' outputs.",
@@ -167,7 +165,6 @@
    "gradient boosted trees",
    "gradient boosted decision trees",
    "gradient boosting machine",
-   "boosting",
    "XGBoost",
    "LightGBM",
    "CatBoost"
@@ -193,7 +190,6 @@
    "stacking ensemble",
    "meta-learner",
    "meta-model",
-   "blending",
    "StackingClassifier"
   ],
   "summary": "Combining several different models by training a second-level model to learn how best to combine their predictions.",
@@ -358,8 +354,7 @@
    "Gaussian mixture",
    "mixture of Gaussians",
    "GaussianMixture",
-   "EM clustering",
-   "soft clustering"
+   "EM clustering"
   ],
   "summary": "A model that treats data as a mix of several Gaussian distributions, and gives each point a probability of belonging to each one.",
   "body": "A GMM says each point was drawn from one of K Gaussian components, chosen with probability πₖ. The density p(x) is the sum over components of πₖ × N(x | μₖ, Σₖ). Each component has its own mean μₖ and covariance Σₖ, so clusters can be stretched ellipses rather than the round blobs k-means favours.\n\nIt is fitted with **expectation maximisation** (EM). The E step computes each point's responsibilities, the probability it came from each component. The M step updates the weights, means and covariances from those soft assignments. Like k-means it finds a local optimum, so several starts help. K is often chosen with BIC.\n\nBecause it gives a full density, it also works for anomaly detection: flag points with very low p(x).\n\nExample: customers are fitted on spend and visit frequency with K = 3. One customer gets responsibilities of 0.70, 0.25 and 0.05, a soft membership that k-means cannot express.",
