@@ -114,3 +114,66 @@ Nothing waits on motion. Buttons are never animated in, so Check, Next and the s
 - Confetti, looping pulses, streak flames. Against the brief.
 - Removing the Day figure on Progress. It repeats the header, but six figures keep the grid even.
 - Disabling Load this code while the box is empty. It would change behaviour the error message already covers.
+
+## Concepts, Progress and Settings pages
+
+Added on 2026-11-23 for the concepts feature and the Progress and Settings redesign. Checked at 375 x 812 and 1100 x 800, light and dark, with a fresh profile and with about seven weeks of simulated history.
+
+### Shared parts
+
+- Cards: 1 px line, 12 px radius, 16 px padding. A card head puts the title on the left and one key figure on the right (for example "23 days practised").
+- Count pills sit beside headings (My list, Glossary, topic groups) in sheet grey with tabular digits.
+- Chips are 44 px tall pills with a strong outline. A saved concept gets an ink border and a small filled bookmark, plus hidden "(saved)" text. On the answer screen they sit under Going deeper with a one line hint.
+
+### Concept card
+
+- Order: back link, topic with a short ink rule, name in the serif at 1.9 rem, other names in muted text, Save toggle, then the one line meaning as a serif lead under a hairline. Then diagram, body at 1.6 line height, Common mix-up, Related chips and the usage line under a rule.
+- Save toggle: outline pill with an empty bookmark when not saved, solid ink pill with a filled bookmark and "Saved" when saved. It keeps aria-pressed.
+- Back link: chevron plus label, muted, 44 px tall, pulled left so the chevron lines up with the page edge, the way a phone back button sits.
+- Common mix-up keeps the sheet panel and gains a brick left edge, since it is about a wrong answer.
+
+### Concepts tab
+
+- The save form sits in a sheet panel with the input and Save on one line at every width.
+- My list rows: name, two line summary, then where and when it was saved. Own terms set the summary in italic. The remove control is a 44 px round button, muted until hovered or pressed, when it turns brick on a soft brick disc.
+- Empty list: dashed box with a bookmark in a sheet disc and one bold line.
+- Search has a magnifier inside the field. Topic headings stick to the top while their list scrolls, with a count. Each entry shows a diagram marker and a saved marker after the name, both with hidden text for screen readers.
+
+### Progress
+
+- Headline: three figures in one bordered band with dividers, sized with clamp so "100%" fits a third of a phone. A new user sees muted figures and a sheet panel that says the page fills in as you practise, with a link to today's questions.
+- Calendar: a real week grid, columns are weeks and rows run Monday to Sunday, with Mon, Wed, Fri, Sun labels and month labels above the week a month starts. Activity uses an ink ramp (22, 45, 70, 100 percent) on sheet, not green, because colour stays for results. Today has an ink ring. Legend reads Less, five squares, More, then Today. The whole grid is one image for screen readers with a summary label.
+- Bank: a 14 px bar, learned in green (a result), seen in 40 percent ink, the rest sheet. The key under it gives each number large.
+- Reviews coming up: seven columns, count above, bar, day below, Today in bold. A day with nothing shows only the baseline. With nothing in review the counts hide and the baseline turns dashed and short.
+- Topics: started topics get a bar, figure and "x of y seen" line. Topics not started are one quiet muted line with no empty bar, so a new user does not face fourteen empty bars.
+- By difficulty: the same pips as the question meta, a bar, the figure, and "x of y right" under the bar.
+
+### Settings
+
+- Cards titled at 1.1 rem with sub titles at 0.95 rem, so Appearance and Theme no longer read at the same level.
+- The theme switch is a segmented control on a sheet track with sun and moon icons. It spans the card on phones and sits right of its label from 560 px.
+- Your data: each tool is a block under a hairline with its own title, description and button. The import box is a monospace field.
+- About: a definition list with values right aligned, then "How reviews work" in words and as a small stepper (Miss, 1 day, 3, 7, 21 days, Learned) that is hidden from screen readers because the sentence says the same.
+- Start over sits 30 px below the rest in a card edged in brick, with a brick title and the brick text button.
+
+### Motion
+
+All in the reduced motion block. Progress renders only when the page opens, so each entrance plays once per visit.
+
+| Moment | What moves | Duration | Delay |
+|---|---|---|---|
+| Progress opens | Calendar squares fade and scale from 0.5, week by week | 260 ms | 60 ms plus 28 ms per week |
+| Progress opens | Learned segment grows from the left, then seen | 460 ms, 360 ms | 100 ms, 440 ms |
+| Progress opens | Forecast bars grow up from the baseline | 380 ms | 120 ms plus 40 ms per day |
+| Progress opens | Topic bars grow from the left | 460 ms | 100 ms plus 30 ms per row |
+| Progress opens | Difficulty bars grow from the left | 460 ms | 100 ms plus 60 ms per row |
+| Save toggle | Bookmark icon settles in with the small overshoot | 280 ms | 0 |
+| Answer screen | Key concepts block fades and rises with the rest of the feedback | 280 ms | 300 ms |
+| Press | Chips scale to 0.97, remove button to 0.9, theme switch to 0.97 | 80 ms | 0 |
+
+Re-renders after an action (save, remove, theme, load code, clear) now clear the page cue on main, so the page no longer fades again on every press.
+
+### Not done
+
+- No bank question lists concepts yet, so the answer screen chips were checked by injecting the block on a live answer screen.
+- Removing an item from My list re-renders the page and focus falls to the body. Moving focus to the next row would change behaviour, so it is left for the feature owner.

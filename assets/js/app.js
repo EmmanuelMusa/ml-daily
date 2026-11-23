@@ -3,10 +3,10 @@ import { renderMarkup, escapeHtml } from './markup.js';
 import { grade, hasResponse, optionOrder } from './grade.js';
 import { dayKey, ensureToday, dealMore, nextNew, recordResult, overrideResult, stats, emptyProgress } from './schedule.js';
 import { loadProgress, saveProgress, pruneUnknown } from './store.js';
-import { ICONS } from './icons.js?v=4';
+import { ICONS } from './icons.js?v=5';
 import { isMidAnswer } from './session.js';
 import { makeLookup } from './saved.js';
-import { conceptChipsHtml, renderConcept, renderConcepts, renderProgress, renderSettings } from './pages.js?v=4';
+import { conceptChipsHtml, renderConcept, renderConcepts, renderProgress, renderSettings } from './pages.js?v=5';
 
 const main = document.getElementById('main');
 const dayLabel = document.getElementById('day-label');

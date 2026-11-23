@@ -103,7 +103,7 @@ Each topic lives in `content/<topic>.json` as a JSON array. Write exactly the id
 }
 ```
 
-Fields: `options` (mcq, multi), `answer` (index, list of indexes, string or number), `accept` (fill, optional), `tolerance` and `check` (numeric), `points` (open), `asof` (optional), `tags` (optional, 1 to 3 short words).
+Fields: `options` (mcq, multi), `answer` (index, list of indexes, string or number), `accept` (fill, optional), `tolerance` and `check` (numeric), `points` (open), `concepts` (1 to 4 ids from `content/glossary/catalogue.json`, the ideas a learner should read up on after this question), `asof` (optional), `tags` (optional, 1 to 3 short words).
 
 ## Worked examples
 
@@ -116,3 +116,43 @@ See `tests/fixtures/content/evaluation.json` for one complete question in each f
 3. `python tools/blind.py compare <topic> scratch/blind/<topic>.answers.json` prints AGREE or DISAGREE for each one.
 4. Now read the full questions. For each one, mark pass or fail on these six checks: one defensible answer, clear wording, plausible distractors with no give-away key, explanation correct and not a restatement, fair difficulty label, interview-relevant. Every DISAGREE needs a verdict: your solve was wrong, or the question is wrong or ambiguous.
 5. Write each failure with a concrete fix.
+
+## Glossary entries
+
+Concepts live in `content/glossary/<topic>.json`. The catalogue in `content/glossary/catalogue.json` fixes every id, name and home topic, so write exactly those. An entry is a short reference card for someone who just met the idea in a question.
+
+```json
+{
+  "id": "precision",
+  "name": "Precision",
+  "topic": "evaluation",
+  "aka": ["positive predictive value", "PPV"],
+  "summary": "Of everything the model flagged as positive, the share that really was positive.",
+  "body": "...",
+  "mixup": "...",
+  "related": ["recall", "f1-score"],
+  "diagram": "precision"
+}
+```
+
+- `summary`: 8 to 35 words. One plain sentence a learner could repeat in an interview.
+- `body`: 60 to 180 words, markup allowed. Cover what it is, why it matters in real work, and one small concrete example with numbers or a scenario. Give a formula when there is one. Write it so it teaches, not as a dictionary line.
+- `mixup` (optional): 12 to 70 words on the confusion people most often have, such as precision versus recall.
+- `related`: 1 to 5 other catalogue ids, the ones a learner should read next.
+- `aka`: other names and common abbreviations. These also power the "Save a term" matching, so include the spellings people really type.
+- `diagram`: only when the catalogue marks the concept `"diagram": true`. The value is the concept id, and the file is `content/glossary/diagrams/<id>.svg`.
+- The same style rules apply: plain English, no em dashes, no semicolons, no emojis, durable facts only, and `asof` on anything about regulation or a named protocol.
+- Never give away a question's answer key. The glossary explains ideas, not specific questions.
+
+## Diagrams
+
+Each diagram is a small inline SVG that the app shows inside the concept card, in both light and dark themes.
+
+- The root is `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 W H" role="img">`, with no width or height. Aim for a viewBox about 320 wide and 140 to 220 tall so text stays readable on a phone.
+- Start with a `<title>` that says what the picture shows.
+- Allowed elements: svg, g, path, rect, circle, ellipse, line, polyline, polygon, text, tspan, title, defs, marker. Nothing else, so no scripts, links, images, styles or foreignObject.
+- Colour **only** with palette classes. Fills: f-ink, f-muted, f-line, f-sheet, f-paper, f-right (soft green), f-wrong (soft red), f-none. Strokes: s-ink, s-muted, s-line, s-sheet, s-paper, s-right, s-wrong, s-none. Stroke weight: s-thin, s-thick, s-dash. Text: t-small, t-label, t-bold, t-muted. A `fill` or `stroke` attribute may only be `none` or `currentColor`.
+- By default shapes have no fill and an ink stroke 1.5 wide, and text is ink at 12 px. Text has no stroke.
+- Arrowheads use a `<marker>` in `<defs>` and `marker-end="url(#id)"`. Give marker ids a prefix from the concept id, such as `prec-arrow`, so two diagrams never clash.
+- Keep it simple and labelled: a few shapes, short labels, and real meaning. No decoration.
+- Check every diagram with `python tools/build.py --no-checks`, which rejects anything off the rules.
