@@ -1,0 +1,130 @@
+[
+  {
+    "id": "llm-0001",
+    "topic": "llm",
+    "subtopic": "scaled dot-product attention",
+    "format": "mcq",
+    "difficulty": 2,
+    "prompt": "Attention computes softmax(QKᵀ / √d_k)V. A teammate writing a custom attention layer with d_k = 128 drops the √d_k term, and training becomes slower and less stable. Why does the scaling matter?",
+    "options": [
+      "Dot products of d_k-dimensional vectors have variance that grows with d_k, so unscaled scores push softmax toward one-hot outputs with tiny gradients. Dividing by √d_k keeps the variance near 1.",
+      "Dividing by √d_k turns each dot product into a cosine similarity, so every score lies between −1 and 1 no matter how long the query and key vectors are.",
+      "Without the √d_k term the attention weights in each row no longer sum to 1, so each output becomes a biased weighted average of the value vectors.",
+      "Dividing by √d_k cuts the cost of the score matrix from O(n²·d_k) to O(n²), so the layer runs faster and fits longer sequences into GPU memory."
+    ],
+    "answer": 0,
+    "explanation": "If the components of q and k are independent with mean 0 and variance 1, their dot product is a sum of d_k terms, each with variance 1, so it has variance d_k. With d_k = 128, typical scores have a standard deviation of about 11. A softmax over scores that far apart puts almost all weight on one key, and in that saturated region its gradients are close to zero, so learning slows and becomes unstable. Dividing by √128 brings the standard deviation back to about 1.\n\nThe cosine option is wrong because cosine similarity divides by the vectors' lengths, not by a fixed constant, so scaled scores can still take any size. The option about rows summing to 1 is wrong because softmax always normalizes each row, with or without scaling. The option about compute is wrong because dividing by a constant is a cheap elementwise step that changes neither the O(n²·d_k) cost nor the memory use.",
+    "deeper": "A good follow-up: the scaling acts like a fixed temperature on the softmax. Some large models also normalize queries and keys before the dot product to keep scores bounded. Interviewers may ask you to derive the variance d_k on a whiteboard, which only needs the fact that the variances of independent terms add.",
+    "tags": [
+      "attention",
+      "transformers"
+    ]
+  },
+  {
+    "id": "llm-0002",
+    "topic": "llm",
+    "subtopic": "tokenization",
+    "format": "mcq",
+    "difficulty": 1,
+    "prompt": "A support bot serves customers in English and in Thai. The team notices that a Thai message uses about three times as many tokens as the same message written in English. What explains this, and what does it mean for the product?",
+    "options": [
+      "The subword tokenizer learned its vocabulary mostly from English text, so Thai splits into smaller pieces. Thai conversations cost more and fill the context window sooner.",
+      "Thai characters take more bytes in UTF-8 and tokens are simply bytes, so the count grows. Cost and context use stay the same because both are measured in words.",
+      "The tokenizer splits every language into single characters, and Thai words are longer. Cost stays the same because providers charge a flat price per message.",
+      "Token counts differ by language, but the model merges them back into words in its first layer. Cost and context use therefore depend on words, not tokens."
+    ],
+    "answer": 0,
+    "explanation": "Subword tokenizers such as BPE build their vocabulary from the text they were trained on. Languages and words that were common in that text get long, efficient tokens, while rarer languages and rare words get broken into many short pieces, sometimes single characters or bytes. Since usage is billed per token and the context window is a token limit, the same conversation in Thai costs more, takes longer to generate and leaves room for less history.\n\nThe UTF-8 option is wrong because tokens are learned subword units, not raw bytes, and cost does follow tokens. The single-character option is wrong because subword tokenizers keep common words whole, and token-priced APIs do not charge a flat rate per message. The option about merging tokens in the first layer is wrong because every token is its own position in the sequence, so it uses compute and context no matter what the model does with it later.",
+    "deeper": "In practice, measure token counts on real traffic in each language before setting budgets, limits and prices. A strong candidate also notes that product codes, IDs and some code formats split badly, and that comparing context windows across models needs care, because different tokenizers turn the same text into different token counts.",
+    "tags": [
+      "tokenization",
+      "cost"
+    ]
+  },
+  {
+    "id": "llm-0003",
+    "topic": "llm",
+    "subtopic": "attention cost and context length",
+    "format": "numeric",
+    "difficulty": 1,
+    "prompt": "In self-attention, each head computes one score for every pair of tokens in the sequence. A summarization service raises its maximum input from 2,000 tokens to 8,000 tokens. By what factor does the number of attention scores per head per layer grow? Give a whole number.",
+    "answer": 16,
+    "tolerance": 0.5,
+    "check": "n_old = 2000\nn_new = 8000\nresult = (n_new * n_new) / (n_old * n_old)",
+    "explanation": "With n tokens, every token attends to every token, so each head builds an n × n score matrix with n² entries. At 2,000 tokens that is 4,000,000 scores. At 8,000 tokens it is 64,000,000 scores. The ratio is 64,000,000 / 4,000,000 = 16, which is the same as (8,000 / 2,000)² = 4² = 16.\n\nThe common mistake is to answer 4, scaling linearly with length. The parts of a transformer that work on one token at a time, such as the feed-forward layers, do grow linearly, which is why the mistake is tempting. The pairwise score matrix does not. This quadratic growth is the main reason long inputs are expensive in compute, and also in memory when the full matrix is stored.",
+    "deeper": "A strong candidate adds that methods like FlashAttention avoid storing the full score matrix, which fixes the memory problem but not the quadratic compute. Sparse or sliding-window attention trade some quality for lower cost. During generation, each new token's cost grows linearly with context because of the KV cache, which is a common follow-up.",
+    "tags": [
+      "attention",
+      "scaling"
+    ]
+  },
+  {
+    "id": "llm-0004",
+    "topic": "llm",
+    "subtopic": "parameter-efficient fine-tuning",
+    "format": "fill",
+    "difficulty": 1,
+    "prompt": "A fine-tuning method keeps a pretrained weight matrix W frozen at its original precision and learns an update ΔW = BA, where B and A are thin matrices of rank r, much smaller than the dimensions of W. Only A and B are trained. This method is called ______.",
+    "answer": "LoRA",
+    "accept": [
+      "low-rank adaptation",
+      "low rank adaptation",
+      "lora fine-tuning"
+    ],
+    "explanation": "LoRA, short for low-rank adaptation, assumes the change needed to adapt a model to a new task has low rank. Instead of updating W directly, it trains two thin matrices whose product BA has the same shape as W. For a 4,096 × 4,096 layer, full fine-tuning updates about 16.8 million weights. With r = 8, B is 4,096 × 8 and A is 8 × 4,096, which is 65,536 weights, about 0.4% of the layer. After training, BA can be merged into W, so inference costs nothing extra.\n\nA common mix-up is with QLoRA, which uses the same low-rank update but stores the frozen base model in 4-bit precision. The prompt says the base stays at its original precision, which rules it out. Adapters and prefix tuning are also parameter-efficient, but they add new layers or tokens rather than a low-rank update to existing weights.",
+    "deeper": "Interviewers often ask which layers to apply LoRA to and how to pick the rank. A strong answer mentions the attention projections as a common start, trying a few ranks on a validation set, and the serving benefit: one base model can host many small task adapters and swap them per request.",
+    "tags": [
+      "lora",
+      "fine-tuning"
+    ]
+  },
+  {
+    "id": "llm-0005",
+    "topic": "llm",
+    "subtopic": "RLHF vs DPO",
+    "format": "mcq",
+    "difficulty": 3,
+    "prompt": "A bank has 50,000 preference pairs for its FAQ assistant. Each pair has a prompt, a reply raters preferred and a reply they rejected. One engineer proposes RLHF with a reward model and PPO. Another proposes DPO. What is the main way DPO differs?",
+    "options": [
+      "It trains the policy directly on the pairs with a classification-style loss that raises the preferred reply's likelihood relative to the rejected one, measured against a frozen reference model.",
+      "It first fits a reward model on the pairs, as RLHF does, then swaps PPO for plain supervised fine-tuning on the sampled replies that the reward model scores highest.",
+      "It drops the reference model and simply maximizes the likelihood of the preferred replies, ignoring the rejected ones, which makes it cheaper and more stable than RLHF.",
+      "It replaces the human pairs with scores the model gives its own replies, so the 50,000 pairs are kept only as a held-out set for evaluating the final model."
+    ],
+    "answer": 0,
+    "explanation": "DPO starts from the same objective as RLHF: maximize reward while staying close to a reference model. Its key step shows that the optimal policy for that objective implies a reward equal to β times the log ratio of the policy's probability to the reference model's probability, plus a term that cancels when two replies to the same prompt are compared. Putting that into the standard preference model gives a loss on the pairs alone. Training pushes the log ratio up for the preferred reply and down for the rejected one. There is no separate reward model, no sampling during training and no PPO loop, which makes it simpler and more stable to run.\n\nThe option about fitting a reward model and fine-tuning on top-scored samples describes rejection sampling, also called best-of-n fine-tuning, not DPO. The option about dropping the reference model is wrong twice: the frozen reference keeps the policy from drifting, and the rejected replies are half of the signal. The option about self-scoring describes AI-feedback or self-rewarding methods, which DPO does not need.",
+    "deeper": "A strong candidate names the tradeoffs. DPO is offline, so it learns only from the replies in the dataset, while PPO can explore new replies and score fresh samples with the reward model. Follow-ups often cover β, which controls how far the policy may move from the reference, and the risk of overfitting a small preference set.",
+    "tags": [
+      "dpo",
+      "rlhf",
+      "alignment"
+    ]
+  },
+  {
+    "id": "llm-0006",
+    "topic": "llm",
+    "subtopic": "decoding settings",
+    "format": "multi",
+    "difficulty": 2,
+    "prompt": "A team is tuning text generation for a product-description writer. Which statements about decoding settings are correct? Select all that apply.",
+    "options": [
+      "Greedy decoding picks the most likely next token at every step, so it involves no random sampling.",
+      "A temperature above 1 flattens the next-token distribution, so less likely tokens are chosen more often.",
+      "Top-p sampling with p = 0.9 samples from the smallest set of tokens whose probabilities add up to at least 0.9.",
+      "Lowering the temperature toward 0 makes the output more varied, because it removes the bias toward common tokens.",
+      "Top-p sampling keeps the same number of candidate tokens at every step, however peaked the distribution is.",
+      "Greedy decoding is guaranteed to return the most likely complete sequence for the given prompt."
+    ],
+    "answer": [
+      0,
+      1,
+      2
+    ],
+    "explanation": "Greedy decoding takes the highest-probability token at each step, so it has no sampling randomness, and the same input gives the same output apart from small numerical effects on some hardware. Temperature divides the logits before the softmax. A value above 1 shrinks the gaps between logits and flattens the distribution, so unlikely tokens get picked more often and the text becomes more varied. Top-p, or nucleus, sampling sorts tokens by probability, keeps the smallest set whose total reaches p, and samples from that set.\n\nLowering the temperature does the opposite of what the false statement claims. It sharpens the distribution, and as it nears 0 sampling approaches greedy decoding, so output becomes less varied. Keeping a fixed number of candidates describes top-k. Top-p adapts: when the model is confident, a few tokens reach 0.9, and when it is unsure, many tokens are needed. Greedy is only best one step at a time. A slightly less likely first token can lead to a much more likely full sequence, which is why beam search exists.",
+    "deeper": "For product descriptions, a strong answer picks settings per field: greedy or a low temperature where facts such as sizes and materials must be exact and consistent, and a moderate temperature with top-p for the creative copy. Interviewers often follow up on why greedy text can become repetitive and how repetition penalties help.",
+    "tags": [
+      "decoding",
+      "sampling"
+    ]
+  }
+]

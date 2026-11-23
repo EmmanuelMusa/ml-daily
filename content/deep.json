@@ -1,0 +1,125 @@
+[
+  {
+    "id": "dl-0001",
+    "topic": "deep",
+    "subtopic": "vanishing gradients",
+    "format": "mcq",
+    "difficulty": 1,
+    "prompt": "A 20-layer fully connected network for churn prediction uses sigmoid activations in every hidden layer. During training, the weights in the first few layers barely change while the last layers learn normally. After the hidden activations are switched to ReLU, the early layers start learning. What best explains both observations?",
+    "options": [
+      "Sigmoid's derivative is at most 0.25 and near zero when saturated, so backpropagation multiplies many small factors. ReLU's derivative is 1 for positive inputs, so the gradient is not shrunk.",
+      "Sigmoid outputs are capped at 1, so large activations get clipped and the loss stops falling. ReLU is unbounded above, so the network can keep lowering the loss with larger activations.",
+      "Stacked sigmoid layers collapse into one linear function, so the extra depth adds nothing. ReLU is nonlinear, so each layer adds new features and receives its own useful gradient.",
+      "Sigmoid outputs are always positive, so all the gradients share one sign. ReLU outputs can also be negative, which lets the gradients cancel out and stay well balanced."
+    ],
+    "answer": 0,
+    "explanation": "Backpropagation computes the gradient for an early layer by multiplying one factor per later layer, and each factor includes the activation's derivative. The sigmoid's derivative σ(x)(1 − σ(x)) peaks at 0.25 when x = 0 and falls toward 0 when the unit saturates at large positive or negative x. Even in the best case, and ignoring the weight terms, 19 such factors give at most 0.25¹⁹, which is about 4 × 10⁻¹², so the first layers get almost no signal. ReLU's derivative is exactly 1 for any positive input, so active units pass the gradient back without shrinking it.\n\nThe option about clipping at 1 confuses a bounded output with a vanishing gradient. Boundedness alone does not stop learning. The option about collapsing into a linear function is false because sigmoid is nonlinear, and only stacks of purely linear layers collapse. The option about negative outputs gets ReLU wrong, since ReLU never outputs a negative value.",
+    "deeper": "A strong answer also names the other fixes used in practice: initialization suited to the activation, such as He initialization for ReLU, residual connections that give gradients a direct path, and normalization layers. A common follow-up is the dying ReLU problem, where units stuck on negative inputs output zero and stop learning, which variants like Leaky ReLU or GELU ease.",
+    "tags": [
+      "gradients",
+      "activations"
+    ]
+  },
+  {
+    "id": "dl-0002",
+    "topic": "deep",
+    "subtopic": "learning rate symptoms",
+    "format": "mcq",
+    "difficulty": 1,
+    "prompt": "You start training an image classifier for product photos. Within the first few hundred steps, the training loss swings up and down wildly, climbs above its starting value, and then turns into NaN. What is the most likely cause?",
+    "options": [
+      "The learning rate is too high, so each update overshoots the minimum and the weights diverge.",
+      "The learning rate is too low, so the optimizer stalls and the loss never manages to settle.",
+      "The model is overfitting, so it memorizes the training images and the training loss grows.",
+      "The model is too small, so it lacks the capacity to fit the data and the loss keeps rising."
+    ],
+    "answer": 0,
+    "explanation": "A learning rate that is too high makes each step jump past the low point of the loss and land somewhere worse. The next step overshoots even further, so the loss oscillates, climbs above where it started, and eventually overflows to NaN. Rising above the starting loss is the telling sign, because a sensible optimizer should not make things worse early on.\n\nA learning rate that is too low gives the opposite picture: a smooth, very slow decline, not wild swings. Overfitting shows up as training loss falling while validation loss rises, and it appears later in training, not in the first few hundred steps. A model that is too small underfits, which looks like a loss that flattens at a high value, not one that explodes. The usual fix is to cut the learning rate by a factor of 3 to 10, add a warmup period, and consider gradient clipping.",
+    "deeper": "In interviews, describe the learning-rate range test: train briefly while raising the learning rate step by step, plot loss against learning rate, and pick a value a bit below where the loss starts to blow up. Also mention checking the input pipeline, since a single corrupt batch can cause a similar spike.",
+    "tags": [
+      "learning-rate",
+      "debugging"
+    ]
+  },
+  {
+    "id": "dl-0003",
+    "topic": "deep",
+    "subtopic": "counting parameters",
+    "format": "numeric",
+    "difficulty": 2,
+    "prompt": "A logistics company predicts delivery delay as one of 3 classes (on time, slightly late, very late) with a fully connected network. It takes 20 input features, then has a hidden layer of 64 units, a hidden layer of 32 units, and an output layer of 3 units. Every layer after the input has a weight matrix and a bias vector. How many trainable parameters does the network have? Give a whole number.",
+    "answer": 3523,
+    "tolerance": 0.5,
+    "check": "sizes = [20, 64, 32, 3]\nresult = sum(n_in * n_out + n_out for n_in, n_out in zip(sizes[:-1], sizes[1:]))",
+    "explanation": "Each dense layer with n_in inputs and n_out outputs has n_in × n_out weights plus n_out biases.\n\n- Input to first hidden layer: 20 × 64 + 64 = 1,344\n- First hidden to second hidden layer: 64 × 32 + 32 = 2,080\n- Second hidden layer to output: 32 × 3 + 3 = 99\n\nThe total is 1,344 + 2,080 + 99 = 3,523.\n\nThe most common mistake is to forget the biases, which gives 1,280 + 2,048 + 96 = 3,424. Another is to give the input layer its own weights or biases. The input layer only holds the 20 feature values and has nothing to learn. Activation functions such as ReLU add no parameters either.",
+    "deeper": "Interviewers often extend this to other layers. A convolution layer has kernel height × kernel width × input channels × output channels weights plus one bias per output channel, which is why convolutions need far fewer parameters than dense layers on images. Batch norm adds two learned parameters per channel, plus running statistics that are stored but not trained.",
+    "tags": [
+      "parameters",
+      "mlp"
+    ]
+  },
+  {
+    "id": "dl-0004",
+    "topic": "deep",
+    "subtopic": "normalization in transformers",
+    "format": "fill",
+    "difficulty": 2,
+    "prompt": "Inside each transformer block, every token's activation vector is normalized on its own: subtract the mean of that vector's features, divide by their standard deviation, then apply a learned scale and shift. No statistics are shared across the examples in a batch. This normalization is called ______.",
+    "answer": "layer normalization",
+    "accept": [
+      "layer norm",
+      "layernorm",
+      "layer normalisation",
+      "ln"
+    ],
+    "explanation": "Layer normalization computes the mean and standard deviation over the features of a single token's vector, so each token is normalized independently of every other token and every other example. That makes it behave the same at any batch size and any sequence length, in training and at inference.\n\nThe common wrong answer is batch normalization. Batch norm computes statistics for each feature across the examples in a batch and keeps running averages for use at inference. That fits transformers poorly. Sequences have different lengths, and padding tokens would pollute the batch statistics. Batches of long sequences are often small, so the estimates are noisy. During generation the model processes one new token at a time, where batch statistics make little sense, and running averages from training may not match what the model sees in production.",
+    "deeper": "Many recent LLMs use RMSNorm, a lighter variant that skips the mean subtraction and the shift and only divides by the root mean square. A likely follow-up is pre-norm versus post-norm: placing the normalization before each sublayer, as most modern models do, makes deep transformers train more stably.",
+    "tags": [
+      "transformers",
+      "normalization"
+    ]
+  },
+  {
+    "id": "dl-0005",
+    "topic": "deep",
+    "subtopic": "training loop bug",
+    "format": "mcq",
+    "difficulty": 2,
+    "prompt": "A colleague's PyTorch training loop for a demand-forecasting model looks like this:\n\n```python\noptimizer = torch.optim.SGD(model.parameters(), lr=0.01)\nfor x, y in loader:\n    pred = model(x)\n    loss = loss_fn(pred, y)\n    loss.backward()\n    optimizer.step()\n```\n\nWhat goes wrong when it runs?",
+    "options": [
+      "Each `backward()` call adds to the gradients already stored, so every step applies the running sum of all past batch gradients rather than the current batch's gradient.",
+      "PyTorch clears the stored gradients automatically inside `optimizer.step()`, so this loop trains exactly like one that zeroes the gradients by hand on every iteration.",
+      "Each `backward()` call overwrites the gradients left from the previous batch, so the loop trains correctly but does a little extra work that could be skipped.",
+      "The first `optimizer.step()` call raises an error, because PyTorch refuses to apply gradients that were not zeroed before the backward pass ran."
+    ],
+    "answer": 0,
+    "explanation": "In PyTorch, `loss.backward()` adds the new gradients into each parameter's `.grad` field rather than replacing what is there. Nothing in this loop clears that field, so after batch 50 the update uses the sum of all 50 batch gradients, each computed at older weights. The steps end up far larger than intended, and the loss usually oscillates or diverges. The fix is to call `optimizer.zero_grad()` once per iteration, before `loss.backward()`.\n\nThe option claiming the optimizer step clears gradients is a common belief, but the step only reads `.grad` and updates the weights. The option about overwriting describes how many people expect autograd to work, and it is exactly the wrong way round. No error is raised either. PyTorch accumulates on purpose, because that behaviour is what makes gradient accumulation across micro-batches possible.",
+    "deeper": "A strong candidate mentions the intended use of accumulation: run several micro-batches, call `backward()` on each loss divided by the number of micro-batches, then step and zero once. That simulates a larger batch on limited memory. Interviewers may also ask where `zero_grad()` belongs, and any point before the next `backward()` works.",
+    "tags": [
+      "pytorch",
+      "debugging"
+    ]
+  },
+  {
+    "id": "dl-0006",
+    "topic": "deep",
+    "subtopic": "NaN loss in mixed precision",
+    "format": "open",
+    "difficulty": 3,
+    "prompt": "You are fine-tuning a text classifier for medical triage notes with fp16 mixed precision. Around step 3,000 the training loss suddenly turns NaN and never recovers. How would you track down the cause and fix it?",
+    "answer": "First, find where the NaN starts. Resume from the last good checkpoint, log the loss and gradient norm every step, and check the batch at the failing step for NaN or infinite inputs and bad labels. Next, look at the fp16 range. Its largest value is about 65,504, so big activations or logits can overflow. Use dynamic loss scaling, which skips steps with infinite gradients and lowers the scale, or switch to bf16, which has the same exponent range as fp32. Then check for numerically unsafe code such as a log of zero, division by a zero count or a hand-written softmax, and compute the loss in fp32 from logits with the built-in cross-entropy. Finally, if gradient norms were spiking before the failure, lower the learning rate, add warmup and clip gradients, unscaling them first when a loss scaler is used.",
+    "points": [
+      "Reproduce from the last good checkpoint and find the first step and tensor that goes NaN",
+      "Check the input batch for NaN or infinite values and bad labels",
+      "fp16 range problems: use dynamic loss scaling or switch to bf16",
+      "Remove unsafe operations like log(0) and compute the loss in fp32 from logits",
+      "Watch gradient norms, then lower the learning rate, add warmup and clip gradients"
+    ],
+    "explanation": "A NaN that appears suddenly after thousands of good steps usually has one of a few causes, and the order of checks matters. Finding the first step and the first tensor that goes bad tells you whether the problem is the data, the forward pass or the update. The framework's anomaly detection mode can point to the operation that produced the first NaN.\n\nfp16 has a narrow range, so activations, logits or gradients can overflow to infinity, and infinity minus infinity is NaN. Loss scaling protects small gradients from underflow and backs off when it sees infinite gradients, but it cannot fix an overflow in the forward pass. bf16 has the same exponent range as fp32 and avoids most of these problems.\n\nThe common mistake is to jump straight to lowering the learning rate. That may hide the symptom while a corrupt record or a log of zero is still there, waiting to strike again. Another mistake is clipping gradients while they are still scaled, which makes the clip threshold meaningless.",
+    "deeper": "In production training jobs, teams add guards that check for a non-finite loss and skip or halt the step, and they save checkpoints often enough that a NaN costs minutes, not days. Interviewers like hearing that you would also log the loss scale over time, since a scale that keeps collapsing points to persistent overflow.",
+    "tags": [
+      "mixed-precision",
+      "debugging"
+    ]
+  }
+]

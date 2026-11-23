@@ -1,0 +1,99 @@
+[
+  {
+    "id": "math-0001",
+    "topic": "math",
+    "subtopic": "Bayes theorem",
+    "format": "numeric",
+    "difficulty": 2,
+    "prompt": "A screening test for a liver condition is used on a population where 0.5% of people have the condition. The test catches 95% of people who have it (sensitivity) and gives a positive result for 3% of people who do not (false positive rate). A person tests positive. What is the probability they have the condition? Give it as a decimal to 2 places.",
+    "answer": 0.14,
+    "tolerance": 0.005,
+    "check": "prev = 0.005\nsens = 0.95\nfpr = 0.03\ntrue_pos = prev * sens\nfalse_pos = (1 - prev) * fpr\nresult = true_pos / (true_pos + false_pos)",
+    "explanation": "Bayes theorem says P(condition | positive) = P(positive | condition) × P(condition) / P(positive).\n\nIt helps to picture 100,000 people. 500 have the condition, and the test catches 95% of them, so 475 true positives. 99,500 do not have it, and 3% of them test positive, so 2,985 false positives. In total 475 + 2,985 = 3,460 people test positive, and 475 / 3,460 ≈ 0.137, which rounds to 0.14.\n\nThe common mistake is to answer 0.95, mixing up P(positive | condition) with P(condition | positive). Another is to forget that the false positive rate applies to the huge healthy group. Even a small 3% of 99,500 people outnumbers all the true cases six to one. That is why a positive screen for a rare condition is usually followed by a second, more specific test.",
+    "deeper": "The same base-rate effect drives alert fatigue in fraud and security systems. A model with 95% recall and a 3% false alarm rate still produces mostly false alerts when the event is rare. A strong candidate reaches for precision, or positive predictive value, and shows how it changes as prevalence changes.",
+    "tags": ["bayes", "base-rate"]
+  },
+  {
+    "id": "math-0002",
+    "topic": "math",
+    "subtopic": "distributions",
+    "format": "fill",
+    "difficulty": 1,
+    "prompt": "A support bot resolves each incoming ticket on its own with probability 0.7, and tickets are independent of each other. The number of tickets it resolves out of the next 20 follows a ______ distribution.",
+    "answer": "binomial",
+    "accept": ["binomial distribution", "binom", "bin(20, 0.7)", "binomial(20, 0.7)", "b(20, 0.7)"],
+    "explanation": "A binomial distribution counts successes in a fixed number n of independent trials, each with the same success probability p. Here n = 20 tickets and p = 0.7, so the count is Binomial(20, 0.7). Its mean is n × p = 14 tickets and its variance is n × p × (1 − p) = 4.2.\n\nThe usual mix-up is with Bernoulli. A Bernoulli variable describes one trial, a single ticket resolved or not, and the binomial is the sum of n of them. Another slip is Poisson, which counts events in a fixed interval with no upper limit, such as tickets arriving per hour. Here the count cannot exceed 20, which points to the binomial. Poisson is a good approximation to the binomial only when n is large and p is small, which is not the case here.",
+    "deeper": "Interviewers often build on this, asking for the chance the bot resolves at least 18 of 20, or how to put a confidence interval on a resolution rate. In production, the independence assumption is the weak point. Tickets from one outage tend to succeed or fail together.",
+    "tags": ["probability", "distributions"]
+  },
+  {
+    "id": "math-0003",
+    "topic": "math",
+    "subtopic": "p-values",
+    "format": "mcq",
+    "difficulty": 2,
+    "prompt": "An A/B test of a new checkout button reports a difference in conversion rate between the two groups with p = 0.03. Which statement correctly interprets this p-value?",
+    "options": [
+      "If the button truly had no effect, a difference at least this extreme would appear about 3% of the time.",
+      "There is a 3% probability that the new button truly has no effect on conversion rate.",
+      "There is a 97% probability that the new button truly raises conversion compared with the old one.",
+      "If the test were run again, about 97% of repeats would also give a significant result."
+    ],
+    "answer": 0,
+    "explanation": "A p-value is computed by assuming the null hypothesis is true, here that the button makes no difference. It is the probability of seeing data at least as extreme as what you saw under that assumption. A small p-value says the result would be surprising if there were no effect, which is evidence against the null.\n\nThe option giving a 3% chance that the button has no effect flips the conditional. The p-value is P(data this extreme | no effect), not P(no effect | data), and getting the second needs a prior, as in Bayes theorem. The option claiming a 97% chance the button raises conversion makes the same flip and also ignores direction. The option about 97% of repeats being significant confuses the p-value with statistical power. The chance a repeat is significant depends on the true effect size and the sample size, which this one p-value does not tell you.",
+    "deeper": "Interviewers like follow-ups on what p = 0.03 does not show: the size of the effect, or whether it matters for the business. A strong candidate reports the effect with a confidence interval, and warns that peeking at results daily or testing many metrics at once makes small p-values far more common by chance.",
+    "tags": ["hypothesis-testing", "ab-testing"]
+  },
+  {
+    "id": "math-0004",
+    "topic": "math",
+    "subtopic": "gradient descent step",
+    "format": "numeric",
+    "difficulty": 1,
+    "prompt": "A one-weight model predicts ŷ = w × x and uses the loss L(w) = (w × x − y)². For a single example with x = 2 and y = 10, the current weight is w = 3 and the learning rate is 0.05. What is w after one gradient descent step? Give it as a decimal to 2 places.",
+    "answer": 3.8,
+    "tolerance": 0.005,
+    "check": "x = 2\ny = 10\nw = 3\nlr = 0.05\ngrad = 2 * (w * x - y) * x\nresult = w - lr * grad",
+    "explanation": "The gradient of L(w) = (w × x − y)² with respect to w uses the chain rule: dL/dw = 2 × (w × x − y) × x.\n\nWith the numbers: the prediction is 3 × 2 = 6, the error is 6 − 10 = −4, so dL/dw = 2 × (−4) × 2 = −16. The update rule is w_new = w − learning rate × gradient = 3 − 0.05 × (−16) = 3 + 0.8 = 3.80.\n\nThe negative gradient means the loss falls as w grows, so the step moves w up, which makes sense because the model is predicting too low. The two common mistakes are dropping the inner factor x from the chain rule, which gives a gradient of −8 and w = 3.40, and adding the gradient instead of subtracting it, which gives w = 2.20 and moves the wrong way.",
+    "deeper": "Checking the new loss is a good habit: with w = 3.8 the prediction is 7.6, so the squared error drops from 16 to 5.76. Interviewers may ask what happens with a learning rate of 0.5. The step would overshoot to w = 11 and the loss would grow, which is how divergence looks.",
+    "tags": ["gradient-descent", "calculus"]
+  },
+  {
+    "id": "math-0005",
+    "topic": "math",
+    "subtopic": "PCA",
+    "format": "mcq",
+    "difficulty": 2,
+    "prompt": "You run PCA on unscaled housing data with two features: sale price in dollars (variance about 10¹⁰) and number of rooms (variance about 2). The first principal component explains 99.99% of the variance. What is the best reading of this result?",
+    "options": [
+      "The first component points almost along the price axis, because PCA follows raw variance and price is in large units.",
+      "Price and room count are almost perfectly correlated, so one component is enough to capture both features.",
+      "The data is truly one-dimensional, so the second component carries no information and can be dropped safely.",
+      "PCA stopped before converging, and more iterations would spread the variance more evenly across components."
+    ],
+    "answer": 0,
+    "explanation": "Principal components are the eigenvectors of the covariance matrix, ordered by their eigenvalues, which are the variances along each direction. Covariance is measured in the raw units. A variance of 10¹⁰ against a variance of 2 means the direction of greatest spread is almost exactly the price axis, whatever the link between the two features. The 99.99% says more about dollars than about structure.\n\nNear-perfect correlation would produce the same number, but nothing here shows it. You would see the same result with price and rooms completely unrelated. That also rules out the claim that the data is one-dimensional. The room count, which is surely useful, is sitting in the second component, so dropping it throws away a real feature. PCA is usually solved exactly with an eigendecomposition or SVD, and approximate solvers aim at the same components, so more iterations would not change how the variance splits. The fix is to standardise both features first, which is the same as running PCA on the correlation matrix.",
+    "deeper": "A strong candidate states the rule plainly: standardise before PCA unless the features share a unit and their raw spread is meaningful, such as pixel intensities. Fit the scaler and PCA on training data only, then apply both to new data. Interviewers may also ask how to choose the number of components from a cumulative explained variance plot.",
+    "tags": ["pca", "scaling"]
+  },
+  {
+    "id": "math-0006",
+    "topic": "math",
+    "subtopic": "confidence intervals",
+    "format": "multi",
+    "difficulty": 3,
+    "prompt": "An e-commerce team samples 400 checkout sessions at random and reports a 95% confidence interval for the mean checkout time of 41 to 47 seconds, using the usual normal-based interval. Which statements are correct? Select all that apply.",
+    "options": [
+      "If the sampling were repeated many times, about 95% of intervals built this way would contain the true mean.",
+      "There is a 95% probability that the true mean checkout time lies between 41 and 47 seconds.",
+      "About 95% of individual checkout sessions take between 41 and 47 seconds.",
+      "With everything else equal, a sample of 1,600 sessions would give an interval about half as wide.",
+      "A 99% interval built from the same data would be narrower than 41 to 47 seconds.",
+      "A two-sided test at the 5% level would reject the claim that the true mean is 50 seconds."
+    ],
+    "answer": [0, 3, 5],
+    "explanation": "The 95% describes the method, not this one interval. Build intervals this way over many samples and about 95% of them will cover the true mean. That makes the repeated-sampling statement correct. The width scales with 1/√n, so going from 400 to 1,600 sessions divides the width by √4 = 2, which makes the half-width statement correct. A 95% interval holds exactly the null values that a two-sided test at the 5% level would not reject. 50 seconds lies outside 41 to 47, so the test rejects it.\n\nThe statement giving a 95% probability that the true mean lies in 41 to 47 is the classic misreading. In the frequentist view the true mean is fixed, so this particular interval either contains it or not. A probability statement like that needs a Bayesian credible interval. The interval is about the mean, not individual sessions, which vary far more. A 99% interval is wider, not narrower, because more confidence needs a larger range.",
+    "deeper": "In A/B testing, interviewers prefer candidates who report an interval for the difference between groups, not just a p-value. A useful extra point is that the 1/√n rule makes precision expensive: halving the width needs four times the traffic, which often decides how long an experiment must run.",
+    "tags": ["confidence-intervals", "statistics"]
+  }
+]

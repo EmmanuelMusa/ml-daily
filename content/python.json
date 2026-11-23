@@ -1,0 +1,110 @@
+[
+  {
+    "id": "py-0001",
+    "topic": "python",
+    "subtopic": "NumPy broadcasting",
+    "format": "fill",
+    "difficulty": 1,
+    "prompt": "Using NumPy 2.x, each of 32 query embeddings is compared with each of 10 cluster centroids. What is the shape of `d`? Write it as a Python tuple.\n\n```python\nimport numpy as np\nqueries = np.zeros((32, 1, 64))\ncentroids = np.zeros((10, 64))\nd = queries - centroids\n```",
+    "answer": "(32, 10, 64)",
+    "accept": [
+      "(32,10,64)",
+      "32, 10, 64",
+      "32,10,64",
+      "32 x 10 x 64",
+      "32x10x64",
+      "32 × 10 × 64",
+      "[32, 10, 64]"
+    ],
+    "check": "import numpy as np\nqueries = np.zeros((32, 1, 64))\ncentroids = np.zeros((10, 64))\nd = queries - centroids\nresult = str(d.shape)",
+    "explanation": "NumPy broadcasting lines the shapes up from the right and compares one dimension at a time. Two sizes fit together if they are equal or one of them is 1. A missing dimension counts as 1.\n\n```text\nqueries:   (32,  1, 64)\ncentroids: (     10, 64)\nresult:    (32, 10, 64)\n```\n\nThe last dimensions are both 64. In the middle, the 1 stretches to match 10. On the left, `centroids` has no dimension, so it is treated as 1 and stretched to 32. The result holds every query minus every centroid, the first step of a distance matrix.\n\nThe common mistake is to line the shapes up from the left. That pairs 32 with 10 and suggests the code fails. Another slip is to expect (32, 64), as if each query met only one centroid. The extra axis of size 1 in `queries` is exactly what makes the pairwise result possible.",
+    "deeper": "Interviewers often follow up with memory. Here the result holds 32 × 10 × 64 = 20,480 floats, which is fine. With a million queries and 10,000 centroids it would be far too large, so real code uses ‖a − b‖² = ‖a‖² − 2a·b + ‖b‖², which needs one matrix multiply and no 3D array.",
+    "tags": [
+      "numpy",
+      "broadcasting"
+    ]
+  },
+  {
+    "id": "py-0002",
+    "topic": "python",
+    "subtopic": "pandas copy-on-write",
+    "format": "numeric",
+    "difficulty": 2,
+    "prompt": "Using pandas 3.x, what number does the last line return? Give a whole number.\n\n```python\nimport pandas as pd\ndf = pd.DataFrame({\"user\": [\"a\", \"b\", \"c\"], \"score\": [10, 20, 30]})\ndf[df[\"score\"] > 15][\"score\"] = 0\nsub = df[df[\"score\"] > 15]\nsub.loc[:, \"score\"] = 99\ndf.loc[df[\"user\"] == \"c\", \"score\"] += 5\ndf[\"score\"].sum()\n```",
+    "answer": 65,
+    "tolerance": 0.5,
+    "check": "import pandas as pd\ndf = pd.DataFrame({\"user\": [\"a\", \"b\", \"c\"], \"score\": [10, 20, 30]})\ndf[df[\"score\"] > 15][\"score\"] = 0\nsub = df[df[\"score\"] > 15]\nsub.loc[:, \"score\"] = 99\ndf.loc[df[\"user\"] == \"c\", \"score\"] += 5\nresult = int(df[\"score\"].sum())",
+    "explanation": "Under copy-on-write in pandas 3, every result of indexing behaves as its own copy. Only a single-step assignment on `df` itself, such as `df.loc[...] = ...`, changes `df`.\n\n- The third line is chained assignment. `df[df[\"score\"] > 15]` builds a new object, and setting `\"score\"` on it never reaches `df`. pandas 3 warns about this, and the scores stay 10, 20 and 30.\n- `sub` is a separate frame. Setting its scores to 99 changes `sub` only.\n- The `.loc` line changes `df` directly, so user c goes from 30 to 35.\n\nThe sum is 10 + 20 + 35 = 65.\n\nThe common mistake comes from older pandas habits, where chained assignment sometimes did update the original. If you believe the third line works, b and c become 0, then c becomes 5, and you get 15. If you believe `sub` is a view, b and c become 99, c then becomes 104, and you get 213.",
+    "deeper": "In an interview, say what copy-on-write buys you: no more guessing about SettingWithCopyWarning, and cheap copies, because data is only copied when one side is written to. The rule to remember is one step: write `df.loc[mask, col] = value`, never `df[mask][col] = value`.",
+    "tags": [
+      "pandas",
+      "copy-on-write"
+    ]
+  },
+  {
+    "id": "py-0003",
+    "topic": "python",
+    "subtopic": "scikit-learn leakage bug",
+    "format": "mcq",
+    "difficulty": 2,
+    "prompt": "A teammate evaluates a churn model with this scikit-learn code. What is wrong, and what is the best fix?\n\n```python\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import cross_val_score\n\nX_scaled = StandardScaler().fit_transform(X)\nscores = cross_val_score(LogisticRegression(), X_scaled, y, cv=5)\n```",
+    "options": [
+      "The scaler is fit on every row, validation folds included. Put the scaler and model in one Pipeline and pass that to `cross_val_score`.",
+      "Nothing leaks, because the scaler never looks at `y`. The scores are a fair estimate of new data, so the code can stay as it is.",
+      "The scaler should be refit on each validation fold inside the loop, so that every fold is scaled by its own mean and variance.",
+      "The folds are not stratified, so class balance varies between them. Pass `cv=StratifiedKFold(5)` to keep the scaling consistent."
+    ],
+    "answer": 0,
+    "explanation": "`fit_transform(X)` computes the mean and standard deviation from all rows before cross-validation starts. So in every fold, the validation rows have already shaped the scaling of the training rows, and the model gets a small peek at data it is later scored on. With a Pipeline, `cross_val_score` refits the scaler on the four training folds each time and only applies it to the held-out fold. That matches production, where the scaler never sees future data.\n\nThe claim that nothing leaks because the scaler never sees `y` is the trap. Leakage is any information from the evaluation data reaching training, labels or not. With a plain scaler the effect is often small, but the same habit with imputers, target encoders or feature selection can inflate scores a lot. Refitting on each validation fold is wrong the other way: held-out rows should be transformed with training statistics, never used to fit. Stratification is not the problem either. For a classifier, `cv=5` already uses stratified folds, and it says nothing about where the scaler was fit.",
+    "deeper": "Interviewers like to ask which steps belong inside the Pipeline. The answer is anything that learns from data: scalers, imputers, encoders and feature selectors. A good habit is to make the Pipeline the object you tune with GridSearchCV, so every candidate in the search is scored without leakage.",
+    "tags": [
+      "sklearn",
+      "leakage",
+      "pipeline"
+    ]
+  },
+  {
+    "id": "py-0004",
+    "topic": "python",
+    "subtopic": "NumPy axis",
+    "format": "numeric",
+    "difficulty": 1,
+    "prompt": "Using NumPy 2.x, the rows below are two days and the columns are three ads, holding click counts. What does the last line return? Give a whole number.\n\n```python\nimport numpy as np\nclicks = np.array([[3, 0, 5],\n                   [1, 4, 2]])\nclicks.sum(axis=0).max()\n```",
+    "answer": 7,
+    "tolerance": 0.5,
+    "check": "import numpy as np\nclicks = np.array([[3, 0, 5],\n                   [1, 4, 2]])\nresult = int(clicks.sum(axis=0).max())",
+    "explanation": "`axis=0` collapses the rows, so the sum runs down each column. That gives one total per ad: 3 + 1 = 4, 0 + 4 = 4 and 5 + 2 = 7, so the array is [4, 4, 7]. Its max is 7, the clicks for the best ad across both days.\n\nThe common mistake is to read `axis=0` as \"add up each row\". That is `axis=1`, which gives the daily totals [8, 7] and a max of 8. A rule that helps: the axis you name is the one that disappears. A (2, 3) array summed over axis 0 becomes shape (3,), one value per column.",
+    "deeper": "pandas follows the same rule: `df.sum(axis=0)` gives one value per column, which is why it is the default. When unsure, print the shape after each step. A common follow-up asks for each row's mean with `keepdims=True`, so the result can be subtracted from the original array by broadcasting.",
+    "tags": [
+      "numpy",
+      "axis"
+    ]
+  },
+  {
+    "id": "py-0005",
+    "topic": "python",
+    "subtopic": "PyTorch eval mode",
+    "format": "multi",
+    "difficulty": 3,
+    "prompt": "A PyTorch model has dropout and batch norm layers, and you are writing its inference code. Which statements about `model.eval()` and `torch.no_grad()` are true? Select all that apply.",
+    "options": [
+      "`model.eval()` makes dropout layers pass their inputs through unchanged",
+      "`model.eval()` makes batch norm use its stored running mean and variance",
+      "`model.eval()` on its own stops autograd from recording operations",
+      "`torch.no_grad()` switches batch norm to its stored running statistics",
+      "Inside `torch.no_grad()`, no autograd graph is built, which saves memory",
+      "`model.eval()` freezes the weights so `optimizer.step()` cannot change them"
+    ],
+    "answer": [
+      0,
+      1,
+      4
+    ],
+    "explanation": "The two do separate jobs, and inference code usually needs both. `model.eval()` sets a flag that changes how some layers behave. Dropout stops dropping units and becomes a pass-through. PyTorch scales activations up during training instead, so no rescaling is needed at test time. Batch norm stops using the current batch's statistics and uses the running mean and variance it collected in training, so a prediction does not depend on what else is in the batch.\n\n`torch.no_grad()` turns off gradient tracking. Operations inside it are not recorded, so the activations kept for the backward pass are not stored, which saves memory and time.\n\nThe statements that mix the two up are false. `eval()` alone still builds a graph, which is why forgetting `no_grad()` wastes memory. `no_grad()` alone leaves dropout and batch norm in training mode, which gives noisy, batch-dependent predictions. Neither one freezes weights. After `eval()`, gradients still flow and `optimizer.step()` still updates parameters. Freezing means setting `requires_grad=False` on parameters or leaving them out of the optimizer.",
+    "deeper": "A common follow-up asks about `torch.inference_mode()`, a stricter and slightly faster cousin of `no_grad()` for pure inference. Another classic bug is forgetting to call `model.train()` after a validation loop, so the rest of training runs with dropout off and batch norm statistics no longer updating.",
+    "tags": [
+      "pytorch",
+      "inference"
+    ]
+  }
+]

@@ -1,0 +1,90 @@
+[
+  {
+    "id": "rai-0001",
+    "topic": "responsible",
+    "subtopic": "fairness metrics",
+    "format": "mcq",
+    "difficulty": 2,
+    "prompt": "A bank's loan model approves 30% of applicants in group X and 30% of applicants in group Y. Among applicants who would actually repay, it approves 60% in group X but only 40% in group Y. Which statement is correct?",
+    "options": [
+      "It meets demographic parity but fails equal opportunity, since would-be repayers are approved at different rates.",
+      "It meets equal opportunity, since applicants in both groups are approved at the same overall rate of 30%.",
+      "It meets both criteria, since equal approval rates also mean equal approval rates among those who would repay.",
+      "It fails demographic parity, since applicants who would repay are approved at a higher rate in group X."
+    ],
+    "answer": 0,
+    "explanation": "Demographic parity asks only whether each group is approved at the same overall rate. Both groups get 30%, so it holds. Equal opportunity asks whether people who truly deserve a yes, here those who would repay, get one at the same rate. That is the true positive rate, 60% against 40%, so it fails.\n\nThe option claiming equal opportunity holds uses the overall rate, which is the parity test, not the opportunity test. The option claiming both hold assumes equal approval rates force equal true positive rates. They do not, because the groups can differ in how many applicants would repay and in how many non-repayers get approved. The option claiming parity fails applies the opportunity test to the parity criterion.\n\nThe two goals can pull against each other. When repayment rates differ between groups, equal approval rates usually push true positive rates apart. Getting both at once generally means accepting different false positive rates per group.",
+    "deeper": "There is no single fair metric. In an interview, say which harm matters for the use case. In lending, qualified applicants being refused points toward equal opportunity. Then say who should decide the trade-off: legal, policy and affected groups, not only the ML team.",
+    "tags": [
+      "fairness",
+      "lending"
+    ]
+  },
+  {
+    "id": "rai-0002",
+    "topic": "responsible",
+    "subtopic": "disparate impact ratio",
+    "format": "numeric",
+    "difficulty": 1,
+    "prompt": "A rental company screens tenant applications with a model. In group A, 240 of 400 applicants are approved. In group B, 105 of 250 applicants are approved. What is the disparate impact ratio, the lower group's approval rate divided by the higher group's approval rate? Give it as a decimal to 2 places.",
+    "answer": 0.7,
+    "tolerance": 0.005,
+    "check": "rate_a = 240 / 400\nrate_b = 105 / 250\nresult = min(rate_a, rate_b) / max(rate_a, rate_b)",
+    "explanation": "Compare rates, not counts. Group A's approval rate is 240 / 400 = 0.60. Group B's is 105 / 250 = 0.42. The ratio is 0.42 / 0.60 = 0.70.\n\nThe common mistake is to divide the raw counts, 105 / 240 ≈ 0.44. That mixes in the fact that the groups have different numbers of applicants, which says nothing about how each group is treated. Another slip is to put the higher rate on top and get 1.43.\n\nA ratio of 0.70 is below 0.8, so it fails the four-fifths rule, a rule of thumb from US hiring guidance that is widely borrowed elsewhere. Falling below 0.8 does not prove discrimination. It is a signal to investigate, for example by checking whether the gap comes from features that act as proxies for group membership.",
+    "deeper": "With small groups, the ratio swings a lot by chance, so strong candidates pair it with a significance test or a confidence interval. Interviewers may also ask what you would do next: look for proxy features, compare error rates by group, and talk to legal before changing anything.",
+    "tags": [
+      "fairness",
+      "four-fifths"
+    ],
+    "asof": "2026-11-23"
+  },
+  {
+    "id": "rai-0003",
+    "topic": "responsible",
+    "subtopic": "explainability",
+    "format": "fill",
+    "difficulty": 1,
+    "prompt": "A credit team wants to tell each applicant which features pushed their score up or down. They use a method that splits one prediction among the input features using Shapley values from cooperative game theory, so the contributions add up to the gap between that prediction and the average prediction. The method is usually called ______.",
+    "answer": "SHAP",
+    "accept": [
+      "shapley additive explanations",
+      "shap values",
+      "kernel shap",
+      "kernelshap",
+      "tree shap",
+      "treeshap",
+      "shapley values"
+    ],
+    "explanation": "SHAP treats the features as players in a game whose payout is the prediction. A feature's Shapley value is its average extra contribution across all the orders in which features could be added. A key property is additivity: the base value, the model's average output, plus all the feature contributions equals the prediction for that applicant. That makes the explanation easy to show as a list of pushes up and down.\n\nThe common wrong answer is LIME. LIME also explains single predictions, but it does so by fitting a simple local model to perturbed samples. It does not use Shapley values and its contributions are not guaranteed to add up to the prediction. Another slip is permutation importance, which ranks features for the whole model rather than explaining one prediction.",
+    "deeper": "Exact Shapley values are costly, so TreeSHAP is used for tree models and sampling methods for others. A good interview point: SHAP explains the model, not the world. Correlated features can share or swap credit, so a SHAP value is not a causal effect.",
+    "tags": [
+      "shap",
+      "explainability"
+    ]
+  },
+  {
+    "id": "rai-0004",
+    "topic": "responsible",
+    "subtopic": "high-risk use case",
+    "format": "open",
+    "difficulty": 3,
+    "prompt": "A company wants a model that ranks job applicants' CVs so recruiters only read the top 20%. It will be used for roles in the EU and trained on ten years of the company's past hiring decisions. Lay out the main risks and the controls you would put in place.",
+    "answer": "The biggest risk is learned bias. Past hiring decisions reflect past preferences, so the model can rank down groups that were hired less, often through proxies such as career gaps, names, school or postcode. It may also latch onto wording, not skill. Under the EU AI Act, systems used to filter or rank job applicants are high-risk, so the company faces duties such as risk management, data governance and bias checks, documentation, logging, human oversight and accuracy testing. Controls I would add: audit the training data and remove or test proxy features, measure selection rates and error rates by group before launch and on a schedule, have recruiters review a sample of rejected CVs, tell candidates an AI system is used and give them a way to ask for human review, keep logs and documentation, and limit personal data to what the task needs.",
+    "points": [
+      "Historical hiring labels encode past bias, often via proxy features",
+      "Recruitment ranking is a high-risk use under the EU AI Act, with duties such as risk management, data governance, logging and human oversight",
+      "Fairness testing by group before launch and ongoing monitoring",
+      "Meaningful human review, including of rejected candidates",
+      "Transparency to candidates and a route to contest or get human review",
+      "Data minimisation and privacy controls on CV data"
+    ],
+    "explanation": "The core problem is the label. A model trained on who was hired learns to copy past decisions, including their bias, and calling that ground truth hides it. Removing a protected attribute does not fix this, because other features often stand in for it. That is why fairness must be measured on outcomes by group, not assumed from the feature list.\n\nThe regulation point matters for an EU deployment. The EU AI Act lists AI used to filter, rank or evaluate job candidates as high-risk. Providers and deployers then carry duties around risk management, data quality, documentation, logs, transparency, human oversight and robustness.\n\nThe common mistake is to treat the human reviewer as the only safeguard. If recruiters only ever see the top 20%, nobody notices strong candidates the model buried. Reviewing a sample of rejections is what makes human oversight real. Another mistake is checking fairness once before launch and never again.",
+    "deeper": "Strong candidates also question the target. Predicting who was hired copies the past, while predicting performance a year in is closer to the real goal, though it is only seen for people who were hired. That selection bias is a good follow-up topic in interviews.",
+    "tags": [
+      "fairness",
+      "hiring",
+      "regulation"
+    ],
+    "asof": "2026-11-23"
+  }
+]

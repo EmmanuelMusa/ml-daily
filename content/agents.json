@@ -1,0 +1,141 @@
+[
+  {
+    "id": "agt-0001",
+    "topic": "agents",
+    "subtopic": "agent vs workflow",
+    "format": "mcq",
+    "difficulty": 1,
+    "prompt": "A team automates expense-report checks. Every report goes through the same three steps: extract the line items with an LLM, compare them with the travel policy, then file the result in the finance system. A teammate proposes rebuilding it as an agent that decides for itself which tools to call and in what order. Which response is best?",
+    "options": [
+      "Keep the fixed workflow, since the steps are known in advance and a workflow is cheaper, more predictable and easier to test.",
+      "Switch to an agent, since letting the model choose its own steps always makes a system more accurate on unusual reports.",
+      "Keep the fixed workflow, since an agent cannot call external systems such as the finance system without a human in between.",
+      "Switch to an agent, since a fixed workflow cannot use an LLM for a step like extraction and must rely on hand-written rules."
+    ],
+    "answer": 0,
+    "explanation": "In a workflow, your code fixes the path and the LLM is called at set points inside it. In an agent, the model looks at what has happened so far and decides the next action in a loop. That freedom is worth paying for when the path cannot be known in advance, such as debugging an unfamiliar failure or researching an open question. Here every report follows the same three steps, so an agent adds cost, latency, run-to-run variation and new ways to fail, such as skipping the policy check, while gaining nothing.\n\nThe claim that model-chosen steps are always more accurate is false. More freedom also means more room for mistakes, and a fixed path is far easier to test. Agents call external systems all the time, since that is what tools are for, so that option has the right choice for a wrong reason. Workflows can and often do include LLM steps, and this one already uses an LLM to extract line items.",
+    "deeper": "A strong candidate says \"start with the simplest thing that works\" and adds agency only where it earns its keep. A common design keeps the main workflow fixed and hands only the reports that fail a check to an agent that can investigate, such as by looking up past receipts.",
+    "tags": ["agents", "workflows"]
+  },
+  {
+    "id": "agt-0002",
+    "topic": "agents",
+    "subtopic": "ReAct pattern",
+    "format": "fill",
+    "difficulty": 2,
+    "prompt": "A trace from a travel-search agent looks like this:\n\n```text\nThought: I need flight prices from Lisbon to Oslo on 3 March.\nAction: search_flights(origin=\"LIS\", dest=\"OSL\", date=\"2026-03-03\")\nObservation: 14 results, cheapest 182 EUR\nThought: The user also wants a hotel near the centre.\nAction: search_hotels(city=\"Oslo\", near=\"centre\")\n```\n\nThe agent pattern that interleaves reasoning steps with tool calls, and feeds each tool's result back in before the next step, is called ______.",
+    "answer": "ReAct",
+    "accept": ["re act", "reason and act", "reasoning and acting", "reason act", "react pattern", "react prompting"],
+    "explanation": "ReAct stands for reason plus act. Each turn of the loop has three parts: a thought about what to do next, an action that calls a tool, and an observation that holds the tool's result. The next thought is written after reading that observation, so the agent can change its plan when a tool returns something unexpected, such as no flights on that date. Grounding each step in real tool output cuts down on invented facts, and the trace is easy for a person to read when debugging.\n\nThe most common wrong answer is \"chain of thought\". Chain of thought is step-by-step reasoning only. It has no actions and no observations, so the model cannot check anything against the outside world. Another near miss is \"function calling\" or \"tool calling\", which is the mechanism for running one action, not the loop that alternates reasoning with actions. \"Plan and execute\" is a different pattern again, where the model writes the whole plan first and then runs the steps.",
+    "deeper": "Modern APIs with native tool calls run the same loop, often without literal \"Thought:\" lines in the output. Interviewers may ask how you stop a ReAct loop from running forever. Good answers mention a step limit, a budget and a clear finish action that the model calls when done.",
+    "tags": ["react", "agents"]
+  },
+  {
+    "id": "agt-0003",
+    "topic": "agents",
+    "subtopic": "tool design",
+    "format": "mcq",
+    "difficulty": 2,
+    "prompt": "A logistics company gives its operations agent one tool, `run_sql(query)`, which runs any SQL against the warehouse database. The tool description says only \"Runs SQL.\" When a query fails, the tool returns a 60-line Python stack trace. In traces, the agent guesses table names, misreads errors and often retries the same broken query. Which redesign would help the agent most?",
+    "options": [
+      "Add narrow tools such as `get_shipment_status(tracking_id)` with clear descriptions, and return short errors that say what went wrong and how to fix it.",
+      "Keep `run_sql` but return the full stack trace plus the database logs on failure, so the agent has every detail it could need to debug the query.",
+      "Merge every action into one `do_task(instruction)` tool, so the agent has fewer choices to make and can never pick the wrong tool by mistake.",
+      "Return an empty result whenever a query fails, so the agent is not distracted by error text and moves on quickly to a different approach."
+    ],
+    "answer": 0,
+    "explanation": "A model decides when and how to use a tool from its name, its description and its parameter schema, much like a new developer reading API docs. A narrow tool such as `get_shipment_status` puts the right tables and joins in code once, so the agent no longer has to guess the database schema. A typed parameter like `tracking_id` makes bad calls less likely, and a scoped tool is also safer than open SQL. Errors are input to the agent's next step. A message such as \"No shipment with tracking ID ABC123. IDs start with TRK followed by 8 digits.\" gives it a clear way to recover.\n\nA longer stack trace plus logs adds tokens and noise and buries the one line that matters. A single `do_task` tool does not remove the choice, it hides it inside free text with no schema, which is harder to check and to debug. Returning an empty result on failure is the most dangerous option, because the agent cannot tell \"no data\" from \"the query broke\" and may report a wrong answer with confidence.",
+    "deeper": "In practice, teams improve tools by reading agent traces and watching where the model gets confused, the same way you would watch a user test a product. A strong candidate also mentions returning only the fields the agent needs and paging large results, since huge tool outputs waste context.",
+    "tags": ["tools", "agents"]
+  },
+  {
+    "id": "agt-0004",
+    "topic": "agents",
+    "subtopic": "agent safeguards",
+    "format": "multi",
+    "difficulty": 2,
+    "prompt": "A customer-support agent can read customer records, send emails to customers and issue refunds through tools. In testing it once looped for 400 steps on a confusing ticket, and once refunded the same order twice. Which safeguards should be in place before it goes live? Select all that apply.",
+    "options": [
+      "A hard cap on steps and on token spend per ticket, after which the agent stops and hands the ticket to a person.",
+      "Human approval before irreversible actions, such as a refund above a set amount or an email sent to many customers.",
+      "A refund tool that enforces limits itself: a maximum amount and a check that the order has not already been refunded.",
+      "A line in the system prompt saying \"Never refund more than $200\", relied on as the main control for large refunds.",
+      "Automatic retries on any failed tool call, repeated until the call succeeds, so that no ticket is left half done."
+    ],
+    "answer": [0, 1, 2],
+    "explanation": "Each of the three keys enforces a rule outside the model, which is the point of a safeguard. A step and spend cap turns the 400-step loop into a bounded failure with a clean hand-off. Human approval for irreversible actions keeps a person in the loop exactly where mistakes are expensive and cannot be undone. Limits inside the refund tool stop a double refund even when the model is confused, because the tool checks the order's state before acting, and a maximum amount caps the damage from any single call.\n\nA system prompt rule is guidance, not enforcement. The model can misread it, and a prompt injection in a customer email could override it, so it must not be the main control for something that moves money. Retrying every failed call until it succeeds is how runaway loops start. Some errors, such as \"order not found\" or \"refund already issued\", will never succeed on retry. Retries should be limited, used only for temporary errors such as timeouts, and safe to repeat.",
+    "deeper": "Interviewers like the word idempotent here. A refund call that carries a unique request ID can be retried safely, because the payment system ignores a repeat of the same ID. A strong answer also mentions logging every tool call so incidents can be audited later.",
+    "tags": ["safety", "agents"]
+  },
+  {
+    "id": "agt-0005",
+    "topic": "agents",
+    "subtopic": "Model Context Protocol",
+    "format": "mcq",
+    "difficulty": 1,
+    "prompt": "Three AI applications run inside one company: a chat assistant, a coding assistant and an analytics bot. Each one has its own hand-written connectors for GitHub, the ticketing system and the data warehouse, which makes nine connectors in all. An engineer proposes adopting the Model Context Protocol (MCP). What does MCP give them?",
+    "options": [
+      "A standard interface, so each system is wrapped once as an MCP server and any MCP-capable application can then use it.",
+      "A fine-tuning method that teaches each model the three systems' APIs, so the applications no longer need tool calls.",
+      "A much larger context window, so each application can load the full contents of all three systems into its prompt.",
+      "A security layer that makes every tool call safe, so the servers no longer need any access controls of their own."
+    ],
+    "answer": 0,
+    "explanation": "MCP is an open standard for connecting AI applications to tools and data. A system such as GitHub is wrapped once as an MCP server, which describes its tools and data in a common format. Any application that speaks MCP can connect to that server as a client. With three applications and three systems, the team goes from nine custom connectors to three servers, and a fourth application gets all three systems without new connector code. It works like a shared plug standard.\n\nMCP is not training. The model still calls tools at run time, and MCP only standardizes how those tools are described and invoked. It does not change the context window either, since it is about connections, not memory. It is also not a security layer. An MCP server can be over-privileged, buggy or even malicious, and its tool descriptions can carry prompt injection. You still need authentication, least-privilege access and a review of any third-party server before trusting it.",
+    "deeper": "A good follow-up answer explains the roles: the host application runs one client per server connection, and servers expose tools (actions), resources (data to read) and prompts (reusable templates). Strong candidates also point out the supply-chain risk of installing community servers without review.",
+    "tags": ["mcp", "tools"],
+    "asof": "2026-11-23"
+  },
+  {
+    "id": "agt-0006",
+    "topic": "agents",
+    "subtopic": "reliability over many steps",
+    "format": "numeric",
+    "difficulty": 2,
+    "prompt": "Suppose a data-cleaning agent completes a job in 20 steps, one after another. Each step succeeds with probability 0.97, independently of the others, and the job fails if any single step fails. What percentage of jobs succeed end to end? Give the answer as a percentage to 1 decimal place.",
+    "answer": 54.4,
+    "tolerance": 0.05,
+    "check": "p_step = 0.97\nn_steps = 20\nresult = round(p_step ** n_steps * 100, 1)",
+    "explanation": "The job succeeds only if all 20 steps succeed. Because the steps are independent, you multiply their success probabilities: 0.97 raised to the power 20.\n\n- 0.97² = 0.9409\n- 0.97⁴ = 0.9409² ≈ 0.8853\n- 0.97⁵ ≈ 0.8853 × 0.97 ≈ 0.8587\n- 0.97¹⁰ ≈ 0.8587² ≈ 0.7374\n- 0.97²⁰ ≈ 0.7374² ≈ 0.5438, which is 54.4%\n\nThe most common mistake is to feel that 97% per step is \"high\" and expect most jobs to pass. Almost half fail. A second mistake is to subtract the error rates linearly: 20 × 3% = 60% failure, giving 40% success. That shortcut only works when the total error is small. For larger totals it overcounts, because once a job has failed, a second failure in the same job does not fail it again.\n\nThe same maths shows why small per-step gains matter so much. At 0.99 per step, 20 steps give about 81.8% success.",
+    "deeper": "Interviewers may turn it around: what per-step rate gives 90% over 20 steps? The answer is 0.9^(1/20) ≈ 0.995. In practice agents beat this simple product by checking their own work and retrying failed steps, which breaks the assumption that one failure ends the job.",
+    "tags": ["reliability", "probability"]
+  },
+  {
+    "id": "agt-0007",
+    "topic": "agents",
+    "subtopic": "agent memory",
+    "format": "mcq",
+    "difficulty": 3,
+    "prompt": "A research agent works through a task of about 200 steps. Each web page it reads adds thousands of tokens to its context. By step 80, cost per step has tripled, and the agent has started ignoring a constraint the user gave at the start: \"only use sources from 2024 onward\". Some page details will be needed again much later, when the agent writes its final report. Which memory design fits best?",
+    "options": [
+      "Pin the user's constraints and the current plan in context, replace old page text with short notes, and save full pages to a store it can search.",
+      "Keep the full history and move to a model with a larger context window, since more context always means the model recalls more of the task.",
+      "Every 10 steps, summarize the whole history, constraints included, into one paragraph, and then drop everything else from the context.",
+      "Store every step in a vector database and keep only the latest step in context, so everything else is retrieved by similarity when needed."
+    ],
+    "answer": 0,
+    "explanation": "Different information has different lifetimes, and the tiered design treats each kind on its own terms. The user's constraints and the plan matter at every step, so they stay pinned where the model always sees them. Raw page text matters mostly at the moment it is read, so it is replaced by short notes that keep the context small and the cost per step flat. The full pages go to an external store, so details the final report needs can be fetched back exactly when they are needed.\n\nKeeping everything in a larger window does not fix the problem. Cost per step keeps growing with the history, and models tend to follow an early instruction less reliably as the context fills with unrelated text, which is the likely reason the constraint was ignored. Summarizing everything into one paragraph is lossy. The constraint may be shortened or dropped, and the page details the report needs are gone for good. Keeping only the latest step and retrieving by similarity sounds tidy, but the constraints and the plan are not similar to most individual steps, so they may never be retrieved, and the agent loses track of where it is in the task.",
+    "deeper": "In interviews, describe memory in tiers: working context, a running summary or scratchpad, and long-term storage with search. A strong candidate also mentions testing the design by checking whether the agent still follows early constraints late in long runs, since that failure is easy to miss.",
+    "tags": ["memory", "context"]
+  },
+  {
+    "id": "agt-0008",
+    "topic": "agents",
+    "subtopic": "evaluating an agent",
+    "format": "open",
+    "difficulty": 3,
+    "prompt": "Your team built an IT helpdesk agent. It reads a ticket, then uses tools to look up the user, reset passwords, unlock accounts and install approved software. Before rollout, the head of IT asks how you will know it works and is safe. Design the evaluation.",
+    "answer": "I would run the agent in a sandbox with fake users, accounts and software, so it can act without touching production. I would build a few hundred test tickets from real history, each with the correct end state, such as the account unlocked and nothing else changed. Task success is judged by checking that final state, not the agent's own claim. I would also check the trajectory: did it pick the right tools, pass valid arguments and avoid needless or repeated calls. I would track steps, cost and latency per ticket. Safety cases matter most: requests for unapproved software, a user asking to reset someone else's password, and tickets carrying injected instructions. Since agents are not deterministic, I would run each ticket several times and report the pass rate. Humans would review a sample of traces, and the whole suite would run again on every change.",
+    "points": [
+      "Sandbox with fake accounts, success judged by the final state",
+      "Trajectory checks: right tools, valid arguments, no needless calls",
+      "Steps, cost and latency per task",
+      "Safety and adversarial cases, including prompt injection and permission abuse",
+      "Repeated runs to measure consistency",
+      "Human review of traces and a regression suite on every change"
+    ],
+    "explanation": "An agent changes things in the world, so the evaluation has to look at what it did, not only at what it said. The most common mistake is to grade the agent's final message. An agent can report \"password reset done\" after calling the wrong tool, or after resetting the wrong account. Checking the actual end state in a sandbox catches that, and checking that nothing else changed catches side effects.\n\nA second mistake is to look only at success rate. Two agents can both solve 90% of tickets while one takes 4 steps and the other takes 30, with very different cost and risk. Trajectory checks show this, and they also expose unsafe paths that happen to end well. Safety cases need their own set, because normal tickets rarely test whether the agent refuses a request it should refuse. Finally, agents vary from run to run. A ticket that passes once may fail on the next run, so measure the pass rate over repeated attempts.",
+    "deeper": "A strong candidate proposes a staged rollout after the offline suite: shadow mode where the agent suggests actions a human approves, then automatic handling of low-risk ticket types first. The approval and override rates from shadow mode are some of the best evidence for wider rollout.",
+    "tags": ["evaluation", "agents"]
+  }
+]
