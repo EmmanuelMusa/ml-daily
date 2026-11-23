@@ -1,0 +1,22 @@
+[
+ {
+  "id": "precision",
+  "name": "Precision",
+  "topic": "evaluation",
+  "aka": ["positive predictive value", "PPV"],
+  "summary": "Of everything the model flagged as positive, the share that really was positive.",
+  "body": "Precision is TP / (TP + FP). It looks only at the cases the model said yes to and asks how many of those were right.\n\nIt matters when a false alarm is costly, such as a spam filter that might hide a real email or a fraud rule that blocks a good customer. A model can reach high precision by flagging very little, so precision is always read next to recall.\n\nExample: a model flags 50 transactions and 40 are real fraud. Precision is 40 / 50 = 0.80.",
+  "mixup": "Precision divides by what the model flagged. Recall divides by what was really there. Swapping the two denominators is the most common slip in interviews.",
+  "related": ["recall", "class-imbalance"],
+  "diagram": "precision"
+ },
+ {
+  "id": "recall",
+  "name": "Recall",
+  "topic": "evaluation",
+  "aka": ["sensitivity", "true positive rate", "TPR"],
+  "summary": "Of all the real positive cases, the share the model managed to catch.",
+  "body": "Recall is TP / (TP + FN). It looks at every case that really was positive and asks how many the model found.\n\nIt matters when a miss is costly, such as a cancer screen or a fraud check, where letting a real case through does real harm. A model can reach perfect recall by flagging everything, so recall is always read next to precision.\n\nExample: there were 80 fraud cases and the model caught 40 of them. Recall is 40 / 80 = 0.50.",
+  "related": ["precision"]
+ }
+]

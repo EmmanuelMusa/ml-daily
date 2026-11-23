@@ -1,0 +1,5 @@
+[
+ {"id": "precision", "name": "Precision", "topic": "evaluation", "diagram": true},
+ {"id": "recall", "name": "Recall", "topic": "evaluation", "diagram": false},
+ {"id": "class-imbalance", "name": "Class imbalance", "topic": "data", "diagram": false}
+]

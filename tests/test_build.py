@@ -181,7 +181,7 @@ class BuildTests(unittest.TestCase):
         import io, contextlib
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
-            code = build.main(["--content", str(d), "--out", str(self.out)])
+            code = build.main(["--content", str(d), "--out", str(self.out), "--glossary", str(ROOT / "tests" / "fixtures" / "glossary")])
         self.assertEqual(code, 1)
         self.assertIn(q["id"], buf.getvalue())
 
@@ -197,12 +197,12 @@ class BuildTests(unittest.TestCase):
         write_content(d, "data", [b, c])
         import io, contextlib
         with contextlib.redirect_stdout(io.StringIO()):
-            self.assertEqual(build.main(["--content", str(d), "--out", str(self.out)]), 1)
+            self.assertEqual(build.main(["--content", str(d), "--out", str(self.out), "--glossary", str(ROOT / "tests" / "fixtures" / "glossary")]), 1)
 
     def test_bank_has_no_check_field(self):
         import io, contextlib
         with contextlib.redirect_stdout(io.StringIO()):
-            code = build.main(["--content", str(FIXTURES), "--out", str(self.out)])
+            code = build.main(["--content", str(FIXTURES), "--out", str(self.out), "--glossary", str(ROOT / "tests" / "fixtures" / "glossary")])
         self.assertEqual(code, 0)
         bank = json.loads(self.out.read_text(encoding="utf-8"))
         self.assertEqual(bank["version"], 1)

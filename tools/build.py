@@ -250,17 +250,179 @@ def order_bank(questions, seed=20261123):
     return out
 
 
+# ---------------------------------------------------------------- glossary
+
+CONCEPT_ID = re.compile(r"[a-z0-9]+(-[a-z0-9]+)*")
+SUMMARY_WORDS = (8, 35)
+BODY_WORDS = (60, 180)
+MIXUP_WORDS = (12, 70)
+
+SVG_TAGS = {"svg", "g", "path", "rect", "circle", "ellipse", "line", "polyline", "polygon",
+            "text", "tspan", "title", "defs", "marker"}
+SVG_ATTRS = {"id", "class", "viewBox", "role", "aria-hidden", "aria-label", "d", "points",
+             "x", "y", "x1", "y1", "x2", "y2", "cx", "cy", "r", "rx", "ry", "width", "height",
+             "transform", "opacity", "fill", "stroke", "stroke-width", "stroke-dasharray",
+             "stroke-linecap", "stroke-linejoin", "fill-opacity", "stroke-opacity", "text-anchor",
+             "dominant-baseline", "font-size", "font-weight", "marker-end", "marker-start",
+             "marker-mid", "refX", "refY", "markerWidth", "markerHeight", "orient", "markerUnits",
+             "dx", "dy"}
+_PALETTE = ("ink", "muted", "line", "right", "wrong", "sheet", "paper", "none")
+SVG_CLASSES = ({f"f-{c}" for c in _PALETTE} | {f"s-{c}" for c in _PALETTE}
+               | {"s-thin", "s-thick", "s-dash", "t-small", "t-label", "t-bold", "t-muted"})
+_MARKER_REF = re.compile(r"url\(#[A-Za-z][\w-]*\)")
+
+
+def _local(name):
+    return name.split("}", 1)[-1]
+
+
+def svg_problems(text):
+    """Problems that make a diagram unsafe or off the app's palette. Empty means clean."""
+    import xml.etree.ElementTree as ET
+    if "<!DOCTYPE" in text or "<!ENTITY" in text:
+        return ["doctype or entity declarations are not allowed"]
+    try:
+        root = ET.fromstring(text)
+    except ET.ParseError as e:
+        return [f"not valid SVG ({e})"]
+    out = []
+    if _local(root.tag) != "svg":
+        out.append("root element must be svg")
+    if "viewBox" not in root.attrib:
+        out.append("svg needs a viewBox")
+    if "width" in root.attrib or "height" in root.attrib:
+        out.append("svg must not set width or height")
+    for el in root.iter():
+        tag = _local(el.tag)
+        if tag not in SVG_TAGS:
+            out.append(f"element <{tag}> is not allowed")
+            continue
+        for raw, value in el.attrib.items():
+            name = _local(raw)
+            if raw.startswith("{http://www.w3.org/XML/1998/namespace}"):
+                continue
+            if name not in SVG_ATTRS:
+                out.append(f"attribute {name} on <{tag}> is not allowed")
+            elif name in ("fill", "stroke") and value not in ("none", "currentColor"):
+                out.append(f"{name}={value!r} on <{tag}>: use a palette class instead")
+            elif name == "class":
+                bad = [c for c in value.split() if c not in SVG_CLASSES]
+                if bad:
+                    out.append(f"class {' '.join(bad)} on <{tag}> is not in the palette")
+            elif name.startswith("marker-") and not _MARKER_REF.fullmatch(value):
+                out.append(f"{name} must point to a local marker like url(#arrow)")
+    return out
+
+
+def validate_concept(e, topic_key, catalogue_ids):
+    errors = []
+    for field in ("id", "name", "topic", "summary", "body", "related"):
+        if not e.get(field):
+            errors.append(f"missing {field}")
+    if errors:
+        return errors
+    if not CONCEPT_ID.fullmatch(str(e["id"])):
+        errors.append("id must be lower-case kebab-case")
+    if e["id"] not in catalogue_ids:
+        errors.append("id is not in the catalogue")
+    if e["topic"] != topic_key:
+        errors.append(f"topic must be {topic_key}")
+    aka = e.get("aka", [])
+    if not isinstance(aka, list) or not all(isinstance(a, str) for a in aka):
+        errors.append("aka must be a list of strings")
+    for field, (lo, hi) in (("summary", SUMMARY_WORDS), ("body", BODY_WORDS)):
+        n = _word_count(e[field])
+        if not lo <= n <= hi:
+            errors.append(f"{field} has {n} words, needs {lo} to {hi}")
+    if "mixup" in e:
+        n = _word_count(e["mixup"])
+        if not MIXUP_WORDS[0] <= n <= MIXUP_WORDS[1]:
+            errors.append(f"mixup has {n} words, needs {MIXUP_WORDS[0]} to {MIXUP_WORDS[1]}")
+    rel = e["related"]
+    if not isinstance(rel, list) or not 1 <= len(rel) <= 5 or len(set(rel)) != len(rel):
+        errors.append("related must list 1 to 5 different concept ids")
+    else:
+        for r in rel:
+            if r == e["id"] or r not in catalogue_ids:
+                errors.append(f"related id {r!r} is not another catalogue concept")
+    if "asof" in e and not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(e["asof"])):
+        errors.append("asof must be YYYY-MM-DD")
+    for field in ("name", "summary", "body", "mixup"):
+        if isinstance(e.get(field), str):
+            errors += prose_violations(e[field])
+    return errors
+
+
+def load_glossary(gdir):
+    """Returns (catalogue ids, entries in topic order, errors). Entries carry inlined svg."""
+    gdir = Path(gdir)
+    errors = []
+    try:
+        catalogue = json.loads((gdir / "catalogue.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        return set(), [], [f"glossary catalogue: {e}"]
+    ids = {c.get("id") for c in catalogue if isinstance(c, dict)}
+    entries, seen = [], set()
+    for key in TOPICS:
+        path = gdir / f"{key}.json"
+        if not path.exists():
+            continue
+        try:
+            items = json.loads(path.read_text(encoding="utf-8"))
+        except ValueError as e:
+            errors.append(f"glossary/{path.name}: not valid JSON ({e})")
+            continue
+        for e in items:
+            cid = e.get("id", "?") if isinstance(e, dict) else "?"
+            errs = validate_concept(e, key, ids) if isinstance(e, dict) else ["not an object"]
+            if cid in seen:
+                errs.append("duplicate concept id")
+            seen.add(cid)
+            if not errs and e.get("diagram"):
+                svg_path = gdir / "diagrams" / f"{e['diagram']}.svg"
+                if not svg_path.exists():
+                    errs.append(f"diagram file {svg_path.name} is missing")
+                else:
+                    svg = svg_path.read_text(encoding="utf-8")
+                    probs = svg_problems(svg)
+                    errs += [f"diagram: {p}" for p in probs]
+                    if not probs:
+                        e = {**e, "svg": re.sub(r"\s*\n\s*", " ", svg).strip()}
+            errors += [f"glossary/{path.name}:{cid}: {m}" for m in errs]
+            if not errs:
+                entries.append(e)
+    return ids, entries, errors
+
+
+def check_question_concepts(q, catalogue_ids, required):
+    c = q.get("concepts")
+    if c is None:
+        return ["missing concepts (1 to 4 glossary ids)"] if required else []
+    if not isinstance(c, list) or not 1 <= len(c) <= 4 or len(set(c)) != len(c):
+        return ["concepts must list 1 to 4 different glossary ids"]
+    return [f"concept {x!r} is not in the glossary catalogue" for x in c if x not in catalogue_ids]
+
+
 # ---------------------------------------------------------------- main
 
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--content", default=str(ROOT / "content"))
     ap.add_argument("--out", default=str(ROOT / "data" / "bank.json"))
+    ap.add_argument("--glossary", default=str(ROOT / "content" / "glossary"))
+    ap.add_argument("--glossary-out", default=None, help="defaults to glossary.json next to --out")
     ap.add_argument("--no-checks", action="store_true")
+    ap.add_argument("--require-concepts", action="store_true")
     args = ap.parse_args(argv)
 
     content = Path(args.content)
     errors, questions, seen = [], [], {}
+    gdir = Path(args.glossary)
+    has_glossary = (gdir / "catalogue.json").exists()
+    catalogue_ids, entries = set(), []
+    if has_glossary:
+        catalogue_ids, entries, gerrs = load_glossary(gdir)
+        errors += gerrs
     python = check_python()
     for key in TOPICS:
         path = content / f"{key}.json"
@@ -280,6 +442,10 @@ def main(argv):
                 errors.append(f"{path.name}:?: not an object")
                 continue
             errs = validate_question(q, key)
+            if has_glossary:
+                errs += check_question_concepts(q, catalogue_ids, args.require_concepts)
+            elif args.require_concepts:
+                errs.append("missing glossary catalogue, so concepts cannot be checked")
             if qid in seen:
                 errs.append(f"duplicate id, also in {seen[qid]}")
             seen[qid] = path.name
@@ -309,6 +475,14 @@ def main(argv):
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(bank, ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n")
+    if has_glossary:
+        gout = Path(args.glossary_out) if args.glossary_out else out.parent / "glossary.json"
+        glossary = {"version": 1, "built": bank["built"], "topics": bank["topics"], "concepts": entries}
+        gout.parent.mkdir(parents=True, exist_ok=True)
+        gout.write_text(json.dumps(glossary, ensure_ascii=False, indent=1) + "\n", encoding="utf-8", newline="\n")
+        missing = len(catalogue_ids - {e["id"] for e in entries})
+        print(f"glossary: {len(entries)} entries, {sum(1 for e in entries if 'svg' in e)} diagrams, "
+              f"{missing} catalogue concepts without an entry yet")
     counts = {}
     for q in questions:
         counts[q["topic"]] = counts.get(q["topic"], 0) + 1
