@@ -501,5 +501,416 @@
    "adam-optimizer",
    "learning-rate"
   ]
+ },
+ {
+  "id": "dl-0022",
+  "topic": "deep",
+  "subtopic": "AdamW vs L2 in the loss",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A team trains a click-through model with Adam and adds (λ/2)‖w‖² to the loss as regularization. A colleague says this is not the same as using AdamW with weight decay λ, even though the two would be identical under plain SGD. Which statement best explains the difference?",
+  "options": [
+   "Adam divides the λw term by each weight's √v̂, so weights with large past gradients get less decay. AdamW decays outside that scaling, so all weights shrink at one rate.",
+   "Adam's momentum averages the λw term away over a few steps, so the penalty barely acts. AdamW applies the decay once per epoch, where the moment estimates cannot reach it.",
+   "Both setups apply the same update to every weight. AdamW differs only because it turns off Adam's bias correction for the decay term, which changes early steps.",
+   "Putting L2 in the loss also decays biases and normalization weights, while AdamW never decays them. That split is the whole difference between the two setups."
+  ],
+  "answer": 0,
+  "explanation": "Adding (λ/2)‖w‖² to the loss puts an extra λw into each gradient. Plain SGD then subtracts ηλw, which is exactly weight decay. Adam does not step along the raw gradient, though. It divides each coordinate by √v̂, a running measure of the size of that weight's past gradients, so the λw term gets divided too. A weight with large past gradients has a large √v̂, so its pull toward zero is weakened, while a weight with tiny gradients is pulled hard. The regularization ends up uneven and tied to gradient history. AdamW takes the decay out of the gradient and applies w ← w − ηλw as a separate step, so every weight shrinks by the same fraction each step.\n\nThe option about momentum is wrong because the λw term enters the moment estimates like any other gradient and is never cancelled, and AdamW decays at every step, not once an epoch. The option claiming the updates are the same describes SGD, not Adam, and AdamW keeps bias correction. The option about biases and normalization weights mixes up a common practice with the core issue. Which parameters get decayed is set by parameter groups in both setups, and the scaling difference remains even when every parameter is decayed.",
+  "deeper": "AdamW is now the usual default for training transformers. A good follow-up point: with decoupled decay the shrink per step is η × λ, so changing the learning rate schedule also changes the regularization strength. Teams also commonly exclude biases and normalization weights from decay, which is a separate choice from coupled versus decoupled.",
+  "concepts": [
+   "weight-decay",
+   "adam-optimizer",
+   "l2-regularization"
+  ],
+  "tags": [
+   "optimizers",
+   "regularization"
+  ]
+ },
+ {
+  "id": "dl-0023",
+  "topic": "deep",
+  "subtopic": "warmup and decay",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "You train a transformer from scratch to route support tickets, using Adam with a peak learning rate of 3 × 10⁻⁴. Starting at the peak rate makes the loss spike in the first few hundred steps and sometimes diverge. A schedule with linear warmup over 2,000 steps, then cosine decay to near zero, trains smoothly. Which statement best explains why this schedule works?",
+  "options": [
+   "Early gradients and Adam's moment estimates are unreliable, so full-size steps can throw the weights into an unstable region. Later decay shrinks the steps so the weights can settle.",
+   "Adam's bias correction makes the first updates far too small, so warmup ramps the rate up to make up for it. Later decay then undoes that extra boost once the moment estimates have become stable.",
+   "Small early steps stop the network from memorizing the first batches it sees, which cuts overfitting. Later decay does the job of weight decay, so no separate regularizer is needed.",
+   "Small early steps give the batch norm running statistics time to settle before big updates arrive. Later decay keeps those running statistics from drifting as training goes on."
+  ],
+  "answer": 0,
+  "explanation": "At the start the weights are random, gradients are large and change quickly, and Adam's second-moment estimate is built from only a handful of steps, so the per-weight step sizes are noisy. Taking full-size steps in that state can push the model into a region where activations and the loss blow up, and transformers are known to be sensitive to this. Warmup keeps the steps small until the gradient statistics and the model are calmer. Decay at the end does a different job. Late in training, large steps bounce around the bottom of a valley, so shrinking them lets the weights settle and usually lowers the final loss.\n\nThe option about bias correction has it backwards. Bias correction removes the shrinkage caused by starting the moments at zero, so the first Adam steps are already close to full size, which is part of why warmup helps. The option about memorizing early batches confuses step size with regularization, and decay does not replace weight decay. The option about batch norm does not fit, because transformers use layer norm, which keeps no running statistics.",
+  "deeper": "A typical follow-up asks how long warmup should be. Common practice is a few hundred to a few thousand steps, or a few percent of the run. You can add that Adam variants such as RAdam try to fix the early variance problem directly, and that warmup also helps in fine-tuning, where large early steps can erase pretrained knowledge.",
+  "concepts": [
+   "learning-rate-schedule",
+   "learning-rate",
+   "adam-optimizer"
+  ],
+  "tags": [
+   "learning-rate",
+   "transformers"
+  ]
+ },
+ {
+  "id": "dl-0024",
+  "topic": "deep",
+  "subtopic": "steps per epoch",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A sentiment model trains on 50,000 product reviews with a batch size of 64 for 5 epochs. The data loader keeps the last, smaller batch of each epoch, and the optimizer takes one step per batch. How many optimizer steps does the whole run take? Give a whole number.",
+  "answer": 3910,
+  "tolerance": 0.5,
+  "check": "import math\nn = 50000\nbatch = 64\nepochs = 5\nresult = math.ceil(n / batch) * epochs",
+  "explanation": "Each epoch is split into batches of 64. 50,000 / 64 = 781.25, so there are 781 full batches holding 781 × 64 = 49,984 reviews, plus one final batch with the remaining 16 reviews. Because the loader keeps that last batch, each epoch has 782 batches and so 782 optimizer steps. Over 5 epochs that is 782 × 5 = 3,910 steps.\n\nThe common mistake is to compute 50,000 × 5 / 64 = 3,906.25 and round to 3,906. That treats the run as one long stream of reviews, but each epoch ends with its own partial batch, so the leftover 16 reviews add a whole extra step in every epoch, not a fraction of one. If the loader dropped the last batch instead, each epoch would have 781 steps and the run would take 3,905.",
+  "deeper": "Step counts matter because schedulers are set in steps. A warmup of 500 steps or a cosine decay over the whole run must use the real count, or the learning rate reaches zero too early or never finishes decaying. With gradient accumulation over k batches, divide the number of optimizer steps by k.",
+  "concepts": [
+   "batch-size",
+   "learning-rate-schedule"
+  ],
+  "tags": [
+   "batching"
+  ]
+ },
+ {
+  "id": "dl-0025",
+  "topic": "deep",
+  "subtopic": "scaling batch size",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "An image classifier for a photo app trains well with SGD and momentum at batch size 256 and learning rate 0.1. To train faster, the team moves to 8 GPUs with 256 images each, an effective batch of 2,048, and keeps the same number of epochs. Which plan is most sound?",
+  "options": [
+   "Scale the learning rate to about 0.8 and warm up to it over the first few epochs, since the linear rule breaks down while the weights still change fast.",
+   "Keep the learning rate at 0.1, since each gradient is now 8 times more accurate, so every step already makes about 8 times more progress than before.",
+   "Scale the learning rate to about 0.8 and skip warmup, since the larger batch already averages away the noisy early gradients that warmup exists to handle.",
+   "Scale the learning rate to about 0.8 and expect matching accuracy at any batch size, since the linear rule makes every batch size train the same way."
+  ],
+  "answer": 0,
+  "explanation": "With 8 times the batch, each epoch has 8 times fewer steps. The linear scaling rule says to multiply the learning rate by the same factor, here 0.1 × 8 = 0.8, so one large-batch step moves the weights about as far as 8 small-batch steps would have. That reasoning assumes the gradient barely changes across those 8 steps. It fails early in training, when the weights move fast, so a gradual warmup to the higher rate is part of the recipe. Even with warmup, very large batches have less gradient noise, tend to settle in sharper minima and can generalize worse, and past some batch size the rule stops working. So you still check validation accuracy against the old run.\n\nKeeping the rate at 0.1 confuses a more accurate gradient with a bigger step. The step length is set by the learning rate, so each update makes roughly the progress of one small step while there are 8 times fewer updates, and the model undertrains. Skipping warmup removes the piece that keeps the scaled rate stable at the start, since the danger early on is fast-changing weights, not gradient noise. Expecting identical accuracy at any batch size ignores both the limit of the rule and the generalization gap.",
+  "deeper": "Strong candidates add that the linear rule was shown for SGD with momentum, and adaptive optimizers often need a different rule, with square-root scaling a common starting point. Past a critical batch size, extra examples per step give little gain, so more GPUs stop cutting training time. Layer-wise methods such as LARS and LAMB push that limit further.",
+  "concepts": [
+   "batch-size",
+   "learning-rate",
+   "learning-rate-schedule"
+  ],
+  "tags": [
+   "batching",
+   "distributed"
+  ]
+ },
+ {
+  "id": "dl-0026",
+  "topic": "deep",
+  "subtopic": "freeze or fine-tune",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A retailer wants to sort shelf photos into 12 product categories but has only 800 labeled images. It has a CNN pretrained on millions of everyday photos, which look a lot like the shelf images. Which approach is the best starting point?",
+  "options": [
+   "Freeze the pretrained layers and train a new 12-class head, since the features already suit these photos and 800 images cannot retrain them.",
+   "Fine-tune every layer from the start at the original pretraining learning rate, since all of the layers need to adapt to the 12 new labels.",
+   "Train the same architecture from random weights, since pretrained features carry biases from the old classes that would hurt the new categories.",
+   "Keep the original classifier head and fine-tune only the first convolution layer, since the early layers hold the most task-specific features."
+  ],
+  "answer": 0,
+  "explanation": "When the new data is small and looks like the pretraining data, the pretrained features already describe it well: edges, textures, shapes and object parts. Freezing the backbone and training only a new head means you fit only the head's weights, tens of thousands at most, instead of millions, so 800 images are enough and overfitting stays low. It is also fast and cheap.\n\nFine-tuning every layer at the original pretraining learning rate lets large updates, driven at first by a random head, wreck the useful features, and with 800 images the model can quickly overfit. Training from random weights throws away your main advantage, and 800 images are far too few to learn good visual features from scratch. Keeping the old head and tuning the first layer gets the layers backwards. Early layers learn generic features like edges, while later layers are more specific to the original task, and the old head predicts the wrong classes anyway.\n\nThe answer changes as data grows or the domain moves away. With tens of thousands of images, or a distant domain such as X-rays, unfreezing more layers with a small learning rate usually wins.",
+  "deeper": "Interviewers often ask for the full grid. Small data and a close domain: train a head on frozen features. Lots of data and a close domain: fine-tune everything with a small learning rate. Small data and a distant domain: use features from earlier layers or find a closer pretrained model. Lots of data and a distant domain: fine-tune fully.",
+  "concepts": [
+   "transfer-learning",
+   "convolutional-neural-network"
+  ],
+  "tags": [
+   "transfer-learning"
+  ]
+ },
+ {
+  "id": "dl-0027",
+  "topic": "deep",
+  "subtopic": "fine-tuning a vision model on little data",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "You fine-tune an ImageNet-pretrained ResNet to spot defects on circuit boards, with 1,500 labeled photos and a new classification head. Which practices are sound? Select all that apply.",
+  "options": [
+   "Use a smaller learning rate for the pretrained backbone than for the new head.",
+   "Train the new head first with the backbone frozen, then unfreeze the top blocks a few at a time.",
+   "Normalize the photos with the same channel mean, standard deviation and color order used in pretraining.",
+   "Give the backbone a larger learning rate than the head, since it must move further away from ImageNet.",
+   "Turn off data augmentation, since pretrained features already generalize well on small datasets.",
+   "Apply strong weight decay to the backbone, since weight decay pulls weights back toward their pretrained values."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "A small dataset cannot support big changes to millions of pretrained weights, so the sound practices all protect what the backbone already knows. A smaller backbone learning rate, often around 10 times lower than the head's, lets the features adapt gently while the new head learns fast. Training the head first matters because a randomly initialized head sends large, noisy gradients into the backbone at the start. Once the head is sensible, unfreezing the top blocks gradually lets the more task-specific layers adapt before the generic early ones. Matching the pretraining normalization keeps inputs in the range the first layers were trained on. A different scale or color order shifts every activation and quietly costs accuracy.\n\nA larger backbone learning rate is the reverse of what helps and tends to erase the pretrained features. Turning off augmentation removes one of the best defenses against overfitting 1,500 images, and pretrained features do not remove that need. Weight decay pulls weights toward zero, not toward their pretrained values, so strong decay on the backbone drags it away from the starting point you wanted to keep. Penalties that pull toward the pretrained weights exist, but they are a different method.",
+  "deeper": "Lower rates for earlier layers and gradual unfreezing were popularized for fine-tuning language models and work for vision too. A practical gotcha is batch norm: with small fine-tuning batches, keeping the pretrained running statistics frozen is often safer than updating them from noisy batches.",
+  "concepts": [
+   "transfer-learning",
+   "learning-rate",
+   "weight-decay"
+  ],
+  "tags": [
+   "transfer-learning",
+   "vision"
+  ]
+ },
+ {
+  "id": "dl-0028",
+  "topic": "deep",
+  "subtopic": "label-preserving augmentation",
+  "format": "multi",
+  "difficulty": 1,
+  "prompt": "A model reads single house-number digits (0 to 9) cropped from street photos. You want to augment the 20,000 training crops. Which augmentations keep every label correct? Select all that apply.",
+  "options": [
+   "Rotating by a random angle between −10 and +10 degrees",
+   "Changing brightness and contrast by up to 20 percent",
+   "Shifting the crop a few pixels with the digit kept in view",
+   "Flipping the image from left to right at random",
+   "Rotating the image by 180 degrees at random"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "An augmentation is safe when a person would still give the changed image the same label. Small rotations match how real photos are taken at slight angles, and a 7 tilted by 10 degrees is still a 7. Brightness and contrast changes mimic shade, sun and camera settings without touching the digit's shape. Small shifts that keep the digit in view copy the imperfect cropping the model will see in production.\n\nA left-right flip changes what many digits look like. A mirrored 3 or 7 is not a valid digit at all, so the model learns from images whose labels no longer describe them. A 180 degree rotation is worse, because it turns a 6 into something that looks like a 9 and a 9 into a 6, so the label becomes actively wrong. The common mistake is to copy an augmentation list from a natural-image task, where left-right flips are safe because a flipped cat is still a cat, into a task where orientation carries the meaning.",
+  "deeper": "In interviews, tie augmentation to deployment conditions: blur for moving vehicles, lighting changes for outdoor cameras, slight rotations for handheld photos. A cheap check is to look at a grid of augmented samples with their labels before training, since a bad augmentation silently caps accuracy.",
+  "concepts": [
+   "data-augmentation"
+  ],
+  "tags": [
+   "augmentation",
+   "vision"
+  ]
+ },
+ {
+  "id": "dl-0029",
+  "topic": "deep",
+  "subtopic": "capping gradient norms",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "Before each optimizer step, a training script computes the L2 norm of all the gradients taken together. If the norm is above 1.0, it multiplies every gradient by 1.0 divided by the norm, which keeps the direction but caps the size. If the norm is 1.0 or below, the gradients are left alone. This technique is called ______.",
+  "answer": "gradient clipping",
+  "accept": [
+   "gradient norm clipping",
+   "grad clipping",
+   "gradient clipping by norm",
+   "clipping by norm",
+   "norm clipping",
+   "clip grad norm",
+   "clipping",
+   "gradient clip"
+  ],
+  "explanation": "Gradient clipping by norm measures the length of the full gradient vector, ‖g‖. If it is above the threshold c, the gradient is rescaled to g × c / ‖g‖, so its length becomes exactly c. The direction of the update stays the same, and only its size is capped. This protects training from the rare batch that produces a huge gradient, which would otherwise throw the weights far off course in one step. It is standard for RNNs and transformers.\n\nA common wrong answer is gradient normalization, which suggests always rescaling to a fixed size, while clipping only acts when the norm is above the limit. Another is loss scaling from mixed precision training, which multiplies the loss to stop small gradients underflowing and has a different purpose. Clipping by value is a related method that caps each element separately, which can change the direction of the gradient.",
+  "deeper": "In interviews, mention that the threshold is often set by watching typical gradient norms and choosing a value a bit above them. A run where clipping fires on most steps is a warning sign, often of a learning rate that is too high. With mixed precision, unscale the gradients before clipping.",
+  "concepts": [
+   "gradient-clipping"
+  ],
+  "tags": [
+   "gradients",
+   "stability"
+  ]
+ },
+ {
+  "id": "dl-0030",
+  "topic": "deep",
+  "subtopic": "lookup table of learned vectors",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A recommender has 2 million product ids. Instead of feeding one-hot vectors, it keeps a trainable matrix with one row of 64 numbers per product. A product's row is fetched by its id and updated by backpropagation like any other weights, so products that behave alike end up with similar rows. This learned lookup table is called the ______ layer.",
+  "answer": "embedding",
+  "accept": [
+   "embeddings",
+   "embedding layer",
+   "embedding table",
+   "embedding matrix",
+   "embedding lookup",
+   "entity embedding",
+   "entity embeddings"
+  ],
+  "explanation": "An embedding layer is a weight matrix with one row per id. Looking up row i gives the same result as multiplying a one-hot vector for id i by the matrix, but without building a 2-million-long vector, so it is far cheaper. Because the rows are trained by the task loss, products that play similar roles, such as ones bought by the same users, drift toward nearby vectors.\n\nA common wrong answer is one-hot encoding. That is the sparse input the embedding replaces. It has no learned values and puts every product at the same distance from every other product. Another is feature hashing, which maps many ids into fewer buckets to save memory but is a fixed function, not a learned table. Hashing is sometimes placed in front of an embedding to shrink it, which is where the two get mixed up.",
+  "deeper": "For large catalogues the embedding table can hold most of a model's parameters, here 2 million × 64 = 128 million. Interviewers may ask how you handle ids never seen in training, with answers such as a shared unknown row, hashing into buckets, or building the vector from content features.",
+  "concepts": [
+   "embedding"
+  ],
+  "tags": [
+   "embeddings",
+   "recsys"
+  ]
+ },
+ {
+  "id": "dl-0031",
+  "topic": "deep",
+  "subtopic": "contrastive learning",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "You train a two-tower model to match customer questions with help-center articles. Each batch holds B question and article pairs. The loss is a softmax over the similarity of each question with all B articles in the batch, with its own article as the correct class. Cutting the batch size from 1,024 to 32 to save memory makes retrieval recall clearly worse, even after retuning the learning rate. What is the main reason?",
+  "options": [
+   "Every other article in the batch is a negative for a given question, so B = 32 gives only 31 negatives. Fewer and easier negatives teach coarser distinctions.",
+   "A smaller batch averages fewer pairs, so the gradient on the matching pairs gets noisier. The set of negatives each question sees stays the same at any batch size.",
+   "The towers' batch norm statistics are estimated from only 32 examples and get noisy. The contrastive loss itself does not depend on how many examples share a batch.",
+   "Small batches are more likely to hold duplicate articles, which act as false negatives. Larger batches spread duplicates out, so fewer correct articles get pushed away."
+  ],
+  "answer": 0,
+  "explanation": "Contrastive learning pulls each matching pair together and pushes non-matching pairs apart. With in-batch negatives, the loss for a question is a B-way classification: pick its own article out of the B in the batch. At B = 32 the model only has to beat 31 mostly random articles, which a coarse topic match often does. At B = 1,024 there are 1,023 competitors, more of them close to the true article, so the model must learn finer signals to rank it first. That is why contrastive methods are sensitive to batch size, and why teams add negatives shared across devices, memory banks or mined hard negatives.\n\nThe option about noisy gradients names a real but minor effect, and its claim that the negatives do not change is false, since the negatives are exactly the other items in the batch. The option about batch norm blames a layer the setup never mentions and says the loss ignores batch size, which is the opposite of the truth. The option about duplicates has the direction backwards. A larger batch is more likely to contain another article that also answers the question, so false negatives grow with batch size.",
+  "deeper": "A strong answer adds the softmax temperature, which controls how sharply the loss focuses on the closest negatives, and the cost side: the similarity matrix grows as B², so large batches need tricks such as gradient caching. Hard negatives mined with BM25 or an older model often help more than raw batch size.",
+  "concepts": [
+   "contrastive-learning",
+   "embedding",
+   "batch-size"
+  ],
+  "tags": [
+   "retrieval",
+   "embeddings"
+  ]
+ },
+ {
+  "id": "dl-0032",
+  "topic": "deep",
+  "subtopic": "sanity checks before a long run",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "Before launching a three-day training run for a support-bot intent classifier with 20 intents, your lead asks what quick checks you will run first so the run does not waste three days. What would you check, and what result would you expect from each?",
+  "answer": "First I would look at the loss on the very first batch. With random weights the model should give near-uniform probabilities, so cross-entropy should start near ln 20 ≈ 3.0. A much higher value points to a bad initialization or badly scaled logits. Next I would try to overfit one small batch of about 32 examples with regularization off. The loss should fall close to zero within a few hundred steps, and if it does not, the model, loss or labels are wired wrong. I would also print a few inputs exactly as the model sees them, after tokenization and cleaning, next to their labels, to catch shuffled labels or truncated text. Finally I would run a few hundred real steps to confirm the loss falls, gradient norms stay finite, and checkpoint saving and the evaluation loop both work.",
+  "points": [
+   "First loss should be close to ln 20 ≈ 3.0, matching near-uniform predictions",
+   "Overfit one small batch to near-zero loss to prove the model and loss can learn",
+   "Inspect a few processed inputs next to their labels to catch pipeline and label bugs",
+   "Run a short real training to check the loss falls and gradients stay finite",
+   "Confirm checkpointing and evaluation work before the long run starts"
+  ],
+  "explanation": "Each check catches a different kind of bug cheaply. The starting loss check works because a randomly initialized classifier should not prefer any class, so each of the 20 classes gets about 1/20 and the loss is −ln(1/20) = ln 20 ≈ 3.0. Overfitting a tiny batch tests the whole training path. If a model with millions of parameters cannot memorize 32 examples, something such as a detached loss, a frozen layer or labels shuffled against inputs is broken. Looking at the real processed inputs catches problems no metric shows, like text cut to 8 tokens or every label mapped to one intent.\n\nThe common mistake is to skip these and trust the loss curve of the long run. A run with a broken pipeline can still show a falling loss, for example by learning only the class frequencies, which brings the loss down to the entropy of the label distribution. That can look like progress for hours before anyone notices accuracy stuck at the majority-class rate.",
+  "deeper": "Strong candidates add a short learning-rate range test and a tiny end-to-end run on a small slice of data that goes through evaluation and checkpoint loading. Interviewers like hearing that you resume from a saved checkpoint once to prove resuming works, since a crash on day two is common.",
+  "concepts": [
+   "cross-entropy-loss",
+   "learning-rate",
+   "overfitting"
+  ],
+  "tags": [
+   "debugging",
+   "training"
+  ]
+ },
+ {
+  "id": "dl-0033",
+  "topic": "deep",
+  "subtopic": "picking an architecture",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "Your team has three new projects and asks you to pick a starting model for each.\n\n- Predict loan default from 40 numeric and categorical columns, with 200,000 rows, scored in a nightly batch job.\n- Detect cracks in photos of concrete, with 5,000 labeled images, running on a tablet on site.\n- Classify the topic of customer reviews, with 30,000 labeled reviews, served through an API with a 100 ms latency budget.\n\nWhat would you choose for each, and why?",
+  "answer": "For loan default I would start with gradient-boosted trees. Tabular columns have no spatial or order structure for a neural network to exploit, trees handle mixed types and skewed features well, and at this size they usually match or beat MLPs while being cheap to train and serve. For cracks I would fine-tune a small pretrained CNN, such as a mobile-sized network. Convolutions build in locality and translation equivariance, which suits cracks that can appear anywhere, 5,000 images are too few to train from scratch, and a small CNN runs fast on a tablet. For reviews I would fine-tune a small pretrained transformer encoder. Attention captures word context and negation, 30,000 labels are plenty for fine-tuning, and a compact or distilled encoder fits a 100 ms budget. I would keep a TF-IDF plus logistic regression baseline to check that the gain is worth the cost.",
+  "points": [
+   "Tabular data: gradient-boosted trees first, since there is no spatial or sequence structure to exploit",
+   "Images: fine-tune a pretrained CNN, whose locality and translation equivariance suit cracks",
+   "Small datasets call for transfer learning, not training deep models from scratch",
+   "Text: fine-tune a pretrained transformer encoder for word context",
+   "Serving limits (tablet, 100 ms) push toward small or distilled models",
+   "Keep a simple baseline to judge whether the deep model earns its cost"
+  ],
+  "explanation": "Interviewers want the reasoning in a clear order: inductive bias, then data size, then serving cost. An inductive bias is an assumption built into the model. Convolutions assume nearby pixels matter together and that a pattern means the same thing anywhere in the image, which is true of cracks. Attention lets any word affect any other, which matters in reviews where a \"not\" five words back flips the meaning. Tabular rows have neither property, so trees, which split on single features and need no feature scaling, are the strong default.\n\nData size then decides between training from scratch and transfer learning. 5,000 images and 30,000 reviews are small for deep models but plenty for fine-tuning a pretrained one. Serving cost then picks the model size inside each family.\n\nThe common mistake is to pick the most powerful architecture everywhere, such as a large transformer on the loan table, or to ignore deployment and propose a model the tablet cannot run. Another is reaching for an RNN for the reviews. It can work, but it reads words one at a time, trains more slowly and lacks the strong pretrained checkpoints that transformer encoders have.",
+  "deeper": "A strong candidate also says what would change each choice. If the loan data included long transaction histories, a sequence model over events could add signal on top of the trees. If the tablet had tight memory, quantizing the CNN would matter. Senior answers tie every choice to a metric and a baseline.",
+  "concepts": [
+   "convolutional-neural-network",
+   "transfer-learning",
+   "gradient-boosting",
+   "recurrent-neural-network"
+  ],
+  "tags": [
+   "architecture",
+   "design"
+  ]
+ },
+ {
+  "id": "dl-0034",
+  "topic": "deep",
+  "subtopic": "reusing pretrained embeddings",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A job board wants to flag duplicate job postings and also sort postings into 15 categories. You have a pretrained sentence encoder that turns text into 768-number vectors, and a few hundred hand-labeled examples for each task. How would you use the encoder's embeddings for both tasks, and how would you decide whether they are good enough or need fine-tuning?",
+  "answer": "I would embed each posting with the frozen encoder, using the pooling it was trained with, and L2-normalize the vectors. For duplicates, I would compare postings by cosine similarity, find each posting's nearest neighbours with a vector index, and flag pairs above a threshold that I tune on the labeled pairs, reporting precision and recall. For categories, I would train a logistic regression on the frozen embeddings, a linear probe, and measure macro-F1 on a held-out split. To judge quality, I would compare both against a simple TF-IDF baseline and read the nearest neighbours of some postings by hand, looking for failures such as matching on company boilerplate instead of the job itself. If the encoder clearly loses to the baseline or misses domain jargon, I would fine-tune it on in-domain pairs or on the category labels.",
+  "points": [
+   "Embed with the frozen encoder and normalize the vectors",
+   "Duplicates: cosine similarity with a threshold tuned on labeled pairs, measured by precision and recall",
+   "Categories: train a linear probe on frozen embeddings and score it on a held-out split",
+   "Compare against a simple baseline and inspect nearest neighbours by hand",
+   "Fine-tune on in-domain data only if the frozen embeddings fall short"
+  ],
+  "explanation": "Pretrained embeddings place texts with similar meaning close together, so many tasks need only a light layer on top. A linear probe is a strong first test because it is cheap and shows how much useful information the frozen vectors already hold. A probe that does well means the encoder already separates the categories. A probe that does poorly means fine-tuning or a different encoder is needed.\n\nThe common mistake is to judge embeddings by eye on a few hand-picked pairs, or to pick a cosine threshold such as 0.8 without measuring it. Similarity scores depend on the encoder, and many encoders give unrelated texts scores well above zero, so a threshold only means something once it is tuned on labeled pairs. Another mistake is to ignore what the text contains. Job postings share long legal and benefits sections, which can make two different jobs at one company look like duplicates. Embedding only the title and duties, or stripping boilerplate first, often matters more than the choice of encoder. Also check truncation, since long postings can exceed the encoder's input limit and lose their key details.",
+  "deeper": "In production, a two-stage setup is common: cheap embedding search proposes candidate duplicates, then a cross-encoder or rules confirm them. Interviewers may ask what happens when you upgrade the encoder, since every stored vector must then be recomputed, because vectors from two models are not comparable.",
+  "concepts": [
+   "embedding",
+   "transfer-learning",
+   "cosine-similarity"
+  ],
+  "tags": [
+   "embeddings",
+   "transfer-learning"
+  ]
+ },
+ {
+  "id": "dl-0035",
+  "topic": "deep",
+  "subtopic": "train vs inference mismatches",
+  "format": "multi",
+  "difficulty": 3,
+  "prompt": "A food-photo classifier scores 91% accuracy on its validation set in the training notebook. The team wraps it in a new serving script, runs that script on the exact same validation images, and gets 74%. Which could explain the drop? Select all that apply.",
+  "options": [
+   "Dropout is still active in the serving script, so random units are zeroed on every prediction.",
+   "Batch norm runs in training mode at serving, so it normalizes with each incoming batch's statistics.",
+   "The serving script resizes and normalizes images differently from the training pipeline.",
+   "Users upload different kinds of food photos than the ones in the validation set.",
+   "The model overfit its training data, so the 91% validation score was too optimistic.",
+   "Gradient tracking is left on at serving, which changes the values the forward pass returns."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "The key fact is that the images are identical, so anything about the data or the model's general quality is ruled out. What is left is the code path, and three common bugs fit.\n\nDropout should be off at inference. If the model is never put in evaluation mode, units are randomly dropped on every call, so predictions get noisier and accuracy falls. Batch norm in training mode normalizes with the mean and variance of whatever batch arrives, rather than the running averages saved during training. With small or uneven serving batches those statistics are far from the training ones, and the outputs shift. Different preprocessing, such as another resize method, BGR instead of RGB order or a missing mean and standard deviation step, is training-serving skew. The model sees inputs unlike the ones it was trained on.\n\nThe option about user uploads describes data drift, which cannot apply when the same images are scored. Overfitting would show as a gap between training and validation scores, not between two runs on the same validation set. Gradient tracking costs memory and time but does not change the outputs of the forward pass.",
+  "deeper": "A quick test is to run the serving code and the notebook on the same few images and compare raw outputs to several decimal places. Teams lock this in with a parity test in CI that fails if the two paths differ beyond a small tolerance. Exporting the model with preprocessing built in removes a whole class of skew.",
+  "concepts": [
+   "batch-normalization",
+   "dropout",
+   "training-serving-skew"
+  ],
+  "tags": [
+   "serving",
+   "debugging"
+  ]
+ },
+ {
+  "id": "dl-0036",
+  "topic": "deep",
+  "subtopic": "validation loss up, accuracy up",
+  "format": "multi",
+  "difficulty": 3,
+  "prompt": "A 5-class news topic classifier is trained with cross-entropy. From epoch 6 to epoch 12, validation loss rises steadily from 0.41 to 0.58 while validation accuracy climbs steadily from 88% to 90%. Which statements about this are correct? Select all that apply.",
+  "options": [
+   "The model is growing more confident, so validation examples it still gets wrong put tiny probability on the true class and each adds a large loss.",
+   "Accuracy only counts whether the top class is correct, so it can improve while the probability given to the true class falls on other examples.",
+   "Temperature scaling fitted on the validation set could lower the validation loss here without changing any predicted class.",
+   "Cross-entropy and accuracy must always move in opposite directions, so this pattern proves there is a bug in the evaluation code.",
+   "The model is underfitting, and more epochs at the same learning rate will bring the validation loss back down again.",
+   "Early stopping on validation loss and on validation accuracy would pick the same epoch here, so the choice of monitor does not matter."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "Cross-entropy charges −ln(p), where p is the probability on the true class, so it cares about confidence. Accuracy only asks whether the true class has the highest score. As training goes on, the model pushes probabilities toward 0 and 1. On examples it gets right this lowers the loss only a little, since −ln(0.99) is about 0.01. On examples it still gets wrong, confidence in a wrong class makes p tiny, and −ln(0.01) is about 4.6. A handful of confident mistakes can outweigh many small gains, so the average loss rises even as a few more examples cross to the right side. That is overconfidence, a form of overfitting in the probabilities, and it shows up as poor calibration. Temperature scaling divides every logit by one number T, which keeps the order of the scores, so no prediction changes. Fitting T on validation loss can only match or beat T = 1, and here a T above 1 softens the overconfident outputs.\n\nThe bug option is wrong because the two metrics often move together but nothing forces any fixed relationship, and this exact pattern is common in real training. The underfitting option misreads the trend. Validation loss rising with more epochs points to overfitting in confidence, and training longer at the same rate usually makes it worse. The early stopping option fails on the given numbers. Over these epochs the loss is best at epoch 6 and accuracy is best at epoch 12, so the two monitors pick different checkpoints.",
+  "deeper": "Choose what to monitor based on how the model is used. If the probabilities feed decisions such as thresholds or ranking, plot a reliability diagram to see where confidence runs ahead of accuracy. Label smoothing and early stopping on loss also limit overconfidence. Interviewers like candidates who ask which metric the product actually depends on.",
+  "concepts": [
+   "cross-entropy-loss",
+   "calibration",
+   "overfitting"
+  ],
+  "tags": [
+   "calibration",
+   "evaluation"
+  ]
  }
 ]
