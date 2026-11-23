@@ -3,7 +3,7 @@ import { renderMarkup, escapeHtml } from './markup.js';
 import { grade, hasResponse, optionOrder } from './grade.js';
 import { dayKey, ensureToday, dealMore, nextNew, recordResult, overrideResult, stats, emptyProgress } from './schedule.js';
 import { loadProgress, saveProgress, exportCode, importCode, pruneUnknown } from './store.js';
-import { ICONS } from './icons.js';
+import { ICONS } from './icons.js?v=3';
 import { isMidAnswer } from './session.js';
 
 const main = document.getElementById('main');
@@ -28,6 +28,7 @@ const S = {
   persistent: true,
   view: 'today',
   ui: freshUi(),
+  fx: null, // one-shot motion cue for the next render: answer, override, reveal, enter, page
 };
 
 function freshUi() {
@@ -36,6 +37,15 @@ function freshUi() {
 
 const today = () => dayKey(new Date());
 const icon = (name) => `<span class="ico">${ICONS[name]}</span>`;
+
+// Reads and clears the motion cue, and puts it on <main> so CSS can play the
+// matching entrance once. Re-renders without a cue get no motion.
+function takeFx() {
+  const fx = S.fx;
+  S.fx = null;
+  main.className = fx ? `fx-${fx}` : '';
+  return fx;
+}
 
 function save() {
   if (S.persistent) S.persistent = saveProgress(S.progress);
@@ -57,9 +67,11 @@ function setDayLabel() {
   dayLabel.textContent = `Day ${stats(S.progress, S.bank, today()).day}`;
 }
 
+// Plain text of a prompt for the summary list. CSS clamps it to two lines,
+// so the cut here only keeps very long prompts out of the DOM.
 function snippet(text) {
   const plain = String(text).replace(/```[\s\S]*?```/g, ' ').replace(/[`*]/g, '').replace(/\s+/g, ' ').trim();
-  return plain.length > 90 ? `${plain.slice(0, 88).trimEnd()}...` : plain;
+  return plain.length > 240 ? `${plain.slice(0, 238).trimEnd()}...` : plain;
 }
 
 // ------------------------------------------------------------------ today
@@ -84,17 +96,19 @@ function railHtml(items, current) {
   const parts = [];
   if (reviews) parts.push(`${reviews} review${reviews === 1 ? '' : 's'}`);
   if (fresh) parts.push(`${fresh} ${items.some((it) => it.kind === 'practice') ? 'more' : 'new'}`);
-  const pos = current ? items.indexOf(current) + 1 : items.length;
-  const cells = items.map((it) => {
+  const pos = current ? `${items.indexOf(current) + 1} of ${items.length}` : 'Done';
+  const cells = items.map((it, n) => {
     const cls = [it.kind === 'review' ? 'review' : ''];
+    if (it === current) cls.push('cur');
     if (it.result === true) cls.push('right');
     else if (it.result === false) cls.push('wrong');
     else if (it === current) cls.push('now');
-    const state = it.result === true ? 'right' : it.result === false ? 'wrong' : 'not answered';
-    return `<li class="${cls.join(' ').trim()}" title="${KIND[it.kind]}, ${state}"></li>`;
+    const state = it.result === true ? 'right' : it.result === false ? 'wrong' : it === current ? 'current' : 'not answered';
+    const glyph = it.result === true ? ICONS.check : it.result === false ? ICONS.cross : '';
+    return `<li class="${cls.join(' ').trim()}" style="--i:${n}" title="${KIND[it.kind]}, ${state}">${glyph}<span class="sr">Question ${n + 1}, ${KIND[it.kind].toLowerCase()}, ${state}</span></li>`;
   });
   return `<div class="rail-wrap">
-    <div class="rail-label"><span>Today: ${parts.join(' and ')}</span><span>${pos} of ${items.length}</span></div>
+    <div class="rail-label"><span>Today: ${parts.join(' and ')}</span><span>${pos}</span></div>
     <ol class="rail" aria-label="Today's questions">${cells.join('')}</ol>
   </div>`;
 }
@@ -174,7 +188,7 @@ function feedbackHtml(q) {
     ? (ok ? 'Marked as got it' : 'Marked for review')
     : (ok ? 'Right' : 'Not quite');
   return `<section class="feedback" aria-labelledby="verdict">
-    <p class="verdict ${ok ? 'right' : 'wrong'}" id="verdict" tabindex="-1">${icon(ok ? 'check' : q.format === 'open' ? 'minus' : 'cross')}${verdict}</p>
+    <p class="verdict ${ok ? 'right' : 'wrong'}" id="verdict" tabindex="-1"><span class="badge">${icon(ok ? 'check' : q.format === 'open' ? 'minus' : 'cross')}</span>${verdict}</p>
     ${keyLine(q)}
     ${override}
     <div class="explain">${renderMarkup(q.explanation)}</div>
@@ -199,6 +213,7 @@ function actionsHtml(q) {
 function renderQuestion(q, item, items) {
   const review = item.kind === 'review' ? '<span class="tag-review">Review</span>' : '';
   const redo = item.kind === 'practice' ? '<span class="tag-review">Redo</span>' : '';
+  takeFx();
   main.innerHTML = `${railHtml(items, item)}
     <article class="question" aria-labelledby="prompt">
       <div class="meta">
@@ -253,6 +268,7 @@ function bindQuestion(q) {
       if (act === 'check') check(q);
       if (act === 'reveal') {
         S.ui.revealed = true;
+        S.fx = 'reveal';
         renderToday();
         main.querySelector('.model h3')?.scrollIntoView({ block: 'nearest' });
       }
@@ -264,6 +280,7 @@ function bindQuestion(q) {
         overrideResult(S.progress, q.id, today());
         S.ui.ok = true;
         save();
+        S.fx = 'override';
         renderToday();
         main.querySelector('#verdict')?.focus();
       }
@@ -279,6 +296,7 @@ function check(q) {
   S.ui.checked = true;
   S.ui.ok = ok;
   save();
+  S.fx = 'answer';
   renderToday();
   main.querySelector('#verdict')?.focus();
 }
@@ -286,6 +304,7 @@ function check(q) {
 function next() {
   S.ui = freshUi();
   rollover();
+  S.fx = 'enter';
   renderToday();
   window.scrollTo(0, 0);
   (main.querySelector('#prompt') ?? main.querySelector('h2'))?.focus();
@@ -302,13 +321,13 @@ function renderSummary() {
 
   const title = items.length ? 'Today\'s set is done' : 'Nothing due today';
   const lede = items.length
-    ? `You got ${right} of ${answered.length} right today.`
-    : 'No reviews are due and no new questions are left.';
+    ? `<p class="score"><span class="score-num">${right}</span> <span class="score-of">of ${answered.length} right today</span></p>`
+    : '<p class="lede">No reviews are due and no new questions are left.</p>';
   const list = answered.map((it) => {
     const q = S.byId.get(it.id);
     return `<li>
-      <span class="${it.result ? 'ok' : 'no'}">${icon(it.result ? 'check' : 'cross')}</span>
-      <span class="what">${escapeHtml(snippet(q.prompt))}<br><span class="sub">${escapeHtml(S.titles[q.topic] ?? q.topic)}, ${KIND[it.kind].toLowerCase()}</span></span>
+      <span class="${it.result ? 'ok' : 'no'}">${icon(it.result ? 'check' : 'cross')}<span class="sr">${it.result ? 'Right' : 'Missed'}</span></span>
+      <span class="what"><span class="clip">${escapeHtml(snippet(q.prompt))}</span><span class="sub">${escapeHtml(S.titles[q.topic] ?? q.topic)}, ${KIND[it.kind].toLowerCase()}</span></span>
     </li>`;
   });
   const canRedo = !bankLeft && dealMore(structuredClone(S.progress), S.ids, today()) > 0;
@@ -324,10 +343,12 @@ function renderSummary() {
   }
   const due = st.dueTomorrow ? `<p class="lede">${st.dueTomorrow} review${st.dueTomorrow === 1 ? '' : 's'} due tomorrow.</p>` : '';
 
+  // Arriving from the last Next replays the rail once. Other visits only fade in.
+  if (takeFx() === 'enter') main.className = 'fx-done';
   main.innerHTML = `${items.length ? railHtml(S.progress.today.items, null) : ''}
     <section class="summary">
       <h2 tabindex="-1">${title}</h2>
-      <p class="lede">${lede}</p>
+      ${lede}
       ${answered.length ? `<ul class="done-list">${list.join('')}</ul>` : ''}
       ${note}
       ${due}
@@ -354,14 +375,15 @@ function renderProgress() {
   setDayLabel();
   const counts = {};
   for (const q of S.bank.questions) counts[q.topic] = (counts[q.topic] ?? 0) + 1;
-  const topics = S.bank.topics.filter((t) => counts[t.key]).map((t) => {
+  const topics = S.bank.topics.filter((t) => counts[t.key]).map((t, n) => {
     const r = st.byTopic[t.key];
     const pct = r?.answered ? Math.round((100 * r.right) / r.answered) : 0;
     const text = r?.answered ? `${r.right} of ${r.answered} right` : 'Not started';
-    return `<li><div class="row"><span>${escapeHtml(t.title)}</span><span>${text}</span></div>
+    return `<li class="${r?.answered ? '' : 'idle'}" style="--i:${n}"><div class="row"><span>${escapeHtml(t.title)}</span><span>${text}</span></div>
       <div class="bar" role="img" aria-label="${escapeHtml(t.title)}: ${text}"><i style="width:${pct}%"></i></div></li>`;
   });
   const fig = (label, value) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
+  takeFx();
   main.innerHTML = `<section class="page">
     <h2 tabindex="-1">Progress</h2>
     <p class="lede">${S.bank.questions.length} questions in the bank.</p>
@@ -387,6 +409,7 @@ function applyTheme(theme) {
 
 function renderSettings(msg = null) {
   const theme = S.progress.settings.theme === 'dark' ? 'dark' : 'light';
+  takeFx();
   main.innerHTML = `<section class="page">
     <h2 tabindex="-1">Settings</h2>
     <div class="group">
@@ -413,7 +436,7 @@ function renderSettings(msg = null) {
     <div class="group">
       <h3>Start over</h3>
       <p>Clears your history, reviews and streak on this device.</p>
-      <div class="actions"><button type="button" class="btn quiet" data-act="reset">Clear my progress</button></div>
+      <div class="actions"><button type="button" class="btn quiet danger" data-act="reset">Clear my progress</button></div>
       ${msg?.where === 'reset' ? `<p class="msg good" role="status">${escapeHtml(msg.text)}</p>` : ''}
     </div>
   </section>`;
@@ -508,12 +531,14 @@ async function boot() {
   rollover();
   save();
   window.addEventListener('hashchange', () => {
+    S.fx = 'page';
     route();
     main.querySelector('h2, #prompt')?.focus();
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && rollover() && S.view === 'today') renderToday();
   });
+  S.fx = 'page';
   route();
 }
 

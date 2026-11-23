@@ -7,6 +7,7 @@
   --muted: #5d6678;
   --line: #e2e6ee;
   --line-strong: #c9d0dc;
+  --control: #8a93a5; /* 3:1 on paper, for radio and checkbox marks and text boxes */
   --right: #0b7a5b;
   --right-soft: #e7f5ef;
   --wrong: #b3372c;
@@ -18,6 +19,8 @@
   --mono: ui-monospace, "Cascadia Mono", "SF Mono", Consolas, "Roboto Mono", monospace;
   --radius: 10px;
   --tabbar: 4rem;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-settle: cubic-bezier(0.34, 1.4, 0.64, 1);
   color-scheme: light;
 }
 
@@ -28,6 +31,7 @@
   --muted: #9aa5b8;
   --line: #24314b;
   --line-strong: #34435f;
+  --control: #6b7a96;
   --right: #4cc79c;
   --right-soft: #12352c;
   --wrong: #f0857a;
@@ -53,8 +57,21 @@ a { color: inherit; }
 
 :focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 
+/* Headings, the prompt and the verdict take focus only so screen readers land
+   in the right place. They are not controls, so they get no ring. */
+[tabindex="-1"]:focus { outline: none; }
+
 .skip { position: absolute; left: -9999px; }
 .skip:focus { left: 16px; top: 8px; background: var(--paper); padding: 8px 12px; z-index: 10; }
+
+.sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
 
 /* ---------- header and tabs ---------- */
 
@@ -95,6 +112,7 @@ a { color: inherit; }
 }
 
 .tabs a {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -105,9 +123,26 @@ a { color: inherit; }
   font-size: 0.78rem;
   color: var(--muted);
   text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .tabs a[aria-current="page"] { color: var(--ink); font-weight: 600; }
+
+/* Phone: a short ink bar on the top edge marks the current tab. */
+.tabs a::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 28px;
+  height: 2.5px;
+  margin-left: -14px;
+  border-radius: 0 0 2px 2px;
+  background: var(--ink);
+  transform: scaleX(0);
+}
+
+.tabs a[aria-current="page"]::before { transform: scaleX(1); }
 
 .ico { display: inline-flex; width: 22px; height: 22px; }
 .ico svg { width: 100%; height: 100%; }
@@ -133,6 +168,8 @@ a { color: inherit; }
     margin-bottom: -1px;
   }
   .tabs a[aria-current="page"] { border-bottom-color: var(--ink); }
+  .tabs a::before { display: none; }
+  .tabs a:hover { color: var(--ink); }
   .ico { width: 18px; height: 18px; }
 }
 
@@ -157,7 +194,7 @@ main {
 
 /* ---------- scorecard rail ---------- */
 
-.rail-wrap { margin: 4px 0 18px; }
+.rail-wrap { margin: 6px 0 20px; }
 
 .rail-label {
   display: flex;
@@ -166,7 +203,10 @@ main {
   font-size: 0.88rem;
   color: var(--muted);
   margin-bottom: 8px;
+  font-variant-numeric: tabular-nums;
 }
+
+.rail-label span:last-child { color: var(--ink); font-weight: 600; }
 
 .rail {
   display: flex;
@@ -177,15 +217,23 @@ main {
   padding: 0;
 }
 
+/* One square per question today. Filled squares carry a check or cross so
+   right and wrong never rest on colour alone. */
 .rail li {
-  width: 18px;
-  height: 18px;
-  border-radius: 4px;
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   border: 1.5px solid var(--line-strong);
+  color: var(--paper);
 }
 
+.rail li svg { width: 14px; height: 14px; stroke-width: 3.2; }
 .rail li.review { border-style: dashed; }
 .rail li.now { border: 2.5px solid var(--ink); }
+.rail li.review.now { border-style: dashed; }
 .rail li.right { background: var(--right); border-color: var(--right); }
 .rail li.wrong { background: var(--wrong); border-color: var(--wrong); }
 
@@ -252,6 +300,8 @@ pre code { background: none; border: 0; padding: 0; font-size: 0.86rem; }
 .options { list-style: none; margin: 0 0 18px; padding: 0; display: grid; gap: 10px; }
 
 .opt {
+  position: relative;
+  isolation: isolate;
   display: flex;
   align-items: flex-start;
   gap: 12px;
@@ -265,9 +315,12 @@ pre code { background: none; border: 0; padding: 0; font-size: 0.86rem; }
   font: inherit;
   text-align: left;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.opt:hover { border-color: var(--line-strong); }
+@media (hover: hover) {
+  .opt:not(.locked):not(.picked):hover { border-color: var(--control); }
+}
 
 .opt input { position: absolute; opacity: 0; pointer-events: none; }
 
@@ -276,7 +329,7 @@ pre code { background: none; border: 0; padding: 0; font-size: 0.86rem; }
   width: 20px;
   height: 20px;
   margin-top: 2px;
-  border: 2px solid var(--line-strong);
+  border: 2px solid var(--control);
   border-radius: 50%;
   display: grid;
   place-items: center;
@@ -284,27 +337,63 @@ pre code { background: none; border: 0; padding: 0; font-size: 0.86rem; }
 
 .opt.multi .mark { border-radius: 5px; }
 
-.opt.picked { border-color: var(--ink); }
-.opt.picked .mark { border-color: var(--ink); background: var(--ink); box-shadow: inset 0 0 0 3px var(--paper); }
-.opt.multi.picked .mark { box-shadow: none; }
-.opt.multi.picked .mark::after {
+/* Radio dot and checkbox tick are always present and scale in when picked. */
+.opt .mark::after {
   content: "";
-  width: 9px; height: 5px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ink);
+  opacity: 0;
+  transform: scale(0.4);
+}
+
+.opt.multi .mark::after {
+  width: 9px;
+  height: 5px;
+  border-radius: 0;
+  background: none;
   border-left: 2px solid var(--on-ink);
   border-bottom: 2px solid var(--on-ink);
-  transform: translateY(-1px) rotate(-45deg);
+  transform: translateY(-1px) rotate(-45deg) scale(0.4);
 }
+
+.opt.picked { border-color: var(--ink); }
+.opt.picked .mark { border-color: var(--ink); }
+.opt.picked .mark::after { opacity: 1; transform: scale(1); }
+.opt.multi.picked .mark { background: var(--ink); }
+.opt.multi.picked .mark::after { transform: translateY(-1px) rotate(-45deg) scale(1); }
 
 .opt:has(input:focus-visible) { outline: 3px solid var(--focus); outline-offset: 2px; }
 
-.opt.is-key { border-color: var(--right); background: var(--right-soft); }
-.opt.is-wrong { border-color: var(--wrong); background: var(--wrong-soft); }
-.opt.locked { cursor: default; }
-.opt.locked:hover { border-color: inherit; }
-.opt.is-key.locked:hover { border-color: var(--right); }
-.opt.is-wrong.locked:hover { border-color: var(--wrong); }
+/* After Check. The soft fill sits on a layer behind the row so it can fade in. */
+.opt::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  opacity: 0;
+}
 
-.opt .flag { margin-left: auto; flex: none; width: 20px; height: 20px; }
+.opt.locked { cursor: default; }
+.opt.locked:not(.is-key):not(.is-wrong) { color: var(--muted); }
+.opt.locked:not(.is-key):not(.is-wrong) .mark { border-color: var(--line-strong); }
+.opt.is-key { border-color: var(--right); }
+.opt.is-key::before { background: var(--right-soft); opacity: 1; }
+.opt.is-wrong { border-color: var(--wrong); }
+.opt.is-wrong::before { background: var(--wrong-soft); opacity: 1; }
+.opt.is-key .mark { border-color: var(--right); }
+.opt.is-key.picked .mark::after { background: var(--right); }
+.opt.multi.is-key.picked .mark { background: var(--right); }
+.opt.is-wrong .mark { border-color: var(--wrong); }
+.opt.is-wrong .mark::after { background: var(--wrong); }
+.opt.multi.is-wrong .mark { background: var(--wrong); }
+.opt.multi.is-key.picked .mark::after,
+.opt.multi.is-wrong .mark::after { background: none; border-color: var(--paper); }
+
+.opt .flag { margin-left: auto; flex: none; width: 22px; height: 22px; }
+.opt .flag svg { width: 100%; height: 100%; stroke-width: 2.5; }
 .opt.is-key .flag { color: var(--right); }
 .opt.is-wrong .flag { color: var(--wrong); }
 
@@ -319,17 +408,17 @@ pre code { background: none; border: 0; padding: 0; font-size: 0.86rem; }
   font-size: 1.05rem;
   color: var(--ink);
   background: var(--paper);
-  border: 1.5px solid var(--line-strong);
+  border: 1.5px solid var(--control);
   border-radius: var(--radius);
   padding: 12px 14px;
   min-height: 52px;
 }
 
 .field textarea { min-height: 120px; resize: vertical; line-height: 1.5; }
-.field input:focus, .field textarea:focus { outline: none; border-color: var(--ink); }
-.field input[readonly] { background: var(--sheet); }
-.field input.right { border-color: var(--right); }
-.field input.wrong { border-color: var(--wrong); }
+.field input:focus, .field textarea:focus { outline: none; border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+.field input[readonly], .field textarea[readonly] { background: var(--sheet); border-color: var(--line-strong); box-shadow: none; }
+.field input.right { border-color: var(--right); background: var(--right-soft); }
+.field input.wrong { border-color: var(--wrong); background: var(--wrong-soft); }
 
 /* buttons */
 
@@ -356,11 +445,18 @@ pre code { background: none; border: 0; padding: 0; font-size: 0.86rem; }
   font: inherit;
   font-weight: 600;
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn:disabled { opacity: 0.35; cursor: not-allowed; }
 
 .btn.quiet { background: var(--paper); color: var(--ink); border-color: var(--line-strong); }
+.btn.quiet.danger { color: var(--wrong); }
+
+@media (hover: hover) {
+  .btn.quiet:not(:disabled):hover { border-color: var(--ink); }
+  .btn.quiet.danger:hover { border-color: var(--wrong); }
+}
 
 @media (min-width: 720px) { .btn { flex: 0 0 auto; min-width: 160px; } }
 
@@ -393,24 +489,38 @@ pre code { background: none; border: 0; padding: 0; font-size: 0.86rem; }
 
 /* feedback */
 
-.feedback { margin: 6px 0 12px; }
+.feedback { margin: 10px 0 12px; }
 
 .verdict {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 1.15rem;
+  gap: 12px;
+  font-size: 1.3rem;
   font-weight: 700;
-  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+  margin: 0 0 12px;
 }
 
-.verdict .ico { width: 24px; height: 24px; }
+.verdict .badge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.verdict .ico { width: 20px; height: 20px; }
+.verdict .ico svg { stroke-width: 2.6; }
 .verdict.right { color: var(--right); }
+.verdict.right .badge { background: var(--right-soft); }
 .verdict.wrong { color: var(--wrong); }
+.verdict.wrong .badge { background: var(--wrong-soft); }
 
 .key-line { margin: 0 0 14px; }
 .key-line strong { font-family: var(--mono); font-weight: 600; }
 
+.feedback .explain { margin-bottom: 18px; line-height: 1.6; }
 .explain { margin-bottom: 16px; }
 
 .deeper {
@@ -428,18 +538,45 @@ pre code { background: none; border: 0; padding: 0; font-size: 0.86rem; }
 .summary h2, .page h2 { font-size: 1.4rem; margin: 6px 0 4px; letter-spacing: -0.01em; }
 .summary .lede, .page .lede { color: var(--muted); margin: 0 0 18px; }
 
+.score {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 2px 0 20px;
+  font-variant-numeric: tabular-nums;
+}
+
+.score-num { font-size: 2.6rem; font-weight: 700; line-height: 1.1; letter-spacing: -0.03em; }
+.score-of { color: var(--muted); font-size: 1rem; }
+
 .done-list { list-style: none; margin: 0 0 20px; padding: 0; border-top: 1px solid var(--line); }
 .done-list li {
   display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 0;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 0;
   border-bottom: 1px solid var(--line);
 }
-.done-list .ico { width: 20px; height: 20px; flex: none; }
-.done-list .ok { color: var(--right); }
-.done-list .no { color: var(--wrong); }
-.done-list .what { flex: 1; min-width: 0; }
+.done-list .ok, .done-list .no {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+}
+.done-list .ico { width: 16px; height: 16px; }
+.done-list .ico svg { stroke-width: 2.6; }
+.done-list .ok { color: var(--right); background: var(--right-soft); }
+.done-list .no { color: var(--wrong); background: var(--wrong-soft); }
+.done-list .what { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.done-list .clip {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
 .done-list .sub { color: var(--muted); font-size: 0.88rem; }
 
 /* progress */
@@ -455,13 +592,16 @@ pre code { background: none; border: 0; padding: 0; font-size: 0.86rem; }
 
 .figures div { border-left: 2px solid var(--line); padding-left: 12px; }
 .figures dt { color: var(--muted); font-size: 0.88rem; }
-.figures dd { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; }
+.figures dd { margin: 0; font-size: 1.6rem; font-weight: 700; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+
+.page h3 { font-size: 1.05rem; margin: 0 0 12px; }
 
 .topics { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
 .topics .row { display: flex; justify-content: space-between; gap: 10px; font-size: 0.95rem; margin-bottom: 5px; }
-.topics .row span:last-child { color: var(--muted); white-space: nowrap; }
+.topics .row span:last-child { color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.topics .idle .row span:first-child { color: var(--muted); }
 .bar { height: 8px; border-radius: 4px; background: var(--sheet); border: 1px solid var(--line); overflow: hidden; }
-.bar i { display: block; height: 100%; background: var(--ink); }
+.bar i { display: block; height: 100%; background: var(--ink); border-radius: 0 3px 3px 0; transform-origin: left center; }
 
 /* settings */
 
@@ -509,14 +649,104 @@ pre code { background: none; border: 0; padding: 0; font-size: 0.86rem; }
 .msg.bad { color: var(--wrong); }
 .msg.good { color: var(--right); }
 
-@media (prefers-reduced-motion: no-preference) {
-  .rail li { transition: background-color 0.25s ease, border-color 0.25s ease; }
-}
-
 .opt .txt { flex: 1; min-width: 0; }
 .opt .txt p { margin: 0; }
 .opt .txt pre { margin: 6px 0 0; }
 
 @media (max-width: 719px) {
   .question .actions { border-top: 1px solid var(--line); margin: 0 -16px; padding: 10px 16px; }
+  /* Keep the model answer heading clear of the sticky bar and tab bar when it scrolls in. */
+  .model h3 { scroll-margin-bottom: calc(var(--tabbar) + env(safe-area-inset-bottom) + 120px); }
+}
+
+/* ---------- motion ----------
+   Everything that moves lives in this block, so reduced motion gets none of
+   it and every element shows in its final state at once. app.js puts a
+   one-shot cue on <main> (fx-answer, fx-override, fx-reveal, fx-enter,
+   fx-done, fx-page) for the render that should play an entrance. Buttons are
+   never animated in, so Check and Next work in the first frame. */
+
+@media (prefers-reduced-motion: no-preference) {
+  /* press and pick feedback */
+  .btn, .opt, .switch button {
+    transition: transform 120ms var(--ease-out), opacity 150ms var(--ease-out), border-color 150ms var(--ease-out);
+  }
+  .btn:not(:disabled):active { transform: scale(0.98); transition-duration: 80ms; }
+  .opt:not(.locked):active { transform: scale(0.985); transition-duration: 80ms; }
+  .opt .mark { transition: border-color 150ms var(--ease-out), background-color 150ms var(--ease-out); }
+  .opt .mark::after { transition: transform 160ms var(--ease-out), opacity 120ms var(--ease-out); }
+  .tabs a::before { transition: transform 200ms var(--ease-out); }
+  .tabs a { transition: color 150ms var(--ease-out); }
+  .tabs a:active .ico { transform: scale(0.92); }
+  .tabs .ico { transition: transform 120ms var(--ease-out); }
+
+  /* tab change */
+  .fx-page > * { animation: ml-fade 180ms var(--ease-out) both; }
+
+  /* next question: the article rises in, the rail stays still */
+  .fx-enter .question > :not(.actions) { animation: ml-rise 240ms var(--ease-out) both; --rise: 8px; }
+  .fx-enter .rail li.now { animation: ml-ring 240ms var(--ease-out) both; }
+
+  /* the answer moment */
+  .fx-answer .rail li.cur,
+  .fx-override .rail li.cur { animation: ml-settle 320ms var(--ease-settle) both; }
+  .fx-answer .rail li.cur svg path,
+  .fx-override .rail li.cur svg path { animation: ml-draw 220ms var(--ease-out) 140ms both; }
+
+  .fx-answer .verdict .badge,
+  .fx-override .verdict .badge { animation: ml-pop 260ms var(--ease-out) both; }
+  .fx-answer .verdict .ico path,
+  .fx-override .verdict .ico path { animation: ml-draw 300ms var(--ease-out) 80ms both; }
+
+  .fx-answer .opt.is-key::before,
+  .fx-answer .opt.is-wrong::before { animation: ml-fade 260ms var(--ease-out) 60ms both; }
+  .fx-answer .opt .flag path { animation: ml-draw 260ms var(--ease-out) 160ms both; }
+
+  .fx-answer .feedback > :not(.verdict) { animation: ml-rise 280ms var(--ease-out) 240ms both; }
+  .fx-answer .feedback > :nth-child(2) { animation-delay: 120ms; }
+  .fx-answer .feedback > :nth-child(3) { animation-delay: 180ms; }
+  .fx-answer .feedback > .linkish { animation: none; }
+
+  /* explain format */
+  .fx-reveal .model { animation: ml-rise 280ms var(--ease-out) both; }
+
+  /* end of the set: the rail replays once, then the result */
+  .fx-done .rail li { animation: ml-settle 280ms var(--ease-settle) calc(var(--i) * 70ms) both; }
+  .fx-done .summary > * { animation: ml-rise 280ms var(--ease-out) 120ms both; }
+  .fx-done .summary > .score { animation-delay: 180ms; }
+  .fx-done .summary > .done-list { animation-delay: 240ms; }
+  .fx-done .summary > .actions { animation: none; }
+
+  /* progress bars grow from the left each time the page opens */
+  .topics li { --d: calc(80ms + var(--i, 0) * 25ms); }
+  .bar i { animation: ml-grow 420ms var(--ease-out) var(--d, 80ms) both; }
+}
+
+@keyframes ml-fade {
+  from { opacity: 0; }
+}
+
+@keyframes ml-rise {
+  from { opacity: 0; transform: translateY(var(--rise, 6px)); }
+}
+
+@keyframes ml-pop {
+  from { opacity: 0; transform: scale(0.7); }
+}
+
+@keyframes ml-ring {
+  from { opacity: 0.3; transform: scale(0.85); }
+}
+
+@keyframes ml-settle {
+  from { opacity: 0; transform: scale(0.6); }
+}
+
+@keyframes ml-draw {
+  from { stroke-dasharray: 1; stroke-dashoffset: 1; }
+  to { stroke-dasharray: 1; stroke-dashoffset: 0; }
+}
+
+@keyframes ml-grow {
+  from { transform: scaleX(0); }
 }
