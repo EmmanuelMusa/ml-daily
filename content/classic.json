@@ -199,5 +199,433 @@
    "precision-at-k",
    "class-imbalance"
   ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0008",
+  "subtopic": "least squares assumptions",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A logistics team fits ordinary least squares to predict delivery time in minutes from route distance in km, number of stops and hour of day. They plan to report a 95% confidence interval and a p-value for each coefficient. Which assumptions does that inference rely on? Select all that apply.",
+  "options": [
+   "The expected delivery time is a linear function of the features as entered in the model.",
+   "The errors on different deliveries are independent of one another.",
+   "The spread of the errors is about the same at every level of predicted time.",
+   "Each feature, such as route distance, follows a normal distribution.",
+   "No feature is an exact linear combination of the other features.",
+   "Delivery times, taken across all deliveries, follow a normal distribution."
+  ],
+  "answer": [
+   0,
+   1,
+   2,
+   4
+  ],
+  "explanation": "OLS inference rests on assumptions about the errors and the form of the model, not about how the features are distributed.\n\nLinearity matters because the coefficients only mean something if the expected target really is a weighted sum of the inputs as entered. You can still add squared or log terms. Independent errors matter because the standard error formula assumes each row adds new information. Deliveries by the same driver on the same day often break this, and the intervals then come out too narrow. Constant error variance matters because the usual formula uses one shared variance. If long routes have much noisier times, the standard errors are wrong. No perfect collinearity is needed for the coefficients to be unique at all. If one feature were an exact multiple of another, endless combinations of weights would fit equally well.\n\nNormally distributed features are not needed. OLS treats the features as given, so they can be skewed, binary or anything else. A normal spread of delivery times across all deliveries is not needed either. That overall spread mixes short and long routes, so it can be skewed or have several peaks even when the model fits well. The assumption, where one is made, is about the errors left after the features explain what they can. Even normal errors only matter for exact small-sample tests. With many deliveries, the intervals hold approximately without them.",
+  "deeper": "A strong candidate adds the fixes. Use cluster-robust standard errors when rows are grouped, such as by driver, and heteroscedasticity-robust errors when the noise grows with the prediction. A plot of residuals against fitted values shows both problems. For pure prediction, most of these assumptions matter far less than for inference.",
+  "concepts": [
+   "linear-regression",
+   "confidence-interval"
+  ],
+  "tags": [
+   "regression",
+   "inference"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0009",
+  "subtopic": "reading a regression coefficient",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A utility company predicts a household's monthly electricity bill in dollars with this linear regression:\n\n`bill = 20 + 0.9 × floor_area_m2 + 12.5 × occupants`\n\nWhich statement correctly reads the coefficient on occupants?",
+  "options": [
+   "Each extra occupant raises the predicted monthly bill by 12.5%, whatever the floor area.",
+   "Occupants matter about 14 times more than floor area, since 12.5 is about 14 times 0.9.",
+   "Holding floor area fixed, one more occupant adds $12.50 to the predicted monthly bill.",
+   "Occupant count explains 12.5% of the variation in monthly bills across households."
+  ],
+  "answer": 2,
+  "explanation": "In a linear regression, a coefficient is the change in the prediction when that one feature goes up by one unit and every other feature stays the same. Here one more occupant, in a home of the same floor area, adds 12.5 to the predicted bill. The target is in dollars, so that is $12.50.\n\nThe percentage reading would be right only if the model predicted the log of the bill. With a plain dollar target, the effect is a fixed amount, not a share. Comparing raw coefficients to rank features is a common trap. The 0.9 is per square metre, and homes differ by tens of square metres, while occupant counts differ by a few people. A coefficient's size depends on its feature's units, so you need standardised features or another importance measure before ranking. The share of variation explained is what R² measures for the whole model. No single coefficient gives that.",
+  "deeper": "Interviewers often follow up on two points. First, this reading describes the model's prediction, not a causal effect, since occupants may stand in for things like appliances. Second, when features are strongly correlated, holding one fixed while changing another describes homes that rarely exist, and the coefficients become unstable.",
+  "concepts": [
+   "linear-regression"
+  ],
+  "tags": [
+   "regression",
+   "coefficients"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0010",
+  "subtopic": "logit to probability",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A support team uses logistic regression to predict whether a ticket will be escalated. The model's score is z = −2.0 + 0.5 × (previous tickets in the last 90 days) + 1.0 × (enterprise plan, 1 if yes and 0 if no). A ticket arrives from an enterprise customer with 3 previous tickets. What is the predicted probability of escalation? Give it as a decimal to 2 places.",
+  "answer": 0.62,
+  "tolerance": 0.005,
+  "check": "import math\nz = -2.0 + 0.5 * 3 + 1.0 * 1\nresult = 1 / (1 + math.exp(-z))",
+  "explanation": "Logistic regression first builds a linear score, called the logit or log-odds, then passes it through the sigmoid to get a probability.\n\nStep 1, the score: z = −2.0 + 0.5 × 3 + 1.0 × 1 = −2.0 + 1.5 + 1.0 = 0.5.\n\nStep 2, the sigmoid: p = 1 / (1 + exp(−0.5)) = 1 / (1 + 0.607) = 1 / 1.607 ≈ 0.622, which rounds to 0.62.\n\nThe common mistake is to stop at step 1 and report 0.5 as the probability. The score lives on the log-odds scale, where 0 means a 50% chance. A related slip is to read the 0.5 coefficient as \"each previous ticket adds 0.5 to the probability\". It adds 0.5 to the log-odds, which multiplies the odds by exp(0.5) ≈ 1.65. How far that moves the probability depends on where you start, since the sigmoid is steep near 0.5 and flat near 0 and 1.",
+  "deeper": "The odds-ratio reading is a favourite follow-up. exp(coefficient) is the factor by which the odds change for a one-unit rise in a feature, here about 1.65 per previous ticket and about 2.72 for the enterprise plan. Stakeholders usually find \"1.65 times the odds\" easier to use than raw log-odds.",
+  "concepts": [
+   "logistic-regression"
+  ],
+  "tags": [
+   "logistic",
+   "sigmoid"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0011",
+  "subtopic": "logistic regression boundary",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A factory scores machine health with two features: temperature deviation and vibration deviation from each machine's normal level, both centred at zero. Healthy machines form a round cloud around zero, and faulty ones sit outside it in every direction. Logistic regression on the two raw features does barely better than chance. Which change best fixes this?",
+  "options": [
+   "Lower the threshold from 0.5, so the boundary line bends around the cloud of healthy machines.",
+   "Add squared and product terms of both features, so the boundary can curve into an ellipse.",
+   "Train for many more iterations, since an unconverged model keeps its boundary too straight.",
+   "Standardise both features, since unscaled inputs stop the sigmoid from bending the boundary."
+  ],
+  "answer": 1,
+  "explanation": "Logistic regression predicts p = sigmoid(w₁x₁ + w₂x₂ + b). The sigmoid only rises, so p = 0.5 exactly where w₁x₁ + w₂x₂ + b = 0, and that set is a straight line. No straight line can separate a round cloud from points on all sides of it, so the model is near chance.\n\nAdding x₁², x₂² and x₁x₂ as extra features keeps the model linear in its weights. But the boundary, a weighted sum of those terms plus the original ones, is now a curve such as a circle or ellipse in the original space. Even the single feature x₁² + x₂², the squared distance from normal, would do most of the work.\n\nChanging the threshold moves the boundary to a different level of the same linear score, so it shifts the line but never bends it. More iterations only bring the weights closer to the best straight line. Standardising changes the size of the weights and can speed up training, but a linear score of rescaled features is still linear, so the boundary stays straight.",
+  "deeper": "Link this to feature crosses in large linear models, such as ad click predictors that cross country with device to learn interactions. The cost is more features and more overfitting risk, so pair them with regularisation. A tree model or a kernel SVM would find this boundary without hand-made terms.",
+  "concepts": [
+   "logistic-regression",
+   "kernel-trick"
+  ],
+  "tags": [
+   "logistic",
+   "boundary"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0012",
+  "subtopic": "entropy and information gain",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A decision tree node holds 16 users of a free app: 8 upgraded to the paid plan and 8 did not. A split on \"used the export feature\" sends 6 users left (all 6 upgraded) and 10 users right (2 upgraded, 8 did not). What is the information gain of this split, using entropy in bits (log base 2)? Give it as a decimal to 2 places.",
+  "answer": 0.55,
+  "tolerance": 0.005,
+  "check": "import math\ndef entropy(counts):\n    n = sum(counts)\n    return -sum(c / n * math.log2(c / n) for c in counts if c > 0)\nparent = [8, 8]\nleft = [6, 0]\nright = [2, 8]\nn = sum(parent)\nresult = entropy(parent) - (sum(left) / n * entropy(left) + sum(right) / n * entropy(right))",
+  "explanation": "Information gain is the parent's entropy minus the weighted average entropy of the children. Entropy is −Σ p log₂ p over the classes in a node.\n\nParent: 8 of 16 upgraded, so p = 0.5 and 0.5. Entropy is 1 bit, the maximum for two classes.\n\nLeft child: all 6 upgraded, so it is pure and its entropy is 0.\n\nRight child: p = 0.2 and 0.8. Entropy = −0.2 × log₂ 0.2 − 0.8 × log₂ 0.8 = 0.464 + 0.258 = 0.722 bits.\n\nWeighted child entropy: 6/16 × 0 + 10/16 × 0.722 = 0.451.\n\nGain: 1 − 0.451 = 0.549, which rounds to 0.55.\n\nThe common mistake is a plain average of the children, (0 + 0.722) / 2 = 0.361, which gives a gain of 0.64. That treats the 6-user child as if it mattered as much as the 10-user child. Using the natural log instead of log₂ gives the gain in nats, about 0.38, so the units must match the question.",
+  "deeper": "A good follow-up is the bias of information gain toward features with many values. A user ID splits every row into its own pure leaf, earns the maximum gain and is useless on new users. The gain ratio used in C4.5 corrects for this. In practice entropy and Gini pick nearly the same splits.",
+  "concepts": [
+   "information-gain",
+   "entropy",
+   "decision-tree"
+  ],
+  "tags": [
+   "decision-tree",
+   "entropy"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0013",
+  "subtopic": "limiting tree overfitting",
+  "format": "multi",
+  "difficulty": 1,
+  "prompt": "Your single decision tree for flagging suspicious insurance claims scores 100% accuracy on training data and 71% on validation. Which changes would reduce this overfitting? Select all that apply.",
+  "options": [
+   "Set a maximum depth for the tree, such as 6 levels",
+   "Switch the split criterion from Gini impurity to entropy",
+   "Require at least 50 claims in every leaf",
+   "Lower the minimum claims needed to split a node from 40 to 2",
+   "Prune back weak branches with cost-complexity pruning"
+  ],
+  "answer": [
+   0,
+   2,
+   4
+  ],
+  "explanation": "A tree that hits 100% on training data has grown leaves so small that they memorise individual claims, noise included. Every fix limits how finely the tree can carve up the data.\n\nA maximum depth caps how many questions the tree can ask in a row, so leaves stay larger and more general. A minimum of 50 claims per leaf stops the tree from making a leaf for a handful of odd cases, and makes each leaf's prediction an average over enough claims to be stable. Cost-complexity pruning grows the tree, then cuts back branches whose gain is too small to justify the extra leaves. Its strength is usually picked by cross-validation.\n\nSwitching from Gini to entropy changes how splits are scored, not how far the tree grows. The two criteria pick nearly the same splits, and a fully grown tree reaches 100% training accuracy with either. Lowering the minimum split size from 40 to 2 also lets the tree split tiny nodes, which gives it more room to memorise.",
+  "deeper": "A single tree is rarely the final model. A strong answer mentions that random forests and gradient boosting control variance in other ways, by averaging many deep trees or by adding many shallow ones. Interviewers may then ask how you would tune depth and leaf size together, usually with a small cross-validated grid.",
+  "concepts": [
+   "decision-tree",
+   "overfitting",
+   "regularization"
+  ],
+  "tags": [
+   "decision-tree",
+   "overfitting"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0014",
+  "subtopic": "trees and feature scaling",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A fraud team changes its preprocessing. Transaction amount, which is always positive, is replaced with log(amount), and customer age is standardised to mean 0 and standard deviation 1. Both changes keep the order of values the same. For which model will the predictions on the training rows stay the same after retraining with the same random seed?",
+  "options": [
+   "k-nearest neighbours with k = 5 and Euclidean distance",
+   "A support vector machine with an RBF kernel",
+   "Logistic regression with an L2 penalty",
+   "A single decision tree grown to depth 8"
+  ],
+  "answer": 3,
+  "explanation": "A decision tree only asks questions of the form \"is amount ≤ t?\". Which rows go left and which go right depends only on the order of the values, and both changes keep that order. Every possible split of the training rows exists before and after the change, with the same impurity, so the tree picks the same splits. Only the threshold numbers change, from dollars to log dollars.\n\nThe other three depend on actual distances or magnitudes. kNN measures Euclidean distance, and the log squeezes large amounts together, so the nearest neighbours change. The RBF kernel is built from the same Euclidean distance, so it changes for the same reason. Logistic regression changes twice over. A linear score in log(amount) is a different function from one in amount, and the L2 penalty shrinks all weights alike, so each feature's scale changes how hard its weight is pulled toward zero.",
+  "deeper": "Tree ensembles such as random forests and gradient boosting rarely need scaling or log transforms, which keeps pipelines simple. A sharp candidate adds one subtlety. Thresholds sit between training values, so a new value that falls between two of them can land on a different side after a log transform, since the midpoint moves.",
+  "concepts": [
+   "decision-tree",
+   "feature-scaling",
+   "k-nearest-neighbors"
+  ],
+  "tags": [
+   "scaling",
+   "decision-tree"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0015",
+  "subtopic": "tree models cannot extrapolate",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A grocery chain trains a gradient-boosted tree model to forecast weekly demand for a product. In the training data the price only ever ranged from $2 to $5, and demand fell steadily as price rose. The pricing team now asks for a forecast at $7, with every other feature unchanged. What will the model do, and what is the best response?",
+  "options": [
+   "Return about its $5 forecast, since prices above the top split share a leaf, so add a price-response term or run price tests.",
+   "Continue the downward slope it learned, since many small trees add up to a smooth trend, so the $7 forecast can be used as it is.",
+   "Return the average demand over all prices, since unseen values go back to the root, so retrain with much deeper trees.",
+   "Return a forecast near zero, since $7 falls outside every leaf, so clip it to the lowest weekly demand seen in training."
+  ],
+  "answer": 0,
+  "explanation": "Each tree splits price at thresholds learned from the data, and the highest one sits somewhere below $5. Any price above it, whether $5.10 or $70, goes down the same branch of every tree. So the sum of trees gives roughly the $5 forecast, and the demand curve goes flat beyond the training range. Trees cannot extrapolate.\n\nThe fix is to give the model something that can. One common approach is a parametric price term, such as a log-linear elasticity fitted on price, with the trees modelling the rest. Another is to gather real data at higher prices through a small price test. Monotone constraints keep the curve sensible inside the range, but they still give a flat line outside it.\n\nA sum of step functions is still flat beyond the last step, so boosting does not continue the trend. Unseen values are not sent back to the root or out of every leaf. Each input follows the splits down to a real leaf. So deeper trees and clipping to the lowest demand both miss the real problem.",
+  "deeper": "This shows up in pricing, forecasting and any feature that drifts upward over time, such as amounts affected by inflation or a growing user count. A strong candidate checks whether serving inputs fall outside the training range, plots partial dependence to show the flat tail, and warns that the flat forecast will look confident while being badly wrong.",
+  "concepts": [
+   "gradient-boosting",
+   "decision-tree",
+   "distribution-shift"
+  ],
+  "tags": [
+   "boosting",
+   "extrapolation"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0016",
+  "subtopic": "boosting vs bagging",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "Depth-2 decision trees give a churn model 0.70 AUC on both training and validation data. You can turn it into an ensemble of 300 such shallow trees, either by bagging or by gradient boosting. Which is more likely to raise validation AUC, and why?",
+  "options": [
+   "Bagging, because averaging many shallow trees lowers their shared bias as well as their variance.",
+   "Boosting, because it trains its trees independently on bootstrap samples, which cuts variance.",
+   "Boosting, because each new shallow tree fits what the earlier trees still get wrong, cutting bias.",
+   "Bagging, because each bootstrap sample shows a tree rows it has never seen, which fixes underfitting."
+  ],
+  "answer": 2,
+  "explanation": "Equal training and validation scores at a modest level point to high bias. Depth-2 trees are too simple to capture the patterns, and they are not overfitting. Boosting attacks bias directly. Each new tree is fit to what the current ensemble still gets wrong, the residuals or gradients, so the combined model builds complex patterns out of many simple pieces.\n\nBagging averages trees trained independently on bootstrap samples. Averaging reduces variance, but every tree has much the same bias, and the average of many similarly biased trees keeps that bias. So the option claiming bagging lowers the shared bias is wrong. The one saying bootstrap samples show new rows is wrong too, since a bootstrap sample only reuses rows from the same dataset. The option crediting boosting with independent bootstrap training describes bagging. Boosting trains in sequence, and each tree depends on the ones before it.",
+  "deeper": "The mirror case is a deep tree that overfits, where bagging or a random forest is the natural choice. A strong candidate also notes that boosting can overfit if it runs too long, which is why it is paired with a small learning rate and early stopping. Adding more trees to a random forest does not overfit in the same way.",
+  "concepts": [
+   "gradient-boosting",
+   "bagging",
+   "bias-variance-tradeoff"
+  ],
+  "tags": [
+   "boosting",
+   "bagging"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0017",
+  "subtopic": "learning rate and number of trees",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A search team trains a gradient boosting model with a learning rate of 0.3 and 200 trees. A teammate lowers the learning rate to 0.03, keeps 200 trees, and validation loss gets worse. What is the most likely cause, and what should they do?",
+  "options": [
+   "A smaller learning rate makes boosting overfit sooner, so go back to 0.3 and keep the 200 trees.",
+   "With smaller steps, 200 trees underfit, so allow far more trees and stop early on validation loss.",
+   "The tree count should match the training-loss minimum, so keep adding trees until training loss stops falling.",
+   "Shrinkage only changes training speed, not the final model, so the drop must come from a bad random seed."
+  ],
+  "answer": 1,
+  "explanation": "The learning rate, also called shrinkage, scales each tree's contribution. At 0.03 each tree moves the predictions a tenth as far as at 0.3, so 200 trees now cover only a small part of the ground the old model did. The model is underfitting. Smaller steps need roughly proportionally more trees, here something near 2,000. The usual practice is to set a high cap on trees, watch loss on a validation set, and stop when it has not improved for a set number of rounds. A small learning rate with many trees often generalises a little better, at the cost of training time.\n\nA smaller learning rate makes the model fit more slowly, so it overfits later, not sooner. Training loss keeps falling as trees are added, so choosing the count from training loss just picks a huge number and overfits. Shrinkage is not only about speed. With a fixed number of trees it changes the final model, as this drop shows.",
+  "deeper": "Treat learning rate and tree count as one pair of knobs. A typical recipe is to fix a small learning rate such as 0.05, let early stopping choose the tree count, then tune depth and regularisation. Remember that early stopping has seen the validation set, so report the final score on a separate test set.",
+  "concepts": [
+   "gradient-boosting",
+   "early-stopping",
+   "learning-rate"
+  ],
+  "tags": [
+   "boosting",
+   "tuning"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0018",
+  "subtopic": "one boosting step by hand",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "Four stores have true daily sales of A = 100, B = 120, C = 140 and D = 200. A gradient boosting model with squared loss starts by predicting the mean of the targets for every store. The first tree, fitted to the residuals, puts A and B in one leaf and C and D in another, and each leaf predicts the mean residual of its stores. With a learning rate of 0.1, what is the model's prediction for store D after this first tree? Give it as a whole number.",
+  "answer": 143,
+  "tolerance": 0.5,
+  "check": "y = {\"A\": 100, \"B\": 120, \"C\": 140, \"D\": 200}\nf0 = sum(y.values()) / len(y)\nr = {k: v - f0 for k, v in y.items()}\nleaf_cd = (r[\"C\"] + r[\"D\"]) / 2\nresult = f0 + 0.1 * leaf_cd",
+  "explanation": "With squared loss, gradient boosting fits each new tree to the residuals, the true value minus the current prediction.\n\nStep 1, the starting prediction: the mean of 100, 120, 140 and 200 is 560 / 4 = 140.\n\nStep 2, the residuals: A = −40, B = −20, C = 0, D = 60.\n\nStep 3, the leaf value for D: D shares a leaf with C, so the leaf predicts (0 + 60) / 2 = 30.\n\nStep 4, the update: 140 + 0.1 × 30 = 143.\n\nTwo mistakes are common. Using D's own residual instead of the leaf value gives 140 + 0.1 × 60 = 146, but a tree outputs one value per leaf, shared by every row in it. Forgetting the learning rate gives 140 + 30 = 170. The small learning rate is deliberate. Each tree corrects only a tenth of the error it sees, and later trees keep chipping away at what remains, which tends to generalise better than one big jump.",
+  "deeper": "A good follow-up is how this changes for other losses. For log loss the trees fit the negative gradient, which is the label minus the predicted probability, and leaf values come from a Newton step rather than a plain mean. Libraries such as XGBoost also add a regularisation term that shrinks each leaf value.",
+  "concepts": [
+   "gradient-boosting",
+   "learning-rate"
+  ],
+  "tags": [
+   "boosting",
+   "residuals"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0019",
+  "subtopic": "out-of-bag estimate",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A hospital has only 600 labelled patient records and builds a random forest to predict readmission. Each tree trains on rows drawn at random with replacement, so roughly a third of the records never reach any given tree. Scoring each record using only the trees that never saw it gives the ______ error, a built-in validation estimate.",
+  "answer": "out-of-bag",
+  "accept": [
+   "oob",
+   "out of bag",
+   "out-of-bag error",
+   "oob error"
+  ],
+  "explanation": "When you draw n rows with replacement from n rows, each row has a (1 − 1/n)ⁿ chance of never being picked, which is close to 1/e ≈ 0.37 for large n. Those left-out rows are the tree's out-of-bag rows. For each record, you combine predictions only from the trees that did not train on it and compare with the true label. Averaged over all records, this gives the out-of-bag error.\n\nIt behaves much like cross-validation but costs almost nothing, since no extra models are trained. That helps here, where holding out a separate validation set from only 600 records would waste scarce data.\n\nA common mix-up is with training error. Scoring a record with all the trees, including those that trained on it, gives an optimistic number. Another is treating it as a final test score. If you tune many settings against the out-of-bag error, it becomes optimistic too, so keep an untouched test set.",
+  "deeper": "In scikit-learn you get it by setting `oob_score=True`. A good interview point is that it assumes rows are independent. If one patient has several admissions, a tree can train on one of them and be scored on a near-copy, which makes the estimate optimistic. A split grouped by patient is safer.",
+  "concepts": [
+   "random-forest",
+   "bagging",
+   "cross-validation"
+  ],
+  "tags": [
+   "random-forest",
+   "validation"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0020",
+  "subtopic": "sampling with replacement",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "To build each tree in a bagged ensemble of taxi fare regressors, you draw n rows at random from the n training rows, returning each row to the pool after it is drawn so it can be picked again. This way of drawing rows is called ______ sampling.",
+  "answer": "bootstrap",
+  "accept": [
+   "bootstrapping",
+   "bootstrapped"
+  ],
+  "explanation": "Bootstrap sampling means drawing a sample the same size as the data, with replacement. Some rows appear two or three times, and others not at all. On average about 63% of the distinct rows show up in each sample, since each row is missed with probability (1 − 1/n)ⁿ ≈ 1/e ≈ 0.37.\n\nBagging, short for bootstrap aggregating, uses this to give each tree a slightly different view of the data. The trees make different mistakes, and averaging them cancels much of that noise, which lowers variance.\n\nA common confusion is with sampling without replacement. Drawing n rows from n without replacement just reproduces the whole dataset in a new order, so plain bagging would train nearly identical trees and averaging would gain little. Another is with stratified sampling, which keeps class shares fixed but says nothing about replacement. The replacement is what creates the variety between trees.",
+  "deeper": "Bootstrap sampling matters outside ensembles too. You can put a confidence interval on any metric, such as a model's AUC, by recomputing it on many bootstrap samples of the test set. Interviewers like candidates who connect the two uses and know that rows must be independent for either to be valid.",
+  "concepts": [
+   "bagging",
+   "random-forest",
+   "confidence-interval"
+  ],
+  "tags": [
+   "bagging",
+   "sampling"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0021",
+  "subtopic": "feature importance pitfalls",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A telecom team trains a random forest of deep trees to predict churn. By mistake, `customer_id` is left in as a feature. It is a randomly assigned code, unique for every customer, stored as an integer. Impurity-based feature importance ranks it third, above contract type. What is the best reading of this?",
+  "options": [
+   "The ID must carry real signal, because a forest only splits on a feature when that split lowers impurity.",
+   "Permutation importance would rank the ID higher still, since shuffling unique values destroys the most information.",
+   "Averaging over trees blurs the ranking, so trust the importance from one deep tree trained on the same data.",
+   "Impurity importance favours features with many unique values, so check permutation importance on held-out data."
+  ],
+  "answer": 3,
+  "explanation": "Impurity-based importance adds up how much each feature lowered impurity across all splits, measured on the training data. A feature with thousands of unique values offers thousands of candidate thresholds, so deep trees can almost always find one that cleanly separates a few training rows, even when the values are random. Those gains are real on the training rows and worthless on new customers. Permutation importance on held-out data asks a different question: how much does validation performance drop when this column is shuffled? For a random ID the answer is close to zero.\n\nThe option claiming the ID must carry signal misses that impurity drops on training data include drops from fitting noise. Permutation importance would rank the ID lower, not higher. Shuffling it on held-out data barely changes the score, because the patterns it memorised do not exist in those rows. One deep tree has the same bias toward many-valued features, with more noise.\n\nA second caveat applies to both methods. Strongly correlated features, such as monthly and total charges, split the credit between them, so each can look weaker than it is.",
+  "deeper": "A strong candidate drops IDs and other leakage-prone columns before training, then reports permutation importance or SHAP values on a validation set. For correlated groups, permuting the whole group together, or dropping a feature and retraining, shows more clearly what the model really relies on.",
+  "concepts": [
+   "feature-importance",
+   "random-forest",
+   "shap-values"
+  ],
+  "tags": [
+   "importance",
+   "random-forest"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0022",
+  "subtopic": "choosing k in kNN",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "Using sentence embeddings as features, a kNN classifier labels support tickets as urgent or not. With k = 1 it scores 100% on training data and 74% on validation. If you raise k to 15, what is the most likely change?",
+  "options": [
+   "Training accuracy will likely fall and validation accuracy rise, since a larger k smooths the boundary.",
+   "Training and validation accuracy will likely both rise, since each vote then draws on more labelled tickets.",
+   "Validation accuracy will likely fall, since a larger k makes the model follow single noisy points more closely.",
+   "Very little will likely change, since k only affects prediction speed and not the shape of the boundary."
+  ],
+  "answer": 0,
+  "explanation": "With k = 1, each training point is its own nearest neighbour, so training accuracy is 100% by construction, unless two identical tickets carry different labels. The boundary bends around every single ticket, mislabelled ones included. That is high variance: a slightly different training set would give quite different predictions.\n\nRaising k makes each prediction a vote among 15 neighbours, so one odd or mislabelled ticket gets outvoted. The boundary becomes smoother. Training accuracy usually drops, since points can now be outvoted by their neighbours, while validation accuracy often rises. Push k too high and the model underfits, drifting toward predicting the majority class everywhere.\n\nTraining accuracy cannot rise from 100%, and drawing on more tickets does not always help, because distant neighbours may come from a different region. Following single noisy points closely describes a small k, so that option has the direction backwards. And k changes the shape of the boundary, not just the speed of prediction.",
+  "deeper": "Pick k with cross-validation, and use an odd k for two classes to avoid ties. A strong candidate also mentions distance weighting, where nearer neighbours get more say, and notes that kNN prediction cost grows with the training set, so production systems use approximate nearest neighbour indexes.",
+  "concepts": [
+   "k-nearest-neighbors",
+   "bias-variance-tradeoff"
+  ],
+  "tags": [
+   "knn",
+   "bias-variance"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0023",
+  "subtopic": "kNN vote by hand",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A network monitor classifies connections as attack (1) or normal (0) from two features that are already scaled. Five labelled connections are:\n\n- P1 at (4, 3), label 0\n- P2 at (2, 4), label 1\n- P3 at (3, 5), label 1\n- P4 at (5, 4), label 0\n- P5 at (6, 1), label 0\n\nA new connection sits at (3, 3). Using kNN with k = 3, Euclidean distance and a simple majority vote, what label does it get? Give it as 0 or 1.",
+  "answer": 1,
+  "tolerance": 0.5,
+  "check": "import numpy as np\npts = np.array([[4, 3], [2, 4], [3, 5], [5, 4], [6, 1]])\nlabels = np.array([0, 1, 1, 0, 0])\nq = np.array([3, 3])\nd = np.sqrt(((pts - q) ** 2).sum(axis=1))\nnearest = np.argsort(d)[:3]\nresult = int(np.bincount(labels[nearest]).argmax())",
+  "explanation": "Compute the distance from (3, 3) to each point:\n\n- P1: √(1² + 0²) = 1.00, label 0\n- P2: √(1² + 1²) ≈ 1.41, label 1\n- P3: √(0² + 2²) = 2.00, label 1\n- P4: √(2² + 1²) ≈ 2.24, label 0\n- P5: √(3² + 2²) ≈ 3.61, label 0\n\nThe three nearest are P1, P2 and P3. Their labels are 0, 1 and 1, so the vote is 2 to 1 for attack, and the answer is 1.\n\nTwo mistakes are common. Looking only at the single closest point, P1, gives 0, which is the k = 1 answer. Counting all five points also gives 0, since three of the five are normal, but kNN only polls the k nearest. P3 and P4 are close in distance, so it pays to compute both carefully rather than eyeball them.",
+  "deeper": "Say what would change the answer. With k = 1 the label flips to 0. With inverse-distance weights the attack label still wins, about 1.21 to 1.00. Real attack data is heavily imbalanced, so a plain majority vote can drown out the rare class, which is why teams tune a threshold on the vote share.",
+  "concepts": [
+   "k-nearest-neighbors"
+  ],
+  "tags": [
+   "knn",
+   "security"
+  ]
+ },
+ {
+  "topic": "classic",
+  "id": "cls-0024",
+  "subtopic": "naive Bayes for spam",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A small team builds an SMS spam filter with multinomial naive Bayes on word counts. Walk through how it decides whether the message \"win free cash now\" is spam. Then explain why it often works well even though its independence assumption is false, and why it needs smoothing for words it never saw in spam during training.",
+  "answer": "Naive Bayes uses Bayes' theorem: P(spam | words) is proportional to P(spam) × P(words | spam). The naive step assumes words are independent given the class, so P(words | spam) becomes P(win | spam) × P(free | spam) × P(cash | spam) × P(now | spam), each estimated from word counts in spam training messages. It scores not-spam the same way, summing logs to avoid underflow, and picks the higher score. Win, free and cash are far more common in spam, so spam wins.\n\nThe independence assumption is false, since free and cash often appear together. But classification only needs the right class to score highest. Counting correlated evidence twice makes the probabilities overconfident, yet rarely flips the ranking.\n\nWithout smoothing, a word never seen in spam gets probability 0, which zeroes the whole product however spammy the other words are. Add-one (Laplace) smoothing adds a small count to every word so no single word can veto a class.",
+  "points": [
+   "Score each class as its prior times the product of word likelihoods, using logs",
+   "Word likelihoods come from word counts in each class's training messages",
+   "Independence is false, but only the ranking of the classes needs to be right",
+   "Double-counted correlated words make the probabilities overconfident",
+   "An unseen word gives a zero that wipes out the class, so smoothing adds a small count"
+  ],
+  "explanation": "Naive Bayes is a generative classifier. For each class it learns how likely each word is, then uses Bayes' theorem to turn those likelihoods into a score for the class given the message. The denominator P(words) is the same for both classes, so it can be dropped when comparing them.\n\nWeak answers stop at \"it multiplies word probabilities\" without saying where those come from or why the method still works. The key insight is that a classifier only has to rank the classes correctly. If spam words push the spam score up, counting some of that evidence twice makes the score too extreme but rarely changes which class wins. That is also why naive Bayes probabilities should be recalibrated before being used as risk scores.\n\nThe other common mistake is to treat smoothing as a small accuracy tweak. Without it, one word that never appeared in spam training, such as a new brand name inside a spam message, gives P(word | spam) = 0. The product is then 0 no matter how spammy the rest is, so that single word decides the class. Add-one smoothing uses (count + 1) / (total words in the class + vocabulary size), which keeps every probability above zero.",
+  "deeper": "Interviewers often ask when you would still pick naive Bayes. Good answers are as a fast text baseline, when labelled data is scarce, or when training and prediction must be very cheap. A strong candidate compares it with logistic regression, which models P(class | words) directly and copes better with correlated words once there is enough data.",
+  "concepts": [
+   "naive-bayes",
+   "bayes-theorem",
+   "conditional-probability"
+  ],
+  "tags": [
+   "naive-bayes",
+   "spam",
+   "text"
+  ]
  }
 ]
