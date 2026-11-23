@@ -1,0 +1,11 @@
+{
+  "name": "ML Daily",
+  "short_name": "ML Daily",
+  "description": "Three AI and machine learning interview questions a day.",
+  "start_url": "./#today",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [{ "src": "assets/icons/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>ML Daily</title>
+  <meta name="description" content="Three AI and machine learning interview questions a day, with explanations and review of misses.">
+  <meta name="theme-color" content="#ffffff">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="assets/icons/icon.svg?v=1" type="image/svg+xml">
+  <script>
+    try {
+      var saved = JSON.parse(localStorage.getItem('ml-daily:v1') || 'null');
+      if (saved && saved.settings && saved.settings.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+    } catch (e) {}
+  </script>
+  <link rel="stylesheet" href="assets/css/style.css?v=1">
+  <script type="module" src="assets/js/app.js?v=1"></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="top">
+    <div class="top-row">
+      <a class="brand" href="#today">ML Daily</a>
+      <span class="day" id="day-label"></span>
+    </div>
+    <nav class="tabs" aria-label="Sections">
+      <a href="#today" data-view="today"><span class="ico" data-icon="today"></span><span>Today</span></a>
+      <a href="#progress" data-view="progress"><span class="ico" data-icon="progress"></span><span>Progress</span></a>
+      <a href="#settings" data-view="settings"><span class="ico" data-icon="settings"></span><span>Settings</span></a>
+    </nav>
+  </header>
+  <p class="notice" id="notice" hidden>Progress can't be saved in this browser window.</p>
+  <main id="main" tabindex="-1">
+    <p class="loading">Loading questions</p>
+  </main>
+</body>
+</html>

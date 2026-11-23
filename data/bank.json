@@ -1,0 +1,188 @@
+{
+ "version": 1,
+ "built": "2026-11-23",
+ "topics": [
+  {
+   "key": "foundations",
+   "title": "ML foundations"
+  },
+  {
+   "key": "classic",
+   "title": "Classic models and use cases"
+  },
+  {
+   "key": "evaluation",
+   "title": "Evaluation and metrics"
+  },
+  {
+   "key": "data",
+   "title": "Data and features"
+  },
+  {
+   "key": "deep",
+   "title": "Deep learning"
+  },
+  {
+   "key": "llm",
+   "title": "Transformers and LLMs"
+  },
+  {
+   "key": "integration",
+   "title": "LLM integration"
+  },
+  {
+   "key": "agents",
+   "title": "Agentic workflows"
+  },
+  {
+   "key": "optimization",
+   "title": "Model optimization"
+  },
+  {
+   "key": "mlops",
+   "title": "MLOps and production"
+  },
+  {
+   "key": "design",
+   "title": "ML system design"
+  },
+  {
+   "key": "math",
+   "title": "Math and statistics"
+  },
+  {
+   "key": "responsible",
+   "title": "Responsible AI"
+  },
+  {
+   "key": "python",
+   "title": "Python for ML"
+  }
+ ],
+ "questions": [
+  {
+   "id": "eval-9001",
+   "topic": "evaluation",
+   "subtopic": "accuracy on imbalanced data",
+   "format": "mcq",
+   "difficulty": 1,
+   "prompt": "A fraud model scores 99% accuracy on a test set where 1% of transactions are fraud. What is the best first reaction?",
+   "options": [
+    "Check precision and recall on the fraud class, because a model that predicts \"not fraud\" every time would also score 99%.",
+    "Ship it, because 99% accuracy is excellent for fraud detection.",
+    "Retrain with more epochs, because accuracy should reach 100% on a clean test set.",
+    "Switch to mean squared error, because accuracy is only for regression."
+   ],
+   "answer": 0,
+   "explanation": "When only 1% of cases are fraud, a model that always says \"not fraud\" is right 99% of the time while catching zero fraud. So 99% accuracy tells you almost nothing here. You need metrics that look at the fraud class directly: recall (how much real fraud you caught) and precision (how many of your alerts were real).\n\nShipping on accuracy alone is the classic mistake this question is testing. Training longer does not fix a misleading metric, and a perfect 100% on a test set is more often a sign of leakage than of a great model. Mean squared error is a regression loss, and accuracy is a classification metric, so the option about switching to it has the two the wrong way round.",
+   "deeper": "Interviewers often open with exactly this trap. A strong answer names the baseline (always predict the majority class), then moves to precision, recall, PR-AUC and the cost of each kind of mistake for the business.",
+   "tags": [
+    "imbalance",
+    "fraud"
+   ]
+  },
+  {
+   "id": "eval-9003",
+   "topic": "evaluation",
+   "subtopic": "metric names",
+   "format": "fill",
+   "difficulty": 1,
+   "prompt": "The share of actual positive cases that a model correctly identifies, TP / (TP + FN), is called ______.",
+   "answer": "recall",
+   "accept": [
+    "sensitivity",
+    "true positive rate",
+    "tpr",
+    "hit rate"
+   ],
+   "explanation": "Recall answers the question \"of everything that really was positive, how much did we catch?\" The bottom of the fraction is every real positive: the ones caught (true positives) plus the ones missed (false negatives).\n\nThe usual mix-up is with precision, TP / (TP + FP). Precision looks at what the model flagged and asks how much of it was right. Recall looks at what was really there and asks how much was found. Recall is also called sensitivity in medicine and true positive rate on a ROC curve, so all three names are accepted.",
+   "deeper": "Recall matters most when a miss is expensive, such as a cancer screen or fraud. Precision matters most when false alarms are expensive, such as spam filters that might hide a real email.",
+   "tags": [
+    "recall"
+   ]
+  },
+  {
+   "id": "eval-9006",
+   "topic": "evaluation",
+   "subtopic": "reading pandas results",
+   "format": "fill",
+   "difficulty": 2,
+   "prompt": "Using pandas 3.x, what does the last line return?\n\n```python\nimport pandas as pd\ndf = pd.DataFrame({\n    \"region\": [\"north\", \"south\", \"north\", \"east\"],\n    \"sales\": [10, 25, 20, 15],\n})\ndf.groupby(\"region\")[\"sales\"].sum().idxmax()\n```",
+   "answer": "north",
+   "accept": [
+    "'north'",
+    "\"north\""
+   ],
+   "explanation": "The groupby adds up sales for each region: north is 10 + 20 = 30, south is 25 and east is 15. The result is a Series indexed by region name. `idxmax()` returns the index label of the largest value, not the value itself, so it returns the label \"north\".\n\nTwo mistakes are common here. Some people answer 30, mixing up `idxmax()` with `max()`. Others answer \"south\" because it has the largest single row, forgetting that the groupby sums rows first. Reading the chain one step at a time, and writing down the intermediate Series, avoids both.",
+   "deeper": "Code-reading questions like this show up in data science screens. Interviewers want to see you trace each step out loud and say what type each step returns, a DataFrame, a Series or a scalar.",
+   "tags": [
+    "pandas",
+    "groupby"
+   ]
+  },
+  {
+   "id": "eval-9004",
+   "topic": "evaluation",
+   "subtopic": "precision and recall",
+   "format": "numeric",
+   "difficulty": 2,
+   "prompt": "A fraud model flags 50 transactions. 40 of them are really fraud. There were 80 fraud cases in total. What is the model's recall? Give it as a decimal to 2 places.",
+   "answer": 0.5,
+   "tolerance": 0.005,
+   "explanation": "Recall is TP / (TP + FN). The model caught 40 real fraud cases, so TP = 40. There were 80 fraud cases in total, so the model missed 80 - 40 = 40 of them, which gives FN = 40. Recall is 40 / (40 + 40) = 0.50.\n\nThe common mistake is to divide by the 50 flagged transactions. That gives 40 / 50 = 0.80, which is the precision, not the recall. A quick way to keep them apart: recall divides by what was really out there, precision divides by what the model flagged.",
+   "deeper": "A model with 0.80 precision and 0.50 recall is careful but misses half the fraud. Lowering the threshold would usually raise recall and lower precision, and the right trade depends on what a missed fraud costs compared with a false alarm.",
+   "tags": [
+    "recall",
+    "fraud"
+   ]
+  },
+  {
+   "id": "eval-9002",
+   "topic": "evaluation",
+   "subtopic": "threshold-free metrics",
+   "format": "multi",
+   "difficulty": 2,
+   "prompt": "Which of these metrics do **not** depend on the decision threshold you pick for a binary classifier? Select all that apply.",
+   "options": [
+    "ROC-AUC",
+    "PR-AUC (average precision)",
+    "F1 score",
+    "Precision",
+    "Log loss"
+   ],
+   "answer": [
+    0,
+    1,
+    4
+   ],
+   "explanation": "ROC-AUC and PR-AUC summarise performance across every possible threshold, so they do not change when you move the cut-off. Log loss works directly on the predicted probabilities, so it also ignores the threshold. It rewards confident correct probabilities and punishes confident wrong ones.\n\nF1 and precision are both computed from hard yes or no predictions. Those only exist after you choose a threshold, so moving the threshold from 0.5 to 0.3 changes them. A common slip is to think F1 is threshold-free because it balances precision and recall. It balances them at one threshold only.",
+   "deeper": "In practice teams compare models with a threshold-free metric such as PR-AUC, then pick the operating threshold separately based on business costs, for example the number of alerts an investigation team can handle each day.",
+   "tags": [
+    "roc",
+    "threshold"
+   ]
+  },
+  {
+   "id": "eval-9005",
+   "topic": "evaluation",
+   "subtopic": "offline vs online metrics",
+   "format": "open",
+   "difficulty": 3,
+   "prompt": "Your new recommendation model beats the old one on offline NDCG by 4%, but in an A/B test it does not move click-through rate. Give the likely reasons and what you would check.",
+   "answer": "Offline gains often fail to show up online. The offline test set was built from logs of what the old model chose to show, so it is biased toward the old model's items. NDCG may also not match what users value, the A/B test may be too short or underpowered to detect a small change, and the new model may be slower, which can hurt engagement. I would check the power and length of the test, compare latency, look at segments such as new and returning users, and see whether the offline metric has tracked online results in past launches.",
+   "points": [
+    "Offline data is biased by the old model's choices (feedback loop)",
+    "The offline metric may not match the online goal",
+    "The A/B test may lack power or run too short",
+    "Latency or other serving differences can cancel the gain",
+    "Check segments and how well offline has predicted online before"
+   ],
+   "explanation": "This is one of the most common gaps in real ML work. Offline evaluation replays logged data, and those logs only contain items the old system decided to show. A new model that prefers different items gets judged on data that never gave those items a fair chance.\n\nThe metric itself may also be the wrong target. NDCG rewards ranking known relevant items high, while click-through depends on novelty, position and presentation. On the experiment side, a small true effect needs a large sample, so a short test can miss it. Finally, a heavier model that adds latency can lose users before they even see the better results. The mistake people make is to blame the A/B test first instead of asking whether the offline number was ever a good proxy.",
+   "deeper": "Mature teams keep a record of offline gains against online results for past launches. If offline gains rarely carry over, they fix the evaluation, for example with counterfactual methods or interleaving tests, before trusting the next offline win.",
+   "tags": [
+    "ab-testing",
+    "recsys"
+   ]
+  }
+ ]
+}

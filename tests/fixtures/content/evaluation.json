@@ -13,7 +13,7 @@
       "Switch to mean squared error, because accuracy is only for regression."
     ],
     "answer": 0,
-    "explanation": "When only 1% of cases are fraud, a model that always says \"not fraud\" is right 99% of the time while catching zero fraud. So 99% accuracy tells you almost nothing here. You need metrics that look at the fraud class directly: recall (how much real fraud you caught) and precision (how many of your alerts were real).\n\nShipping on accuracy alone is the classic mistake this question is testing. Training longer does not fix a misleading metric, and a perfect 100% on a test set is more often a sign of leakage than of a great model. Mean squared error is a regression loss, and accuracy is a classification metric, so the last option has the two the wrong way round.",
+    "explanation": "When only 1% of cases are fraud, a model that always says \"not fraud\" is right 99% of the time while catching zero fraud. So 99% accuracy tells you almost nothing here. You need metrics that look at the fraud class directly: recall (how much real fraud you caught) and precision (how many of your alerts were real).\n\nShipping on accuracy alone is the classic mistake this question is testing. Training longer does not fix a misleading metric, and a perfect 100% on a test set is more often a sign of leakage than of a great model. Mean squared error is a regression loss, and accuracy is a classification metric, so the option about switching to it has the two the wrong way round.",
     "deeper": "Interviewers often open with exactly this trap. A strong answer names the baseline (always predict the majority class), then moves to precision, recall, PR-AUC and the cost of each kind of mistake for the business.",
     "tags": ["imbalance", "fraud"]
   },
