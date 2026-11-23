@@ -63,12 +63,17 @@ def normalize_fill(s):
     return s.rstrip(".").strip()
 
 
+_GROUPED = re.compile(r"[+-]?\d{1,3}(,\d{3})+(\.\d*)?%?")
 _NUM = re.compile(r"[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?", re.I)
 
 
 def parse_number(s):
     """Same rules as parseNumber in assets/js/grade.js."""
-    t = re.sub(r"[\s,]", "", str(s))
+    t = re.sub(r"\s", "", str(s))
+    if "," in t:
+        if not _GROUPED.fullmatch(t):
+            return None
+        t = t.replace(",", "")
     if t.endswith("%"):
         t = t[:-1]
     if not t:

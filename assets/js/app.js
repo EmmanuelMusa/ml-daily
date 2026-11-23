@@ -4,6 +4,7 @@ import { grade, hasResponse, optionOrder } from './grade.js';
 import { dayKey, ensureToday, dealMore, nextNew, recordResult, overrideResult, stats, emptyProgress } from './schedule.js';
 import { loadProgress, saveProgress, exportCode, importCode, pruneUnknown } from './store.js';
 import { ICONS } from './icons.js';
+import { isMidAnswer } from './session.js';
 
 const main = document.getElementById('main');
 const dayLabel = document.getElementById('day-label');
@@ -41,9 +42,11 @@ function save() {
   document.getElementById('notice').hidden = S.persistent;
 }
 
+// Builds the new day's set, unless the person is partway through a question.
 function rollover() {
   const t = today();
   if (S.progress.today?.day === t) return false;
+  if (S.progress.today && isMidAnswer(S.ui)) return false;
   ensureToday(S.progress, S.ids, t);
   S.ui = freshUi();
   save();

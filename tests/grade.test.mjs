@@ -77,3 +77,13 @@ test('optionOrder matches the shared vector', () => {
   const vec = JSON.parse(readFileSync(new URL('./fixtures/option-order.json', import.meta.url), 'utf8'));
   assert.deepEqual(vec, { 'eval-0007': optionOrder('eval-0007', 4), 'py-0003': optionOrder('py-0003', 6) });
 });
+
+test('a decimal comma is refused, not misread', () => {
+  assert.equal(parseNumber('0,5'), null);
+  assert.equal(parseNumber('1,5'), null);
+  assert.equal(parseNumber('12,34'), null);
+  assert.equal(parseNumber('1,000'), 1000);
+  assert.equal(parseNumber('12,345,678'), 12345678);
+  assert.equal(parseNumber('1,000.5'), 1000.5);
+  assert.equal(hasResponse({ format: 'numeric', answer: 0.5, tolerance: 0.005 }, '0,5'), false);
+});

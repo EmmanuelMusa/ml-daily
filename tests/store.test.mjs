@@ -93,3 +93,17 @@ test('prune drops unknown ids', () => {
   assert.ok(p.review.a);
   assert.deepEqual(p.today.items.map((it) => it.id), ['a', 'b', 'c']);
 });
+
+test('default storage that throws on access gives persistent false', () => {
+  const desc = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  Object.defineProperty(globalThis, 'localStorage', { configurable: true, get() { throw new Error('SecurityError'); } });
+  try {
+    const { progress, persistent } = loadProgress();
+    assert.deepEqual(progress, emptyProgress());
+    assert.equal(persistent, false);
+    assert.equal(saveProgress(sample()), false);
+  } finally {
+    if (desc) Object.defineProperty(globalThis, 'localStorage', desc);
+    else delete globalThis.localStorage;
+  }
+});

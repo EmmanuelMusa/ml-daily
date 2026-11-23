@@ -13,8 +13,14 @@ export function normalizeFill(s) {
     .trim();
 }
 
+const GROUPED = /^[+-]?\d{1,3}(,\d{3})+(\.\d*)?%?$/;
+
 export function parseNumber(s) {
-  let t = String(s ?? '').replace(/[\s,]/g, '');
+  let t = String(s ?? '').replace(/\s/g, '');
+  if (t.includes(',')) {
+    if (!GROUPED.test(t)) return null; // a decimal comma or stray comma, refuse rather than misread
+    t = t.replace(/,/g, '');
+  }
   if (t.endsWith('%')) t = t.slice(0, -1);
   if (!t) return null;
   const parts = t.split('/');

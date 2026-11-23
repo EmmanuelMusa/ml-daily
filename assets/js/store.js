@@ -17,9 +17,10 @@ export function isProgress(x) {
     && isObj(x.settings);
 }
 
-export function loadProgress(storage = globalThis.localStorage) {
+export function loadProgress(storage) {
   let raw;
   try {
+    storage ??= globalThis.localStorage;
     if (!storage) throw new Error('no storage');
     raw = storage.getItem(STORAGE_KEY);
   } catch {
@@ -34,8 +35,9 @@ export function loadProgress(storage = globalThis.localStorage) {
   return { progress: emptyProgress(), persistent: true };
 }
 
-export function saveProgress(progress, storage = globalThis.localStorage) {
+export function saveProgress(progress, storage) {
   try {
+    storage ??= globalThis.localStorage;
     storage.setItem(STORAGE_KEY, JSON.stringify(progress));
     return true;
   } catch {

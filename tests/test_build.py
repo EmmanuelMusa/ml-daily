@@ -122,6 +122,10 @@ class ParseTests(unittest.TestCase):
             self.assertAlmostEqual(parse_number(s), v)
         for s in ["", "abc", "1/0"]:
             self.assertIsNone(parse_number(s))
+        for s in ["0,5", "1,5", "12,34"]:
+            self.assertIsNone(parse_number(s))
+        self.assertEqual(parse_number("12,345,678"), 12345678)
+        self.assertEqual(parse_number("1,000.5"), 1000.5)
 
     def test_normalize_fill(self):
         self.assertEqual(normalize_fill("  Cross-Entropy. "), "cross entropy")
