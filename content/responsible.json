@@ -107,5 +107,473 @@
    "feedback-loop",
    "model-card"
   ]
+ },
+ {
+  "id": "rai-0005",
+  "topic": "responsible",
+  "subtopic": "checking equalized odds",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A hospital tests a sepsis alert model on two age groups.\n\n- Under 65: 80 true positives, 20 false negatives, 30 false positives, 270 true negatives.\n- 65 and over: 54 true positives, 21 false negatives, 100 false positives, 400 true negatives.\n\nEqualized odds asks for equal true positive rates (TPR) and equal false positive rates (FPR) across groups. Report the equalized odds gap, defined here as the larger of the absolute TPR gap and the absolute FPR gap. Give it as a decimal to 2 places.",
+  "answer": 0.1,
+  "tolerance": 0.005,
+  "check": "tpr_a = 80 / (80 + 20)\nfpr_a = 30 / (30 + 270)\ntpr_b = 54 / (54 + 21)\nfpr_b = 100 / (100 + 400)\nresult = max(abs(tpr_a - tpr_b), abs(fpr_a - fpr_b))",
+  "explanation": "Work out both rates for each group. TPR is TP / (TP + FN), the share of real sepsis cases that get an alert. FPR is FP / (FP + TN), the share of patients without sepsis who get an alert anyway.\n\n- Under 65: TPR = 80 / 100 = 0.80, FPR = 30 / 300 = 0.10.\n- 65 and over: TPR = 54 / 75 = 0.72, FPR = 100 / 500 = 0.20.\n\nThe TPR gap is 0.08 and the FPR gap is 0.10, so the equalized odds gap is 0.10. Older patients get twice the rate of false alarms, and they also miss out on more true alerts.\n\nThe most common mistake is to stop after the TPR and answer 0.08. That checks equal opportunity, which only looks at people who really have the condition. Equalized odds also needs the error rate among people who do not. Another slip is to compute FP / (FP + TP), which is the share of alerts that are false. That gives 0.27 and 0.65 here, a different quantity that answers a different question.",
+  "deeper": "With only 75 older patients who had sepsis, a TPR gap of 0.08 could be noise, so a strong candidate adds confidence intervals before acting. They would also ask which error hurts more in this ward. A missed sepsis case can be fatal, while extra false alarms cost staff time and feed alert fatigue.",
+  "tags": [
+   "fairness",
+   "healthcare"
+  ],
+  "concepts": [
+   "equal-opportunity",
+   "false-positive-rate",
+   "confusion-matrix"
+  ]
+ },
+ {
+  "id": "rai-0006",
+  "topic": "responsible",
+  "subtopic": "dropping the protected attribute",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A university's admissions triage model gave lower scores to applicants from one ethnic group. The team deletes the ethnicity column, retrains, and declares the model fair. Postcode, school name and first language are still features. What is the main flaw in their reasoning?",
+  "options": [
+   "Nothing, because a model cannot learn a pattern from a column it never even sees.",
+   "Postcode, school and language can stand in for ethnicity, so the gap can survive.",
+   "The column must also be deleted from the test set, or the old bias leaks back in.",
+   "Deleting a column only removes bias if stronger regularization is added as well."
+  ],
+  "answer": 1,
+  "explanation": "Removing a protected attribute does not remove the information it carried. Where people live, which school they went to and their first language are often strongly linked to ethnicity. A model trained on past admissions can rebuild much of the same pattern from these proxies, so the score gap can stay almost as large. This idea is often called fairness through unawareness, and it rarely works on its own.\n\nThe option claiming nothing is wrong is the belief the question tests. The model never sees the column, but it sees features correlated with it. Deleting the column from the test set changes nothing about the trained model. In fact you need the attribute at test time to measure whether the gap is still there. Regularization limits how complex the model is, but it does not target group information, so it is not the missing step.",
+  "deeper": "A strong answer adds that teams should keep the protected attribute, stored securely and away from the model, so they can audit outcomes by group. Without it you cannot tell whether dropping the column helped. An interviewer may follow up by asking how to find proxies, for example by training a model to predict ethnicity from the remaining features.",
+  "tags": [
+   "fairness",
+   "proxies"
+  ],
+  "concepts": [
+   "proxy-discrimination",
+   "demographic-parity"
+  ]
+ },
+ {
+  "id": "rai-0007",
+  "topic": "responsible",
+  "subtopic": "fairness definitions that conflict",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A school district's early-warning model flags students at risk of dropping out. In group A, 30% of students later drop out. In group B, 15% do. At the chosen threshold the flags have the same precision in both groups, 0.6, so a flag means the same thing whatever the group. The model also misses the same share of real dropouts in both groups, 30%. What follows for the false positive rate, the share of students who stay in school but are flagged anyway?",
+  "options": [
+   "It must be equal in both groups, since precision and miss rate both match.",
+   "It must be higher in group B, since it has fewer real dropouts to find.",
+   "It must be higher in group A, the group where more students drop out.",
+   "It cannot be pinned down without each group's full score distribution."
+  ],
+  "answer": 2,
+  "explanation": "Take 1,000 students per group. Group A has 300 dropouts. Missing 30% means 210 are flagged correctly. With precision 0.6, those 210 are 60% of all flags, so there are 350 flags and 140 are false. That is 140 of 700 students who stay, an FPR of 0.20. Group B has 150 dropouts, 105 caught, 175 flags and 70 false ones among 850 who stay, an FPR of about 0.08.\n\nIn general FPR = p / (1 − p) × (1 − precision) / precision × (1 − miss rate), where p is the base rate. Hold precision and miss rate fixed and FPR rises with p. So equal precision, often called predictive parity, plus equal miss rates forces unequal false positive rates whenever base rates differ and the model is not perfect.\n\nExpecting equal FPRs is exactly the intuition this result breaks. Group B has fewer dropouts, which pushes its FPR down, not up. And the base rate, precision and miss rate together fix every cell of the confusion matrix, so the score distribution is not needed.",
+  "deeper": "This is the core of the well-known debate over criminal risk scores. One side showed equal precision across groups, the other showed unequal false positive rates, and both were right. The same clash holds for calibrated scores in general. In an interview, say the conflict is arithmetic, not a data problem, and that people affected and policy owners must choose which error to equalize.",
+  "tags": [
+   "fairness",
+   "impossibility"
+  ],
+  "concepts": [
+   "calibration",
+   "equal-opportunity",
+   "false-positive-rate"
+  ]
+ },
+ {
+  "id": "rai-0008",
+  "topic": "responsible",
+  "subtopic": "where to intervene for fairness",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A job-ad delivery model shows senior engineering ads to men far more often than to women. The team lists possible fixes and the stage of the pipeline each belongs to. Which pairings are correct? Select all that apply.",
+  "options": [
+   "Reweighing training examples so group and label look independent in the weighted data is a pre-processing fix.",
+   "Adding a fairness penalty to the training loss so the gap counts as error is an in-processing fix.",
+   "Setting a separate score threshold for each group on the already trained model is a post-processing fix.",
+   "Adversarial debiasing, where a second network tries to guess gender from the model's outputs during training, is a post-processing fix.",
+   "Resampling the training data so both groups appear equally often is a post-processing fix.",
+   "Relabelling some training examples so both groups have similar positive rates is an in-processing fix."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "The three stages are defined by what you change. Pre-processing changes the data before training. In-processing changes how the model learns. Post-processing changes how a trained model's outputs become decisions.\n\nReweighing gives each example a weight so that, in the weighted data, group and label are independent. It touches only the data, so it is pre-processing. A fairness penalty in the loss changes the training objective, which makes it in-processing. Per-group thresholds leave the model alone and only change the cut-off applied to its scores, so they are post-processing.\n\nAdversarial debiasing is wrong as post-processing because the adversary is trained together with the main model and its loss shapes the main model's weights. That is in-processing. Resampling the training data, like reweighing, changes the data before training, so it is pre-processing. Relabelling, sometimes called massaging, flips a few labels before training starts. It edits the data, not the learning algorithm, so it is also pre-processing, not in-processing. Per-group thresholds need no retraining at all, which is why they are the fastest fix to try.",
+  "deeper": "Each stage has a catch. Post-processing needs the protected attribute at decision time, which can be unlawful in hiring or ads for jobs. In-processing needs it during training. A strong candidate names the stage, the data it needs and the legal check before suggesting one.",
+  "tags": [
+   "fairness",
+   "mitigation"
+  ],
+  "concepts": [
+   "demographic-parity",
+   "equal-opportunity",
+   "decision-threshold"
+  ]
+ },
+ {
+  "id": "rai-0009",
+  "topic": "responsible",
+  "subtopic": "reading a SHAP explanation",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A telecom churn model explains one customer's score with SHAP. The base value is 0.20. The contributions are: month-to-month contract +0.25, tenure of 3 months +0.10, no support calls −0.05. A manager says: \"Move this customer to an annual contract and their churn score will fall by 0.25.\" Which statement is correct?",
+  "options": [
+   "The score is 0.50, and switching will lower it by exactly 0.25, because SHAP values are additive.",
+   "The score is 0.30, and switching will cut it by 0.25, leaving a churn score of only 0.05.",
+   "The score is 0.50, and the manager is right as long as the features are not correlated.",
+   "The score is 0.50, but the 0.25 is credit relative to the average, not the effect of a switch."
+  ],
+  "answer": 3,
+  "explanation": "SHAP contributions add up from the base value: 0.20 + 0.25 + 0.10 − 0.05 = 0.50. But each contribution measures how far knowing that feature moves the prediction away from the average over a background set of customers. That background mixes all contract types. The +0.25 compares month-to-month with that mix, not with an annual contract, and it says nothing about how the other contributions would shift if the contract changed.\n\nAdditivity is about how the explanation of one prediction adds up. It does not turn a contribution into the change you get from editing a feature, so the option claiming an exact 0.25 drop is wrong. The option giving 0.30 forgets the base value. Uncorrelated features do not rescue the manager either. Even in a purely additive model, switching to annual removes the +0.25 and adds the annual contract's own contribution, which is usually negative, so the drop would differ from 0.25.\n\nTo see what the model predicts after a switch, re-score the customer with an annual contract.",
+  "deeper": "Even the re-scored number is only what the model predicts, not what the customer will do. Customers who choose annual contracts differ from those who are pushed into one. A strong candidate separates explanation, model what-if and causal effect, and suggests an experiment such as a randomized retention offer for the last one.",
+  "tags": [
+   "shap",
+   "churn"
+  ],
+  "concepts": [
+   "shap-values",
+   "counterfactual-explanation"
+  ]
+ },
+ {
+  "id": "rai-0010",
+  "topic": "responsible",
+  "subtopic": "SHAP values add up",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A food delivery app predicts delivery time and explains each prediction with SHAP. For one order, the base value is 31.5 minutes and the prediction is 46.0 minutes. Three contributions are shown: distance +8.2, heavy rain +3.6, restaurant prep speed −1.9. The rush-hour contribution is hidden. What is it, in minutes, to 1 decimal place?",
+  "answer": 4.6,
+  "tolerance": 0.05,
+  "check": "base = 31.5\nprediction = 46.0\nshown = [8.2, 3.6, -1.9]\nresult = prediction - base - sum(shown)",
+  "explanation": "SHAP values are additive: the base value plus every feature's contribution equals the prediction. So the hidden contribution is whatever is needed to close the gap.\n\n- Gap to explain: 46.0 − 31.5 = 14.5 minutes.\n- Shown contributions: 8.2 + 3.6 − 1.9 = 9.9 minutes.\n- Rush hour: 14.5 − 9.9 = 4.6 minutes.\n\nThe most common mistake is to drop the minus sign on prep speed and add 1.9. That gives 8.2 + 3.6 + 1.9 = 13.7 and a wrong answer of 0.8. Another slip is to forget the base value and subtract the shown contributions from the full prediction, 46.0 − 9.9 = 36.1, which is far larger than any single feature here. The base value is the model's average prediction, and every contribution is measured from it.",
+  "deeper": "Teams use this sum as a sanity test. If the shown values plus the base do not reach the prediction, the explainer may be using the wrong output, for example log-odds instead of probability in a classifier. Interviewers like the follow-up of why a classifier's SHAP values are often in log-odds.",
+  "tags": [
+   "shap",
+   "logistics"
+  ],
+  "concepts": [
+   "shap-values"
+  ]
+ },
+ {
+  "id": "rai-0011",
+  "topic": "responsible",
+  "subtopic": "counterfactual explanations",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A courier platform uses a model to decide who joins its higher-paid priority tier. A rejected courier asks what would change the outcome. A counterfactual tool returns four changes, and each one would flip this courier's decision in the model. Which one should the platform show?",
+  "options": [
+   "Be at least seven years older than the age on your current profile.",
+   "Complete 40 more deliveries with your rating staying at 4.5 or more.",
+   "Move your home address to one of the postcodes in the city's northern districts.",
+   "Raise your average rating to 5.3 on the platform's five-star scale."
+  ],
+  "answer": 1,
+  "explanation": "A counterfactual explanation tells a person the smallest change that would have given a different decision. To help, it must be actionable, meaning the person can really do it, and plausible, meaning the changed profile could exist. Doing 40 more deliveries while keeping a good rating meets both, and it points the courier at a path they control.\n\nAge cannot be changed by effort, so telling someone to be older is useless and may also show the model leans on age in a way that needs a fairness review. Moving home is possible in theory but is an unreasonable ask, and a postcode flip is a warning sign that location may act as a proxy for a protected group. A rating of 5.3 is impossible on a five-star scale. Counterfactual search can land outside the real data range unless it is constrained, which is why tools add feasibility limits.",
+  "deeper": "In practice teams lock immutable features such as age, set valid ranges, and show a few diverse options rather than one. The counterfactuals that get filtered out are useful too. They make a cheap audit, because they show which sensitive or proxy features can flip a decision on their own.",
+  "tags": [
+   "explainability",
+   "recourse"
+  ],
+  "concepts": [
+   "counterfactual-explanation",
+   "proxy-discrimination"
+  ]
+ },
+ {
+  "id": "rai-0012",
+  "topic": "responsible",
+  "subtopic": "documenting a model",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A team releases a skin-lesion classifier to partner clinics. Alongside the weights it publishes a short document covering what the model is meant for and not meant for, the training data, accuracy broken down by skin tone and age, and known failure cases. This kind of document for a trained model is called a ______.",
+  "answer": "model card",
+  "accept": [
+   "model cards",
+   "modelcard"
+  ],
+  "explanation": "A model card is a short, standard report that travels with a trained model. It states the intended use and uses that are out of scope, describes the training and evaluation data, reports metrics overall and for relevant groups, and lists limits and ethical concerns. Here, accuracy by skin tone matters because skin-lesion models trained mostly on lighter skin often do worse on darker skin, and clinics need to know that before they rely on it.\n\nThe common wrong answer is a datasheet. A datasheet for a dataset documents how a dataset was collected, what it contains and how it should be used. It describes the data, not the model built from it. Another near miss is a system card, which some companies publish for a whole product with many parts, such as a chat assistant with its safety layers. The prompt describes one trained model, which is what a model card covers.",
+  "deeper": "Interviewers sometimes ask what you would put in a model card for your last project. A strong answer includes metrics by slice, the conditions where the model was never tested, and a named owner. Keep it next to the model in the registry so it is updated with each new version.",
+  "tags": [
+   "documentation",
+   "healthcare"
+  ],
+  "concepts": [
+   "model-card",
+   "slice-based-evaluation"
+  ]
+ },
+ {
+  "id": "rai-0013",
+  "topic": "responsible",
+  "subtopic": "bounding one record's influence",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "An energy company trains a usage-forecasting model on household smart-meter data. It uses a training method with a formal guarantee: adding or removing any one household's data changes the probability of any possible output by at most a factor of exp(ε), where a smaller ε means stronger protection. This guarantee is called ______.",
+  "answer": "differential privacy",
+  "accept": [
+   "dp",
+   "differentially private",
+   "ε-differential privacy",
+   "epsilon differential privacy",
+   "epsilon-differential privacy",
+   "(ε, δ)-differential privacy"
+  ],
+  "explanation": "Differential privacy promises that the output looks almost the same whether or not any one person's data was used. So an attacker who sees the model learns very little about any single household. ε, the privacy budget, sets how close the two cases must be. For model training the usual method is DP-SGD: clip each example's gradient so no one record can push too hard, then add random noise before each update. Stronger privacy, a smaller ε, usually costs some accuracy.\n\nThe common wrong answer is k-anonymity. That is a property of a released table, where each person is indistinguishable from at least k − 1 others on certain columns. It gives no bound on how much one record can change a trained model, and it can break when combined with outside data. Federated learning is another near miss. It keeps raw data on devices but gives no formal limit on what the shared updates reveal.",
+  "deeper": "A good interview point is that ε adds up. Each training run or query on the same data spends more of the budget, so teams track total privacy loss. Ask what ε value is planned and why, since a very large ε offers little real protection even though the method is technically differentially private.",
+  "tags": [
+   "privacy"
+  ],
+  "concepts": [
+   "differential-privacy",
+   "federated-learning"
+  ]
+ },
+ {
+  "id": "rai-0014",
+  "topic": "responsible",
+  "subtopic": "LLMs repeating training data",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A utility company fine-tunes a language model on five years of customer support chats. In testing, a prompt written like the opening of a real chat gets the model to complete it with a real customer's full home address. Which plan best reduces this risk before launch?",
+  "options": [
+   "Lower the sampling temperature, since memorized text mostly appears under random sampling.",
+   "Scrub personal data from the chats, drop duplicates, and filter outputs for personal data.",
+   "Add a system prompt telling the model it must never reveal anyone's personal details.",
+   "Train for more epochs so the model generalizes beyond any one specific support conversation."
+  ],
+  "answer": 1,
+  "explanation": "Language models can memorize and repeat training text word for word, especially text that is rare and specific, like an address, or that appears many times. The fix works at three points. Scrubbing personal data from the chats removes the source. Removing duplicate chats cuts repetition, which is a major driver of memorization. An output filter catches anything that still slips through.\n\nLowering temperature does not help and can make things worse. Memorized text is often the most likely continuation, so greedy decoding is a common way extraction attacks recover it. A system prompt asks the model to behave, but the address is still stored in its weights and a clever prompt or jailbreak can draw it out. Training for more epochs shows the model each chat more times, which increases memorization instead of reducing it.",
+  "deeper": "A strong candidate adds an extraction test to the pre-launch checks: prompt the model with prefixes of real training records and measure how often it completes them exactly. For high-risk data, fine-tuning with differential privacy gives a formal bound, at some cost to quality.",
+  "tags": [
+   "privacy",
+   "llm"
+  ],
+  "concepts": [
+   "pii-handling",
+   "deduplication",
+   "differential-privacy"
+  ]
+ },
+ {
+  "id": "rai-0015",
+  "topic": "responsible",
+  "subtopic": "handling personal data",
+  "format": "multi",
+  "difficulty": 1,
+  "prompt": "A fitness app is building a workout recommender from users' activity logs, which also contain names, email addresses and birth dates. Which practices are sound ways to handle this personal data? Select all that apply.",
+  "options": [
+   "Keep only the fields the recommender needs and drop the rest before training.",
+   "Replace names and emails with random IDs, and keep the lookup table in a separate, tighter-access store.",
+   "Restrict who can read the raw logs and keep a record of every access.",
+   "Treat emails as anonymous once hashed, so the hashed values need no further protection.",
+   "Keep the raw logs forever, since deleting them would hurt reproducibility.",
+   "Copy real user records into shared test fixtures so tests match production."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "The sound practices limit how much personal data exists and who can reach it. Data minimization keeps only what the task needs, so a recommender probably needs activity history and maybe an age band, not names or emails. Pseudonymization swaps direct identifiers for random IDs and keeps the key elsewhere, so a leak of the training table does not expose who is who. Access control with logging means fewer people can see raw data and misuse can be traced.\n\nA hashed email is not anonymous. Anyone with a list of emails can hash them and match, so it is still pseudonymous personal data, and privacy laws such as the GDPR treat it that way. Keeping raw logs forever breaks the principle of storage limitation. Reproducibility can come from versioned, minimized snapshots with a set retention period. Real records in shared test fixtures spread personal data into code repositories, where access is wide and deletion is hard. Synthetic test data does the job.",
+  "deeper": "Interviewers often ask how you would delete one user's data when they ask. A strong answer covers the raw store, derived features, backups and trained models, and notes that removing someone from a trained model may mean retraining on a schedule. Planning that early is far cheaper.",
+  "tags": [
+   "privacy",
+   "data"
+  ],
+  "asof": "2026-11-23",
+  "concepts": [
+   "pii-handling"
+  ]
+ },
+ {
+  "id": "rai-0016",
+  "topic": "responsible",
+  "subtopic": "federated learning",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A phone keyboard learns next-word suggestions with federated learning. A product manager writes: \"Users' typing never leaves their phones, so the system is private by design.\" Which response is most accurate?",
+  "options": [
+   "Raw text stays on the phone, and averaging updates on the server makes them impossible to trace back.",
+   "Phones upload their typed text in encrypted form, and the server decrypts it to train the shared model.",
+   "Raw text stays on the phone, but the shared model updates can still leak details of what a user typed.",
+   "Privacy is not a concern here, since next-word models are too small to memorize any one user's text."
+  ],
+  "answer": 2,
+  "explanation": "In federated learning each phone trains on its own data and sends back only a model update, such as gradients or new weights. The server combines the updates into a shared model. Raw text never moves, which is a real gain. But an update is computed from that text. Research has shown that individual updates can be partly inverted to recover inputs, and the final model can memorize rare strings such as a typed card number.\n\nThe option about averaging is the close miss. In plain federated learning the server receives each update separately and averages them afterwards, so it can inspect any single one. Hiding individual updates needs secure aggregation, where the server only ever sees the sum. Even then, the combined model can leak without differential privacy noise. The option about encrypted uploads describes central training, not federated learning. Small models can still memorize unusual sequences, so model size is no guarantee.",
+  "deeper": "A strong answer names the layered defences: secure aggregation, clipping each update and adding noise for differential privacy, and a minimum number of devices per round. It also notes that federated learning makes debugging harder, because engineers cannot look at the data the model trains on.",
+  "tags": [
+   "privacy",
+   "federated"
+  ],
+  "concepts": [
+   "federated-learning",
+   "differential-privacy"
+  ]
+ },
+ {
+  "id": "rai-0017",
+  "topic": "responsible",
+  "subtopic": "EU AI Act risk tiers",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "An online furniture shop adds a chatbot that answers questions about orders, deliveries and returns. Under the EU AI Act's risk-based approach, where does this system most likely sit?",
+  "options": [
+   "High-risk: it needs a conformity assessment and human oversight first.",
+   "Prohibited: it could sway buyers, so it cannot be offered in the EU.",
+   "Minimal risk: the Act places no specific duties on customer chatbots.",
+   "Limited risk: people must be told they are talking to an AI system."
+  ],
+  "answer": 3,
+  "explanation": "The EU AI Act sorts AI systems by the harm they could do. A chatbot that talks to the public falls under transparency duties, often called the limited-risk tier. The main obligation is that people are told they are dealing with an AI, unless that is already obvious from the context.\n\nHigh-risk covers uses listed in the Act where errors can seriously affect people's lives or rights, such as credit scoring, access to education, hiring and essential public services. Answering questions about furniture deliveries is not on that list. Prohibited practices are a short list of unacceptable uses, such as social scoring and manipulation that distorts behaviour in a way that causes significant harm. Ordinary sales help does not reach that bar. Minimal risk is the tier for systems such as spam filters, with no specific duties. It is the close miss here, but a system that talks directly with people carries the transparency duty, so it sits one tier up.",
+  "deeper": "The tier depends on the use, not the technology. The same language model could power this chatbot and also a tool that screens job applicants, which would be high-risk. In interviews, a strong candidate asks what decision the system feeds before naming a tier.",
+  "tags": [
+   "regulation",
+   "chatbot"
+  ],
+  "asof": "2026-11-23",
+  "concepts": [
+   "eu-ai-act"
+  ]
+ },
+ {
+  "id": "rai-0018",
+  "topic": "responsible",
+  "subtopic": "red teaming an LLM product",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A health insurer is about to launch an LLM assistant that answers members' questions using their own claim records. You are asked to plan the red teaming. Which plan is strongest?",
+  "options": [
+   "Probe leaks, jailbreaks, unsafe advice and bias, and turn each failure into a regression test.",
+   "Probe jailbreaks only, since nearly every other harm starts with getting past the guardrails.",
+   "Probe leaks, jailbreaks, unsafe advice and bias in one big session the week before launch.",
+   "Have the prompt authors probe every harm type, since they know their own prompts' weak points."
+  ],
+  "answer": 0,
+  "explanation": "Red teaming means deliberately trying to make the system fail in the ways that would hurt people most. For this product that means jailbreaks, leaks of another member's claims, unsafe medical or coverage advice, and answers that treat members differently by group. Each prompt that causes a failure becomes a test case. The set is rerun on every model, prompt or retrieval change, so a fixed failure that comes back is caught before release.\n\nA focus on jailbreaks alone misses failures that need no jailbreak. An assistant can leak data through a retrieval bug or give harmful advice to a perfectly polite question. A single session before launch can cover every harm type and still only find today's problems. Without saved tests, a later model or prompt change can bring a fixed failure back, and real members are the ones who find it. Prompt authors can also cover every harm type, but they share their own blind spots and tend to test the cases they already designed for. Good red teams include outsiders and domain experts, here clinicians and claims staff.",
+  "deeper": "Interviewers may ask how you would scale this. Strong answers mention using an LLM to generate attack variants of each human finding, scoring outputs with a mix of rules and an LLM judge, and tracking failure rate per harm category as a release gate.",
+  "tags": [
+   "red-teaming",
+   "llm"
+  ],
+  "concepts": [
+   "red-teaming",
+   "golden-dataset",
+   "jailbreak"
+  ]
+ },
+ {
+  "id": "rai-0019",
+  "topic": "responsible",
+  "subtopic": "a credit model approves one group less",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A journalist reports that your bank's credit-card approval model approves applicants from one ethnic group at about half the rate of others. The model does not use ethnicity as a feature. You lead the response. What do you do, and in what order?",
+  "answer": "First, verify the claim. Get or carefully estimate group membership for an audit sample, within privacy rules, and measure approval rates, the disparate impact ratio, and outcomes where they exist, such as default rates among approved applicants, noting that rejected applicants have no repayment record. Check whether the gap is statistically solid and how much remains after legitimate factors such as income and existing debt. Second, find the cause. Look at the labels, since past approvals may carry past bias, at how well the group is represented in training data, and at proxy features such as postcode, using SHAP or removing features to see what drives the gap. Third, choose a fix with legal and compliance: drop or rework proxies, reweigh data, or retrain with a fairness constraint, then re-measure both fairness and default rates. Finally, record the finding, fix and trade-offs in the model card, add group metrics to monitoring, and give a clear public answer.",
+  "points": [
+   "Verify first: approval rates and error rates by group on a proper audit sample",
+   "Getting group labels for the audit needs care under privacy rules",
+   "Check labels, representation and proxy features to find the cause",
+   "Choose a fix with legal and compliance, then re-measure fairness and default rates",
+   "Document in the model card, monitor group metrics, and communicate clearly"
+  ],
+  "explanation": "The order matters. Measuring comes before fixing, because a raw approval gap can have several causes and each needs a different remedy. If the gap comes from biased past decisions in the labels, reweighing or new labels help. If it comes from a proxy feature, removing or reworking that feature helps. If it shrinks a lot once income and debt are accounted for, the team must still show those factors are needed for the business and are not proxies themselves.\n\nThe most common mistake is to defend the model because ethnicity is not a feature. Proxies can carry the same signal, and regulators and courts look at outcomes, not just inputs. The opposite mistake is jumping straight to per-group thresholds before knowing the cause, which may be unlawful and hides the real problem. A further gap is the audit itself. Banks often do not hold ethnicity data, so getting it through a voluntary survey or a careful statistical estimate is real work, and that data must be protected. Under the EU AI Act, credit scoring of individuals is a high-risk use, so documentation and monitoring are duties, not extras.",
+  "deeper": "Senior candidates also talk about the people side: who owns the decision on which fairness metric to target, how to brief the journalist honestly without overclaiming, and how to offer affected applicants a review. Keeping the audit reproducible means the same check can run after every retrain.",
+  "tags": [
+   "fairness",
+   "credit",
+   "audit"
+  ],
+  "asof": "2026-11-23",
+  "concepts": [
+   "disparate-impact",
+   "proxy-discrimination",
+   "model-card"
+  ]
+ },
+ {
+  "id": "rai-0020",
+  "topic": "responsible",
+  "subtopic": "global vs local explanations",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "Your e-commerce fraud model holds suspicious orders for manual review. The head of risk asks what the model pays attention to in general. A support agent asks why one specific customer's order was held. Explain the difference between the two kinds of explanation they need and how you would produce each.",
+  "answer": "The head of risk needs a global explanation: how the model behaves across all orders. I would show which features matter most overall, for example mean absolute SHAP values or permutation importance on a recent sample, and how the score moves as key features change, such as order value or account age. That lets them check the model relies on sensible signals and not on proxies. The support agent needs a local explanation: why this one order scored high. I would show that order's top SHAP contributions in plain words, for example a new account, a shipping address far from the billing address and an unusually large basket. The two can disagree, since a feature that matters little overall can drive one decision. Neither is a causal claim. And what agents tell customers should be general enough that fraudsters cannot learn how to game the model.",
+  "points": [
+   "Global explanation describes behaviour across all data, for oversight and sanity checks",
+   "Global tools: mean absolute SHAP, permutation importance, dependence plots",
+   "Local explanation says why one prediction came out as it did",
+   "Local tools: per-prediction SHAP contributions in plain language",
+   "Global and local views can differ, and neither is causal",
+   "Limit detail shown to customers so the model is not easy to game"
+  ],
+  "explanation": "Global and local explanations answer different questions. A global view averages over many predictions, so it shows the model's general habits. A local view breaks down one prediction, so it shows why this case came out the way it did. SHAP can serve both: per-order SHAP values are local, and averaging their absolute size across many orders gives a global ranking.\n\nThe common mistake is to answer the support agent with the global chart: \"the model mostly uses order value, so that is why.\" This customer's order may have been held for a different reason, such as a brand-new account, even if order value matters most on average. The reverse mistake is showing the head of risk a few individual explanations and calling that an audit. A handful of cases can hide a reliance on proxies or a feature that behaves strangely across the full range.",
+  "deeper": "Interviewers may ask how you would check that explanations are stable. Two near-identical orders with very different explanations will erode the agents' trust. A good habit is to log local explanations with each decision, which also helps when a customer disputes a hold weeks later.",
+  "tags": [
+   "explainability",
+   "fraud"
+  ],
+  "concepts": [
+   "shap-values",
+   "feature-importance"
+  ]
+ },
+ {
+  "id": "rai-0021",
+  "topic": "responsible",
+  "subtopic": "closing a selection-rate gap",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A city's model picks housing-benefit claims for fraud checks. Claims from applicants born abroad are selected at three times the rate of other claims, yet past audits found fraud no more common among them. Two fixes are proposed: a separate score threshold for each group at decision time, or retraining the model with a fairness constraint. Compare them and say what you would recommend.",
+  "answer": "Per-group thresholds are fast, exact and need no retraining. Raising the cut-off for one group closes the selection gap directly, and the cost is easy to measure: some fraud in that group goes unchecked and the overall hit rate may change. But they apply the protected attribute at decision time, which in many places counts as direct unequal treatment, and they hide the cause instead of fixing it. Constrained retraining builds the goal into the model and pushes it away from proxies, usually without needing the attribute when scoring. It takes more work, the trade-off is harder to tune, and error rates can still shift. I would first find why the model over-selects, likely proxies or labels from past audits that targeted the same group. Then I would fix the data and retrain with a constraint, cleared with legal, and monitor selection, hit and false positive rates by group every month.",
+  "points": [
+   "Per-group thresholds are quick and exact but use the protected attribute at decision time",
+   "That may be unlawful direct unequal treatment, so legal review is needed",
+   "Constrained retraining tackles proxies in the model but costs more effort and tuning",
+   "Measure the accuracy cost: fraud missed and hit rate, by group",
+   "Find the root cause first, such as proxies or biased labels from past audits",
+   "Monitor selection, hit and false positive rates by group after the change"
+  ],
+  "explanation": "The fact that fraud is no more common among applicants born abroad matters. It means the extra checks mostly land on honest claimants, so this group faces a far higher false positive rate. Closing the selection gap here is not only about equal rates. It also reduces wrongful investigations.\n\nA common mistake is to treat per-group thresholds as the obvious fix because they are simple. They work on the symptom, need the protected attribute for every decision, and can be challenged as treating people differently because of their origin. Another mistake is ignoring the labels. If past audits already targeted this group, the training data records more fraud found there simply because more people there were checked. A model trained on that copies the bias, and a fairness constraint on top only partly offsets it. Systems that public authorities use to assess eligibility for benefits are on the EU AI Act's high-risk list, and a fraud model that can lead to benefits being cut likely falls there too, so this analysis belongs in its documentation.",
+  "deeper": "Strong candidates suggest a randomized audit sample, checking a small random share of all claims. It gives unbiased fraud rates by group, which fixes the label problem and shows whether any remaining gap is justified. Interviewers value this because it turns a fairness argument into measurement.",
+  "tags": [
+   "fairness",
+   "public-sector"
+  ],
+  "asof": "2026-11-23",
+  "concepts": [
+   "demographic-parity",
+   "decision-threshold",
+   "proxy-discrimination",
+   "selection-bias"
+  ]
+ },
+ {
+  "id": "rai-0022",
+  "topic": "responsible",
+  "subtopic": "was this record in training",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "A mental health app trains a mood-prediction model on users' journal entries. An attacker who holds one person's journal entries queries the model and sees it is unusually confident on them, which suggests that person used the app. An attack that tries to tell whether a specific record was in the training set is called a ______ attack.",
+  "answer": "membership inference",
+  "accept": [
+   "membership inference attack",
+   "membership",
+   "mia",
+   "membership inference attacks"
+  ],
+  "explanation": "Membership inference exploits the gap between how a model treats data it trained on and data it has never seen. Overfit models are more confident and have lower loss on their training records. An attacker compares the model's output on a target record with what it gives for similar records known to be outside training, often using shadow models trained to mimic the target. Here, just learning that someone was in the training set reveals that they used a mental health app, which is sensitive on its own.\n\nThe common wrong answer is model inversion. That attack tries to rebuild what inputs look like, for example a typical face for a name, from the model's outputs. It does not test whether a given record was used. Training data extraction is another near miss. It pulls verbatim training text out of a generative model, which is a stronger leak than a yes or no on membership.",
+  "deeper": "Defences include differential privacy, which bounds the attack's success by design, plus less overfitting and returning labels instead of full confidence scores. Teams can also run membership inference against their own model as a privacy audit before release, a step interviewers like to hear.",
+  "tags": [
+   "privacy",
+   "attacks"
+  ],
+  "concepts": [
+   "differential-privacy",
+   "overfitting"
+  ]
  }
 ]
