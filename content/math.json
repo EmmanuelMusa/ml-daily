@@ -149,5 +149,707 @@
    "confidence-interval",
    "central-limit-theorem"
   ]
+ },
+ {
+  "id": "math-0007",
+  "topic": "math",
+  "subtopic": "conditional probability from a table",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A subscription app followed 1,000 customers for one quarter and counted who filed a complaint and who cancelled:\n\n- Complained and cancelled: 60\n- Complained and stayed: 140\n- Did not complain and cancelled: 90\n- Did not complain and stayed: 710\n\nWhat is the probability that a customer cancelled, given that they complained? Give it as a decimal to 2 places.",
+  "explanation": "Conditioning on \"complained\" shrinks the world to the customers who complained. There are 60 + 140 = 200 of them, and 60 of those cancelled. So P(cancelled | complained) = 60 / 200 = 0.30.\n\nThere are two common slips. The first divides by everyone who cancelled: 60 / (60 + 90) = 0.40. That is P(complained | cancelled), the reverse question. The second divides by all 1,000 customers, giving 0.06, which is the joint probability P(complained and cancelled). A simple habit avoids both: the event after \"given\" sets the denominator.\n\nIt also helps to compare with the other group. Customers who did not complain cancelled at 90 / 800 ≈ 0.11, so complainers cancel at almost three times the rate. That gap is what a churn model would pick up from a complaint feature.",
+  "deeper": "Interviewers like to flip the direction halfway through: \"now what share of the customers who cancelled had complained?\" A strong candidate redraws the denominator out loud. In real work, a table like this is a quick sanity check on a feature before modelling, though a high conditional rate is a correlation and does not prove that complaints cause cancellations.",
+  "concepts": [
+   "conditional-probability"
+  ],
+  "tags": [
+   "probability",
+   "churn"
+  ],
+  "answer": 0.3,
+  "tolerance": 0.005,
+  "check": "complained_cancelled = 60\ncomplained_stayed = 140\nresult = complained_cancelled / (complained_cancelled + complained_stayed)"
+ },
+ {
+  "id": "math-0008",
+  "topic": "math",
+  "subtopic": "expected value of a decision",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A churn model gives a customer a 0.4 probability of leaving this month. If they leave, the company loses $200 in future profit. A retention call costs $10. For a customer who would otherwise leave, the call keeps them with probability 0.25. For a customer who would have stayed anyway, the call changes nothing. What is the expected gain in profit from calling this customer, compared with not calling? Give it in dollars as a whole number.",
+  "explanation": "The call only earns money in one situation: the customer was going to leave and the call keeps them. That happens with probability 0.4 × 0.25 = 0.10, and in that case the company keeps $200. So the expected benefit is 0.10 × $200 = $20. The call costs $10 every time, whatever happens. The expected gain is $20 − $10 = $10, so calling is worth it on average.\n\nThe most common mistake is to skip the churn probability and compute 0.25 × $200 − $10 = $40. That treats every called customer as someone about to leave. Another slip is to forget the cost and answer $20. Listing each outcome with its probability and payoff, then summing, catches both.\n\nThe answer depends on the score. Calling breaks even when p × 0.25 × $200 = $10, which is p = 0.2. So a sensible rule is to call customers whose churn probability is above 0.2.",
+  "deeper": "This is why calibrated probabilities matter. The break-even threshold of 0.2 only works if a score of 0.4 really means a 40% chance of leaving. A strong candidate also asks where the 0.25 save rate came from, since it should be measured with a randomized holdout of called and uncalled at-risk customers, not guessed.",
+  "concepts": [
+   "expected-value",
+   "decision-threshold",
+   "calibration"
+  ],
+  "tags": [
+   "expected-value",
+   "churn"
+  ],
+  "answer": 10,
+  "tolerance": 0.5,
+  "check": "p_leave = 0.4\nloss_if_leave = 200\ncall_cost = 10\np_saved = 0.25\nresult = p_leave * p_saved * loss_if_leave - call_cost"
+ },
+ {
+  "id": "math-0009",
+  "topic": "math",
+  "subtopic": "averaging shrinks error",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "You are comparing two training recipes. A single run's validation accuracy varies from seed to seed with a standard deviation of 0.8 points. You want to average several runs so that the standard error of the averaged accuracy is 0.2 points. Assuming the runs are independent, how many seeds do you need?",
+  "explanation": "The standard error of a mean of n independent values is σ / √n. Here σ = 0.8 and the target is 0.2, so √n = 0.8 / 0.2 = 4 and n = 16. Put another way, halving the error takes four times the runs, and quartering it takes sixteen times.\n\nThe option with 4 seeds treats the error as falling like 1/n. That is true of the variance, σ² / n, not of the standard deviation. Four seeds give 0.8 / √4 = 0.4, twice the target. The 256-seed option swaps the two quantities. It is the variance that falls like 1/n and the error, its square root, that falls like 1/√n. Using its rule, the variance must drop from 0.64 to 0.04, a factor of 16, so √n = 16 and n = 256, which wastes 240 runs. The option saying averaging cannot help confuses the noise of one run, which stays at 0.8, with the noise of the average, which shrinks as runs are added.\n\nThe independence assumption matters. If runs share hidden choices, such as the same data split, they are correlated and the error shrinks more slowly than 1/√n.",
+  "deeper": "Interviewers use this to probe whether you can tell a real gain from noise. If two recipes differ by 0.3 points and one run has seed noise of 0.8, a single run of each tells you nothing. A strong candidate runs several seeds per recipe, reports the mean with its standard error, and points out the 1/√n cost of extra precision.",
+  "concepts": [
+   "variance",
+   "central-limit-theorem"
+  ],
+  "tags": [
+   "standard-error",
+   "seeds"
+  ],
+  "options": [
+   "4 seeds, because the error of an average falls in direct proportion to the number of runs.",
+   "256 seeds, because the variance of the average, not its error, falls with the square root of the run count.",
+   "16 seeds, because the error of an average falls with the square root of the run count.",
+   "None, because seed noise is fixed and averaging more runs leaves the error unchanged."
+  ],
+  "answer": 2
+ },
+ {
+  "id": "math-0010",
+  "topic": "math",
+  "subtopic": "binomial probability",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A batch job calls an external geocoding API 15 times. Each call times out with probability 0.1, independently of the other calls. What is the probability that exactly 2 of the 15 calls time out? Give it as a decimal to 3 places.",
+  "explanation": "The number of timeouts is binomial with n = 15 and p = 0.1. The probability of exactly k timeouts is C(n, k) × pᵏ × (1 − p)ⁿ⁻ᵏ.\n\nStep by step: C(15, 2) = 15 × 14 / 2 = 105 ways to choose which two calls fail. Each such pattern has probability 0.1² × 0.9¹³. Here 0.1² = 0.01 and 0.9¹³ ≈ 0.2542. Multiplying gives 105 × 0.01 × 0.2542 ≈ 0.2669, which rounds to 0.267.\n\nThe most common mistake is dropping the C(15, 2) factor and answering 0.01 × 0.2542 ≈ 0.0025. That is the chance of one specific pattern, such as the first two calls failing and the rest succeeding. Another slip is to leave out the 0.9¹³ term, which says the other 13 calls must succeed. Without it you get 105 × 0.01 = 1.05, which is not even a valid probability.\n\nAs a sanity check, the expected number of timeouts is n × p = 1.5, so a result of 1 or 2 timeouts should be common, and it is.",
+  "deeper": "In practice you care more about \"at least one\" timeout, 1 − 0.9¹⁵ ≈ 0.79, which shows why a job with many calls needs retries even when each call is fairly reliable. The binomial also assumes independence. Real timeouts cluster during an outage, which makes jobs with several failures more common than this model predicts.",
+  "concepts": [
+   "binomial-distribution"
+  ],
+  "tags": [
+   "binomial",
+   "reliability"
+  ],
+  "answer": 0.267,
+  "tolerance": 0.0005,
+  "check": "from math import comb\nn = 15\nk = 2\np = 0.1\nresult = comb(n, k) * p**k * (1 - p)**(n - k)"
+ },
+ {
+  "id": "math-0011",
+  "topic": "math",
+  "subtopic": "normal tail share",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "Delivery times for a grocery service are roughly normal, with a mean of 30 minutes and a standard deviation of 5 minutes. Using the 68-95-99.7 rule, what percentage of deliveries take longer than 40 minutes? Give it as a percentage to 1 decimal place.",
+  "explanation": "First turn the cutoff into a z-score: (40 − 30) / 5 = 2. So 40 minutes is 2 standard deviations above the mean. The 68-95-99.7 rule says about 95% of values lie within 2 standard deviations of the mean, here between 20 and 40 minutes. That leaves 5% outside the band. The normal curve is symmetric, so half of that 5% is above 40 minutes and half is below 20. The answer is 2.5%.\n\nThe common mistake is answering 5%, forgetting that the 5% outside the band is split between two tails. Another is to use the 68% figure, which belongs to 1 standard deviation, or 35 minutes here. That would give 16%.\n\nThe rule is an approximation. The exact share above z = 2 is about 2.28%, because the true two-sided figure is 95.45%. For a quick estimate in an interview, 2.5% is the expected answer.",
+  "deeper": "Real delivery and latency times are usually right-skewed, with a long tail of slow cases. A normal model then understates how often the worst delays happen. For service targets, teams read percentiles such as p95 or p99 straight from the data rather than trusting a mean and a standard deviation.",
+  "concepts": [
+   "normal-distribution"
+  ],
+  "tags": [
+   "normal",
+   "z-score"
+  ],
+  "answer": 2.5,
+  "tolerance": 0.05,
+  "check": "mean = 30\nsd = 5\ncutoff = 40\nz = (cutoff - mean) / sd\nwithin = {1: 68.0, 2: 95.0, 3: 99.7}[round(z)]\nresult = (100 - within) / 2"
+ },
+ {
+  "id": "math-0012",
+  "topic": "math",
+  "subtopic": "the central limit theorem",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "An online store wants to A/B test a new checkout on revenue per user, with about 50,000 users in each arm. Revenue per user is very skewed: most users spend nothing and a few spend thousands. A colleague says a z-test on the difference in means is invalid because revenue is not normally distributed. What is the best reply?",
+  "explanation": "The z-test compares two sample means. What it needs is for each mean to be close to normal across repeated samples. The central limit theorem says the mean of many independent values is close to normal whatever the shape of the individual values, as long as their variance is finite. With 50,000 users per arm, the averages are close enough to normal for the test to work, even though single users' revenue is far from normal.\n\nThe option claiming the revenue values become normal misreads the theorem. The data keeps its skewed shape however many users you collect. Only the sampling distribution of the average becomes normal. The option about symmetric data is wrong because the theorem has no symmetry condition, though strong skew does mean you need more data before the approximation is good. A rank-based test would also answer a different question, whether one arm tends to rank higher, not whether average revenue rose. Log-transforming changes the question too. The mean of log revenue tracks the geometric mean, not average revenue, so it no longer tests the number the business cares about, and the many zero values need special handling.\n\nOne real caveat: a few huge spenders inflate the variance, so the test may need a lot of data to have useful power.",
+  "deeper": "A strong candidate adds practical fixes for heavy-tailed metrics: capping extreme values, variance reduction with pre-experiment data such as CUPED, or a bootstrap to check the interval. They also check that the unit of randomization matches the unit of analysis, since many orders from one user are not independent.",
+  "concepts": [
+   "central-limit-theorem",
+   "ab-testing"
+  ],
+  "tags": [
+   "clt",
+   "ab-testing"
+  ],
+  "options": [
+   "The colleague is right, so log-transform revenue first and then run the z-test on the logged values.",
+   "The test needs the averages to be near normal, not the raw values, and 50,000 users per arm gives that.",
+   "The central limit theorem makes the revenue values close to normal once each arm has enough users in it.",
+   "The central limit theorem only holds for symmetric data, so skewed revenue needs a rank-based test."
+  ],
+  "answer": 1
+ },
+ {
+  "id": "math-0013",
+  "topic": "math",
+  "subtopic": "losses and their noise models",
+  "format": "multi",
+  "difficulty": 3,
+  "prompt": "Many training losses are the negative log-likelihood of a noise model, so minimizing them is maximum likelihood estimation. Which pairings of a loss with the model it corresponds to are correct? Select all that apply.",
+  "explanation": "Write down the noise model, take the negative log of its density, and drop constants. A Gaussian density contains exp(−(y − ŷ)² / 2σ²), so its negative log is the squared error up to scale and a constant. That is why mean squared error is maximum likelihood under Gaussian noise with fixed variance. A Laplace density contains exp(−|y − ŷ| / b), so its negative log is the absolute error, which pairs mean absolute error with Laplace noise. For a categorical label, the likelihood of an example is the predicted probability of its true class, and the negative log of that is exactly softmax cross-entropy.\n\nThe option pairing MSE with Laplace noise swaps the two. MSE is in fact sensitive to outliers, because squaring magnifies large errors. Laplace noise has heavier tails, which is why MAE is the more robust choice. Binary cross-entropy comes from a Bernoulli label, not a Gaussian one. A Gaussian on the label would give squared error on the probability, a different loss. Finally, MAE is minimized by the conditional median, not the mean. Only MSE targets the mean.",
+  "deeper": "Interviewers use this to see whether you can derive a loss rather than recite it. A good follow-up: what if the noise variance changes with the input? Then the model predicts both a mean and a variance and minimizes the Gaussian negative log-likelihood, which divides each squared error by σ² and adds a log σ term.",
+  "concepts": [
+   "maximum-likelihood-estimation",
+   "cross-entropy-loss",
+   "loss-function"
+  ],
+  "tags": [
+   "mle",
+   "loss"
+  ],
+  "options": [
+   "Mean squared error is maximum likelihood when the targets have Gaussian noise with a constant variance.",
+   "Mean squared error is maximum likelihood under Laplace noise, which is why it resists outliers.",
+   "Binary cross-entropy is maximum likelihood for a Gaussian label centred on the predicted probability.",
+   "Mean absolute error is maximum likelihood when the targets have Laplace noise with a constant scale.",
+   "Softmax cross-entropy is maximum likelihood for a single categorical label per example.",
+   "Mean absolute error and mean squared error both estimate the conditional mean of the target."
+  ],
+  "answer": [
+   0,
+   3,
+   4
+  ]
+ },
+ {
+  "id": "math-0014",
+  "topic": "math",
+  "subtopic": "most probable parameters",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A banner was shown 200 times and clicked 30 times. You model each view as an independent click with probability p and estimate p = 30 / 200 = 0.15, because that value makes the observed clicks more probable than any other value of p would. This way of choosing parameters is called ______.",
+  "explanation": "Maximum likelihood estimation picks the parameter values under which the data you actually saw is most probable. Here the likelihood of 30 clicks in 200 views is proportional to p³⁰ (1 − p)¹⁷⁰. Taking the log and setting its derivative to zero gives 30 / p = 170 / (1 − p), so p = 30 / 200 = 0.15. The sample click rate is exactly the maximum likelihood estimate.\n\nA common mix-up is with maximum a posteriori (MAP) estimation. MAP also maximizes, but it first multiplies the likelihood by a prior over p. With a prior that favours small click rates, MAP would give a value below 0.15. Another mix-up is with least squares, which is a special case: it matches maximum likelihood only when the noise is Gaussian.\n\nMost training losses in ML are negative log-likelihoods, so minimizing them is maximum likelihood estimation in disguise.",
+  "deeper": "Maximum likelihood can overfit small samples. A new banner with 1 click in 2 views gets an estimate of 0.5, which nobody believes. Teams smooth such rates with a prior, for example by adding pseudo-counts, which turns the estimate into a MAP estimate. Interviewers often ask exactly this follow-up for cold-start items.",
+  "concepts": [
+   "maximum-likelihood-estimation"
+  ],
+  "tags": [
+   "mle",
+   "ads"
+  ],
+  "answer": "maximum likelihood estimation",
+  "accept": [
+   "maximum likelihood",
+   "mle",
+   "maximum likelihood estimate",
+   "ml estimation",
+   "maximum likelihood method",
+   "maximum likelihood estimator",
+   "max likelihood",
+   "max likelihood estimation"
+  ]
+ },
+ {
+  "id": "math-0015",
+  "topic": "math",
+  "subtopic": "type I vs type II errors",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A monitoring job tests one input feature each night. Its null hypothesis is that the feature's distribution has not changed since training. One week an upstream change really does shift the feature, but that night's test does not reject the null. What kind of error is this?",
+  "explanation": "A type II error is failing to reject a null hypothesis that is false. Here the null says \"no shift\", a shift really happened, and the test stayed quiet. In detection terms that is a false negative: a real event that went undetected.\n\nThe type I options get the direction wrong. A type I error is rejecting a true null, which here would mean raising a drift alarm on a night when nothing changed. Saying the test \"reached the wrong verdict\" is true of both kinds of error, so it does not make this one type I. A lower α does make type I errors rarer, and it makes type II errors like this one more likely, not type I ones. The option claiming no error happened is the classic misreading of a non-significant result. Failing to reject the null means the test did not find enough evidence. It does not prove the null is true.",
+  "deeper": "In monitoring, both errors have real costs. Type I errors cause alert fatigue, and type II errors let a broken feature degrade the model for days. Teams tune α and the test window with both in mind. An interviewer may ask how a larger nightly sample changes the type II rate. It lowers it, because power rises.",
+  "concepts": [
+   "hypothesis-testing",
+   "data-drift"
+  ],
+  "tags": [
+   "hypothesis-testing",
+   "monitoring"
+  ],
+  "options": [
+   "A type I error, a false positive: the test reached the wrong verdict about the data.",
+   "A type I error, caused by setting the significance level α too low for this test.",
+   "No error, because not rejecting the null shows the feature's distribution held steady.",
+   "A type II error, a false negative: the test missed a change that really happened."
+  ],
+  "answer": 3
+ },
+ {
+  "id": "math-0016",
+  "topic": "math",
+  "subtopic": "what raises power",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A team plans a two-week A/B test of a new checkout flow on a fixed amount of traffic, with conversion rate as the metric. All else equal, which change would raise the test's statistical power?",
+  "explanation": "Power is the chance that the test detects an effect that is really there. It rises with larger samples, larger true effects, less noise in the metric, and a higher significance level α. Moving α from 1% to 5% lowers the bar for calling a result significant, so a real effect clears it more often. The price is more false positives, the usual trade between type I and type II errors.\n\nEach other option cuts power. Splitting traffic across three variants leaves each arm with a third of the users instead of half, so every comparison has a smaller sample. A noisier metric widens the spread of the estimated difference, so the same true effect is harder to tell apart from chance. Stopping after one week halves the sample, and power falls with it. Stopping early also tempts teams to peek at results, which inflates false positives unless the test uses a sequential design.",
+  "deeper": "Interviewers often ask for the four levers of power and then which ones a team actually controls. Sample size and α are choices, and metric noise can be cut with variance reduction such as CUPED. The effect size is mostly set by the product change itself, which is why teams fix a minimum detectable effect before launch.",
+  "concepts": [
+   "statistical-power",
+   "ab-testing"
+  ],
+  "tags": [
+   "power",
+   "ab-testing"
+  ],
+  "options": [
+   "Testing at the 5% significance level instead of the planned 1%.",
+   "Splitting the same traffic across three variants instead of two.",
+   "Making revenue per user, which is much noisier, the main metric.",
+   "Stopping the test after one week instead of two to ship sooner."
+  ],
+  "answer": 0
+ },
+ {
+  "id": "math-0017",
+  "topic": "math",
+  "subtopic": "many tests at once",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "After an A/B test, an analyst checks the result separately in 12 user segments, running a test at a significance level of 0.05 in each one. Suppose the change truly has no effect in any segment and the 12 tests are independent. What is the probability that at least one segment shows a significant result? Give it as a decimal to 2 places.",
+  "explanation": "Work with the complement. When there is no effect, each test correctly stays non-significant with probability 1 − 0.05 = 0.95. With 12 independent tests, all of them stay quiet with probability 0.95¹² ≈ 0.540. So at least one false positive happens with probability 1 − 0.540 = 0.46.\n\nThe common mistake is to add the error rates: 12 × 0.05 = 0.60. That sum is an upper bound, not the true probability, because it double counts the cases where several tests fire together. With enough tests the sum even goes above 1, which no probability can.\n\nThe standard fix is the Bonferroni correction: test each segment at α / m = 0.05 / 12 ≈ 0.0042. Then the chance of at least one false positive across all 12 segments is at most 0.05. It is simple and safe but conservative, so it lowers the power in each segment.",
+  "deeper": "Segment hunting is a common way teams fool themselves: one of twelve segments \"wins\" and gets a launch. A strong candidate says the segments should be chosen before the test, corrected with Bonferroni or a false discovery rate method such as Benjamini-Hochberg, and that a surprise segment result needs a fresh test to confirm it.",
+  "concepts": [
+   "multiple-comparisons",
+   "p-value"
+  ],
+  "tags": [
+   "multiple-testing",
+   "ab-testing"
+  ],
+  "answer": 0.46,
+  "tolerance": 0.005,
+  "check": "m = 12\nalpha = 0.05\nresult = 1 - (1 - alpha) ** m"
+ },
+ {
+  "id": "math-0018",
+  "topic": "math",
+  "subtopic": "interval for a proportion",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "To estimate how often a support bot hallucinates, reviewers check 500 randomly sampled answers and mark 90 of them as hallucinated. Using the normal approximation with z = 1.96, what is the lower end of the 95% confidence interval for the hallucination rate? Give it as a decimal to 3 places.",
+  "explanation": "The observed rate is p̂ = 90 / 500 = 0.18. Its standard error is √(p̂(1 − p̂) / n) = √(0.18 × 0.82 / 500) = √0.0002952 ≈ 0.01718. The margin of error is 1.96 × 0.01718 ≈ 0.0337. The interval is 0.18 ± 0.0337, which runs from about 0.146 to 0.214, so the lower end is 0.146.\n\nThe most common mistake is to leave n out of the standard error and use √(0.18 × 0.82) ≈ 0.384, which gives a nonsense interval that dips below zero. Another is to forget the square root and use 0.18 × 0.82 / 500 ≈ 0.0003 as the standard error. That is the variance, and it gives an interval far too narrow.\n\nThe normal approximation works here because both n p̂ = 90 and n(1 − p̂) = 410 are well above 10. For rare events, such as 2 hallucinations in 500 answers, a Wilson interval is the safer choice.",
+  "deeper": "Reporting \"an 18% hallucination rate\" without an interval invites bad calls. If a new prompt scores 16% on another 500 answers, the two intervals overlap heavily and the change may be noise. Halving the margin needs four times as many reviewed answers, which is often the real cost question in LLM evaluation.",
+  "concepts": [
+   "confidence-interval"
+  ],
+  "tags": [
+   "confidence-interval",
+   "llm-eval"
+  ],
+  "answer": 0.146,
+  "tolerance": 0.0005,
+  "check": "import math\nn = 500\nbad = 90\nz = 1.96\np = bad / n\nse = math.sqrt(p * (1 - p) / n)\nresult = p - z * se"
+ },
+ {
+  "id": "math-0019",
+  "topic": "math",
+  "subtopic": "correlation and confounders",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "Users who turn on an app's dark mode keep using the app 20% longer than users who do not. A product manager proposes switching dark mode on for everyone to raise retention. What is the main flaw in this reasoning, and the best next step?",
+  "explanation": "Dark mode users are not a random group. People who explore settings tend to be engaged, long-time users, and those same users would stay longer anyway. Engagement is a confounder: it drives both dark mode use and retention, so the 20% gap can appear even if dark mode does nothing. A randomized test breaks this link. If dark mode is switched on for a random half of users, engagement is balanced across the two groups on average, so any retention gap is caused by dark mode.\n\nThe option asking for a larger observational dataset fixes the wrong problem. More data shrinks random noise but keeps the same confounding, so you just get a more precise biased number. The reverse-causation option has a fair point, since long-time users have more chances to find the setting, but it jumps to the claim that the change must hurt, which nothing here shows. The option calling the gap strong evidence confuses a large correlation with a causal effect. A big gap can come entirely from who chooses the feature.",
+  "deeper": "When a randomized test is not possible, interviewers expect you to mention ways to adjust for confounders, such as matching users on engagement and tenure. A strong candidate also notes that switching dark mode on for everyone turns a choice into a default, which is a different treatment from the one users picked for themselves.",
+  "concepts": [
+   "correlation",
+   "selection-bias",
+   "ab-testing"
+  ],
+  "tags": [
+   "causation",
+   "confounding"
+  ],
+  "options": [
+   "The sample may be too small to trust, so gather a larger observational dataset and check again.",
+   "Retention may cause dark mode use, so the change will surely hurt and the idea should be dropped.",
+   "Committed users may be likelier both to find the setting and to stay, so run a randomized test.",
+   "Nothing is wrong, since a gap as large as 20% is strong enough evidence of a causal effect."
+  ],
+  "answer": 2
+ },
+ {
+  "id": "math-0020",
+  "topic": "math",
+  "subtopic": "independence vs mutual exclusivity",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A fraud system has two rules. Let A be the event that rule A flags a transaction and B the event that rule B flags it, with P(A) > 0 and P(B) > 0. Which statements are correct? Select all that apply.",
+  "explanation": "Independence means knowing one event tells you nothing about the other, so P(A given B) = P(A) and the joint probability is the product P(A) × P(B). Mutual exclusivity means the events cannot happen together, so P(A and B) = 0 and the probability of either one is simply P(A) + P(B), with no overlap to subtract.\n\nThose two ideas clash. If A and B are mutually exclusive, learning that B happened tells you A did not, which is strong dependence. Formally, P(A and B) = 0 while P(A) × P(B) > 0 because both are positive, so they cannot be independent. The same reasoning shows why the product rule for mutually exclusive events is wrong.\n\nFor independent events the addition rule must remove the overlap: P(A or B) = P(A) + P(B) − P(A) × P(B). Plain addition counts transactions flagged by both rules twice. Finally, P(A given B) = P(A) is the definition of independence. It says the rules overlap at the rate chance would predict, not that they never overlap.",
+  "deeper": "Real fraud rules are rarely independent, because they often key on the same signals. If two rules each flag 2% of traffic, independence predicts 0.04% flagged by both. A strong candidate measures the real overlap, since heavy overlap means the second rule adds little new coverage.",
+  "concepts": [
+   "conditional-probability"
+  ],
+  "tags": [
+   "probability",
+   "fraud"
+  ],
+  "options": [
+   "If A and B are independent, then P(A or B) = P(A) + P(B).",
+   "If A and B are independent, then P(A and B) = P(A) × P(B).",
+   "If A and B are mutually exclusive, they cannot also be independent.",
+   "If A and B are mutually exclusive, then P(A and B) = P(A) × P(B).",
+   "If A and B are mutually exclusive, then P(A or B) = P(A) + P(B).",
+   "If P(A given B) = P(A), the two rules never flag the same transaction."
+  ],
+  "answer": [
+   1,
+   2,
+   4
+  ]
+ },
+ {
+  "id": "math-0021",
+  "topic": "math",
+  "subtopic": "correlation facts",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "An analyst computes Pearson correlations between features in a churn dataset. Which statements are correct? Select all that apply.",
+  "explanation": "Pearson correlation measures linear association after centring and scaling each variable. Converting dollars to cents multiplies by 100, a positive linear change that the scaling undoes, so every correlation stays the same. Because Pearson correlation works with products of deviations, one point far from the rest can dominate the sums and create a strong correlation out of almost nothing. Spearman correlation is Pearson correlation on the ranks, and a strictly increasing transform such as a log of positive values keeps every rank, so Spearman is unchanged.\n\nZero correlation only rules out a linear relationship. If y = x² with x spread evenly around zero, y depends fully on x, yet the Pearson correlation is zero. Multiplying by −1 is linear but flips the direction, so the correlation keeps its size and changes sign. Finally, the share of variance explained in a simple linear fit is r², not r. A correlation of 0.9 explains 0.81, or 81%, of the variance.",
+  "deeper": "Before trusting a correlation matrix, plot the pairs that matter. An interviewer may show a scatter plot with one outlier and ask what the correlation would be without it. Spearman correlation is a sensible default for skewed features such as spend or session counts.",
+  "concepts": [
+   "correlation",
+   "outliers"
+  ],
+  "tags": [
+   "correlation",
+   "statistics"
+  ],
+  "options": [
+   "A Pearson correlation of zero means the two features are independent.",
+   "Converting a feature from dollars to cents leaves its correlations unchanged.",
+   "Multiplying a feature by −1 leaves its correlations with others unchanged.",
+   "A single extreme customer can turn a near-zero correlation into a strong one.",
+   "A correlation of 0.9 means one feature explains 90% of the other's variance.",
+   "Spearman correlation is unchanged by any strictly increasing transform of a feature."
+  ],
+  "answer": [
+   1,
+   3,
+   5
+  ]
+ },
+ {
+  "id": "math-0022",
+  "topic": "math",
+  "subtopic": "derivative through a composition",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A single neuron computes f(w) = σ(w × x), where σ(z) = 1 / (1 + e⁻ᶻ) is the sigmoid. Take x = 2 and w = 0.5, and use σ(1) ≈ 0.7311. What is the derivative df/dw at this point? Give it as a decimal to 3 places.",
+  "explanation": "The chain rule splits the derivative into an outer and an inner part. The outer function is σ(z) with z = w × x, and the sigmoid's derivative is σ′(z) = σ(z)(1 − σ(z)). The inner part is dz/dw = x. So df/dw = σ(z)(1 − σ(z)) × x.\n\nWith the numbers: z = 0.5 × 2 = 1, so σ(z) ≈ 0.7311 and 1 − σ(z) ≈ 0.2689. Their product is about 0.1966. Multiplying by x = 2 gives 0.3932, which rounds to 0.393.\n\nThe most common mistake is to stop at σ′(z) ≈ 0.197 and forget the inner derivative x. That is the derivative with respect to z, not w. Another slip is to evaluate the sigmoid at w = 0.5 instead of at z = 1.\n\nNotice that σ(z)(1 − σ(z)) is at most 0.25, reached at z = 0. That cap is one reason deep stacks of sigmoid layers suffer from vanishing gradients.",
+  "deeper": "Backpropagation is this same chain rule applied layer by layer. A common follow-up is the gradient of the logistic loss with respect to z, which simplifies to σ(z) − y. That clean form is why sigmoid outputs are paired with cross-entropy rather than squared error, which keeps the small σ′ factor and slows learning.",
+  "concepts": [
+   "chain-rule",
+   "backpropagation"
+  ],
+  "tags": [
+   "calculus",
+   "sigmoid"
+  ],
+  "answer": 0.393,
+  "tolerance": 0.0005,
+  "check": "import math\nx = 2\nw = 0.5\nz = w * x\ns = 1 / (1 + math.exp(-z))\nresult = s * (1 - s) * x"
+ },
+ {
+  "id": "math-0023",
+  "topic": "math",
+  "subtopic": "batch, mini-batch or stochastic",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "You are training a model on 50 million examples on a single GPU. You compare full-batch gradient descent, mini-batch gradient descent with 256 examples per step, and stochastic gradient descent with 1 example per step. Which statement is correct?",
+  "explanation": "Mini-batch gradient descent is the standard choice because it balances three things. A batch of 256 is large enough to keep the GPU's parallel cores busy, small enough to fit in memory, and averaged enough for a stable step while still carrying some helpful noise.\n\nFull-batch descent does give the exact gradient, but every step needs a pass over all 50 million examples. You get very few updates per hour, and the whole batch would not fit in GPU memory without accumulating gradients over many chunks. Low noise per step does not mean fast progress per second. Pure stochastic descent takes the cheapest steps, but a single example leaves most of the GPU idle, so it processes far fewer examples per second, and its gradients are very noisy. The claim about bias is backwards. A randomly sampled mini-batch gives an unbiased estimate of the full gradient, just like a single example, and averaging 256 examples cuts the variance of that estimate by a factor of 256.",
+  "deeper": "A common follow-up is how the learning rate should change with batch size. Larger batches give less noisy gradients and often allow a larger learning rate, roughly in proportion at first, usually with a warm-up period. Very large batches can generalize slightly worse, so teams tune batch size and learning rate together.",
+  "concepts": [
+   "gradient-descent",
+   "batch-size"
+  ],
+  "tags": [
+   "optimization",
+   "sgd"
+  ],
+  "options": [
+   "Full-batch steps give the cleanest gradient, so full-batch reaches a good model in the least time.",
+   "Mini-batch steps use the GPU's parallel cores well and fit in memory, with moderate gradient noise.",
+   "Single-example steps are the cheapest, so pure stochastic descent also makes the best use of the GPU.",
+   "Mini-batch gradients are biased estimates of the full gradient, unlike single-example gradients."
+  ],
+  "answer": 1
+ },
+ {
+  "id": "math-0024",
+  "topic": "math",
+  "subtopic": "convex and non-convex losses",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A teammate fits an L2-regularized logistic regression and a small two-layer neural network five times each, from different random starting weights, with the same data and an optimizer run to convergence. The logistic regression lands on the same weights every time. The network ends with different weights and slightly different validation losses. What is the best explanation?",
+  "explanation": "In logistic regression the logit is linear in the weights, and log loss is a convex function of the logit, so the loss is convex in the weights. Adding an L2 penalty makes it strictly convex, so there is exactly one minimum and every start reaches it. Without the penalty, perfectly separable data would have no finite minimum at all. In a network with hidden layers, the output depends on products of weights passed through nonlinear activations, so the loss is not convex in the weights. It has many minima and saddle points, and where you end up depends on where you start.\n\nThe option blaming a bug is the subtle trap. Cross-entropy is convex in the logits, but a network's logits are a non-convex function of its weights, so the full loss is not convex. The option calling both losses convex is wrong for the network, and more iterations would not make the runs agree. The option calling logistic regression non-convex is wrong too, since convexity is exactly why its starting point does not matter.\n\nEven two networks with identical loss can have different weights, because swapping hidden units gives the same function.",
+  "deeper": "Non-convexity is why initialization schemes, random seeds and learning-rate warm-up matter for neural nets but not for linear models. A strong candidate adds that in large networks most minima that SGD finds have similar loss, so the practical worries are saddle points and poor conditioning more than bad local minima.",
+  "concepts": [
+   "convexity",
+   "gradient-descent",
+   "weight-initialization"
+  ],
+  "tags": [
+   "convexity",
+   "optimization"
+  ],
+  "options": [
+   "The network must have a bug, since cross-entropy is a convex loss and has one minimum from any start.",
+   "Both losses are convex, but the network needs far more iterations to reach their shared global minimum.",
+   "Both losses are non-convex, but a model with a single layer of weights ignores its starting point.",
+   "Regularized log loss is convex in the weights, while hidden layers make the network's loss non-convex."
+  ],
+  "answer": 3
+ },
+ {
+  "id": "math-0025",
+  "topic": "math",
+  "subtopic": "when gradient descent diverges",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "You run plain gradient descent, x ← x − η f′(x), on f(x) = 5x² from a non-zero starting point. It converges to the minimum at x = 0 for every learning rate η strictly between 0 and some value η_max, and fails to converge for any η at or above η_max. What is η_max? Give it as a decimal to 2 places.",
+  "explanation": "The gradient is f′(x) = 10x, so one step gives x ← x − η × 10x = (1 − 10η) x. Each step multiplies x by the same factor. The iterates shrink to 0 only if that factor has size below 1: |1 − 10η| < 1, which means 0 < η < 0.2. So η_max = 0.2.\n\nTo see the failure, try η = 0.25 from x = 1. The factor is 1 − 2.5 = −1.5, so x goes to −1.5 and then to 2.25. Each step overshoots the minimum and lands further away on the other side. At exactly η = 0.2 the factor is −1, and x bounces between 1 and −1 forever.\n\nThe common mistake is to quote the rule η < 2/a with a = 5 and answer 0.4. That rule is written for f(x) = (a/2)x², where a is the second derivative. The general rule is η < 2 / f″(x), and here f″(x) = 10. Working with the update factor directly avoids mixing up the two forms.",
+  "deeper": "For a model with many weights, the same rule applies to the sharpest direction: gradient descent needs η < 2 / λ_max, where λ_max is the largest eigenvalue of the Hessian. That is why a loss that explodes after a learning-rate increase is a classic interview debugging case, and why warm-up and adaptive optimizers help.",
+  "concepts": [
+   "gradient-descent",
+   "learning-rate"
+  ],
+  "tags": [
+   "optimization",
+   "learning-rate"
+  ],
+  "answer": 0.2,
+  "tolerance": 0.005,
+  "check": "a = 5.0\ncurvature = 2 * a  # f''(x) for f(x) = a * x**2\neta_max = 2 / curvature\n\ndef run(eta, x=1.0, steps=500):\n    for _ in range(steps):\n        x = x - eta * 2 * a * x\n    return abs(x)\n\nassert run(0.95 * eta_max) < 1e-3\nassert run(1.05 * eta_max) > 1\nassert abs(run(eta_max) - 1.0) < 1e-9\nresult = eta_max"
+ },
+ {
+  "id": "math-0026",
+  "topic": "math",
+  "subtopic": "shape of a matrix product",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "In a transformer feed-forward layer, a batch of token vectors X has shape 32 × 768 and the weight matrix W has shape 768 × 3072. What is the shape of the product XW? Write it as rows × columns, for example 10 × 20.",
+  "explanation": "For a product of an m × n matrix and an n × p matrix, the inner sizes must match and they disappear, so the result is m × p. Here m = 32 tokens, n = 768 features shared by both matrices, and p = 3072 output features. So XW is 32 × 3072. Each of the 32 rows is still one token, now described by 3072 numbers instead of 768.\n\nA common mistake is to keep the inner size and write 768 × 3072 or 32 × 768. The inner size is summed over inside each dot product, so it never appears in the output. Another slip is to flip the order and answer 3072 × 32. Order matters in matrix products, and WX is not even defined here, because 3072 does not match 32.\n\nA quick habit is to write the shapes side by side, (32 × 768)(768 × 3072), cross out the matching inner pair, and read off what is left.",
+  "deeper": "Shape tracking is a top source of bugs in model code. Interviewers often ask for the cost too: this product takes 32 × 768 × 3072 multiply-adds, about 75 million. Repeating that for every layer is why feed-forward blocks take a large share of a transformer's compute.",
+  "concepts": [
+   "matrix-multiplication"
+  ],
+  "tags": [
+   "linear-algebra",
+   "shapes"
+  ],
+  "answer": "32 × 3072",
+  "accept": [
+   "32 x 3072",
+   "32x3072",
+   "32×3072",
+   "32 by 3072",
+   "(32, 3072)",
+   "(32,3072)",
+   "32, 3072",
+   "32,3072",
+   "[32, 3072]"
+  ]
+ },
+ {
+  "id": "math-0027",
+  "topic": "math",
+  "subtopic": "explained variance",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "You run PCA on six standardized sensor features from a delivery fleet. The eigenvalues of the components, from largest to smallest, are 3.0, 1.5, 0.9, 0.4, 0.15 and 0.05. What is the smallest number of components that together explain at least 95% of the variance? Give it as a whole number.",
+  "explanation": "Each eigenvalue is the variance along its component, and the total variance is their sum: 3.0 + 1.5 + 0.9 + 0.4 + 0.15 + 0.05 = 6.0. Each component's share is its eigenvalue divided by 6.0, and you add the shares from the top.\n\n- One component: 3.0 / 6.0 = 50%\n- Two: 4.5 / 6.0 = 75%\n- Three: 5.4 / 6.0 = 90%\n- Four: 5.8 / 6.0 ≈ 96.7%\n\nThree components fall short of 95% and four pass it, so the answer is 4.\n\nA common mistake is to divide by the largest eigenvalue instead of the total. Another is to count the eigenvalues above 1, the Kaiser rule, which gives 2 here. That rule answers a different question and promises no particular share of variance.\n\nThe total of 6.0 is no accident. Standardized features each have variance 1, so the eigenvalues add up to the number of features.",
+  "deeper": "In practice you read this off a cumulative explained-variance plot. A strong candidate adds that 95% of the variance is not 95% of the useful signal. A low-variance component can still carry the pattern that predicts the target, so the number of components is better tuned on the downstream validation score.",
+  "concepts": [
+   "pca",
+   "variance"
+  ],
+  "tags": [
+   "pca",
+   "dimensionality"
+  ],
+  "answer": 4,
+  "tolerance": 0.5,
+  "check": "import numpy as np\nev = np.array([3.0, 1.5, 0.9, 0.4, 0.15, 0.05])\nshare = np.cumsum(ev) / ev.sum()\nresult = int(np.argmax(share >= 0.95 - 1e-12) + 1)"
+ },
+ {
+  "id": "math-0028",
+  "topic": "math",
+  "subtopic": "measuring vector alignment",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "In a semantic search system, a query embedding a and a document embedding b are scored with Σ aᵢbᵢ. The score is large when the two vectors point in a similar direction and are long. This operation is called the ______ of a and b.",
+  "explanation": "The dot product multiplies matching entries and adds them up: a · b = Σ aᵢbᵢ. Geometrically it equals |a| × |b| × cos θ, where θ is the angle between the vectors. So it grows when the vectors point the same way and also when they are long.\n\nThe common mix-up is with cosine similarity. Cosine similarity is the dot product divided by both lengths, a · b / (|a| |b|), which keeps only the angle and always lies between −1 and 1. The plain sum Σ aᵢbᵢ has no division, so it is the dot product. The two give the same ranking only when the document vectors all have the same length, for example when every embedding is normalized to length 1.\n\nThis is why the choice matters in search. With raw dot products, a document whose embedding happens to be long can rank high for many queries, even if its direction is only a loose match.",
+  "deeper": "Vector databases usually let you choose dot product, cosine or Euclidean distance. A strong candidate checks what the embedding model was trained with. If embeddings are normalized, all three give the same ranking and the dot product is the cheapest. Matrix multiplication is just many dot products computed at once.",
+  "concepts": [
+   "matrix-multiplication",
+   "cosine-similarity"
+  ],
+  "tags": [
+   "linear-algebra",
+   "embeddings"
+  ],
+  "answer": "dot product",
+  "accept": [
+   "inner product",
+   "scalar product",
+   "dot"
+  ]
+ },
+ {
+  "id": "math-0029",
+  "topic": "math",
+  "subtopic": "uncertainty of a distribution",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "For active learning, you pick the unlabeled support tickets the classifier is least sure about. For each ticket the model gives probabilities pᵢ over the classes, and you score it with −Σ pᵢ log pᵢ. The score is 0 when one class gets all the probability and largest when every class is equally likely. This quantity is the ______ of the predicted distribution.",
+  "explanation": "Entropy measures how spread out a distribution is. Each class contributes −pᵢ log pᵢ, which is zero when pᵢ is 0 or 1 and positive in between. If the model puts all its probability on one class, every term is zero and the entropy is 0. If it spreads probability evenly over k classes, entropy reaches its maximum of log k. With 4 classes and natural logs, that is log 4 ≈ 1.39.\n\nThe common mix-up is cross-entropy, −Σ pᵢ log qᵢ. Cross-entropy compares two distributions, such as the true labels and the predictions, and it is used as a training loss. The quantity here uses one distribution, the prediction, so it is plain entropy.\n\nIn active learning, labeling the highest-entropy tickets first sends annotators the cases where a label is most likely to change the model, rather than easy ones it already gets right.",
+  "deeper": "Entropy sampling has a known weakness: it favours noisy or ambiguous items that no label will fix, and it can pick many near-duplicates. Strong candidates mention mixing in diversity, for example by clustering the uncertain pool, and checking that the model is calibrated, since an overconfident model makes entropy a poor guide.",
+  "concepts": [
+   "entropy",
+   "active-learning"
+  ],
+  "tags": [
+   "entropy",
+   "active-learning"
+  ],
+  "answer": "entropy",
+  "accept": [
+   "shannon entropy",
+   "information entropy",
+   "predictive entropy"
+  ]
+ },
+ {
+  "id": "math-0030",
+  "topic": "math",
+  "subtopic": "reading KL divergence",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "KL divergence shows up in three places in your work: as a drift score between a training-time and a live feature histogram, as the loss between a teacher and a student in distillation, and as the penalty that keeps a fine-tuned LLM close to its reference model. Which statement about KL(P ‖ Q) is correct?",
+  "explanation": "KL(P ‖ Q) = Σ P(x) log(P(x) / Q(x)), which equals the cross-entropy H(P, Q) minus the entropy H(P). In coding terms, H(P) is the best average code length for data from P, and H(P, Q) is what you pay if you build the code for Q instead. KL is the extra cost of using the wrong distribution. It is never negative and is 0 only when the two distributions match.\n\nKL is not a distance. KL(P ‖ Q) and KL(Q ‖ P) usually differ, and the triangle inequality can fail. The asymmetry matters because the two directions punish different mistakes. If Q gives zero probability to an outcome that P can produce, the log term is infinite, so KL blows up. In drift monitoring this happens when a live histogram has an empty bin, which is why teams add a small smoothing count. Finally, since KL = H(P, Q) − H(P) and H(P) does not depend on Q, minimizing either one over Q gives the same answer. That is why training with cross-entropy is the same as minimizing KL from the data distribution to the model.",
+  "deeper": "Interviewers often ask which direction a method uses. Distillation with soft labels minimizes KL(teacher ‖ student), which pushes the student to cover everything the teacher finds likely. The LLM fine-tuning penalty uses KL(policy ‖ reference) on the policy's own samples. For a symmetric drift score, teams often use PSI, which adds both directions, or Jensen-Shannon divergence, which also stays finite.",
+  "concepts": [
+   "kl-divergence",
+   "entropy",
+   "knowledge-distillation"
+  ],
+  "tags": [
+   "kl",
+   "information-theory"
+  ],
+  "options": [
+   "It is the average extra cost of encoding samples from P with a code built for Q, and is 0 only if Q = P.",
+   "It is a true distance, so KL(P ‖ Q) equals KL(Q ‖ P) and the triangle inequality holds for it.",
+   "It stays finite even when Q gives zero probability to a histogram bin where P has some mass.",
+   "Minimizing it over Q gives a different answer than minimizing the cross-entropy H(P, Q) over Q."
+  ],
+  "answer": 0
+ },
+ {
+  "id": "math-0031",
+  "topic": "math",
+  "subtopic": "the matrix PCA decomposes",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "PCA on a data matrix whose columns have been mean-centred, but not scaled, finds the eigenvectors of the d × d ______ matrix, where d is the number of features. Each eigenvector is a principal component, and its eigenvalue is the variance of the data along that direction.",
+  "explanation": "The covariance matrix holds each feature's variance on its diagonal and the covariance of each pair of features off the diagonal. For centred data X with n rows it is XᵀX / (n − 1). Its eigenvectors are the directions along which the data varies most, and each eigenvalue is the variance captured along that direction. Sorting by eigenvalue gives the first principal component, then the second, and so on. Libraries often reach the same result through a singular value decomposition of X, which avoids forming the matrix at all.\n\nThe common mistake is to answer the correlation matrix. That is right only when the features have also been scaled to unit variance, because the correlation matrix is the covariance matrix of standardized data. On unscaled data the two give different components, and features with large units dominate the covariance version. Another slip is the n × n matrix XXᵀ, which compares rows rather than features, so its size does not match d × d.",
+  "deeper": "A frequent follow-up is how PCA scales to wide data. Forming a 50,000 × 50,000 covariance matrix is expensive, so libraries work on the SVD of X directly, or use randomized SVD when only the top components are needed. A strong candidate also mentions scaling the features first when their units differ.",
+  "concepts": [
+   "pca",
+   "variance"
+  ],
+  "tags": [
+   "pca",
+   "linear-algebra"
+  ],
+  "answer": "covariance",
+  "accept": [
+   "covariance matrix",
+   "sample covariance",
+   "sample covariance matrix",
+   "cov",
+   "scatter",
+   "scatter matrix",
+   "variance covariance",
+   "variance-covariance matrix"
+  ]
+ },
+ {
+  "id": "math-0032",
+  "topic": "math",
+  "subtopic": "testing counts against expectations",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "Last quarter, support tickets split across four categories in known proportions. This quarter you count the tickets in each category, work out how many you would expect if the old proportions still held, and compute Σ (observed − expected)² / expected over the four categories. This is the statistic of the ______ test.",
+  "explanation": "The chi-square goodness-of-fit test compares observed counts with the counts a hypothesis predicts. Each category adds (O − E)² / E, the squared gap scaled by the expected count, so a gap of 20 matters more when you expected 50 than when you expected 5,000. Under the null hypothesis that the proportions have not changed, the sum roughly follows a chi-square distribution with k − 1 degrees of freedom, here 4 − 1 = 3.\n\nA common mix-up is the t-test, which compares means of a numeric variable, not counts in categories. Another is to drop the division by E and just add up squared gaps, which gives far too much weight to the large categories.\n\nThe test needs enough data. A common rule is an expected count of at least 5 in every category. With smaller counts, merge categories or use an exact test.",
+  "deeper": "In ML work this test shows up in drift monitoring for categorical features and in checking that a train and test split kept the same label mix. With very large samples, even a tiny, harmless shift gives a tiny p-value, so a strong candidate also reports an effect size, such as the change in each category's share.",
+  "concepts": [
+   "hypothesis-testing",
+   "data-drift"
+  ],
+  "tags": [
+   "chi-square",
+   "statistics"
+  ],
+  "answer": "chi-square",
+  "accept": [
+   "chi square",
+   "chi-squared",
+   "chi squared",
+   "χ²",
+   "χ2",
+   "chi2",
+   "chi-square goodness-of-fit",
+   "chi-squared goodness-of-fit",
+   "pearson's chi-square",
+   "pearson chi-square",
+   "pearson's chi-squared"
+  ]
+ },
+ {
+  "id": "math-0033",
+  "topic": "math",
+  "subtopic": "why log probabilities",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "Training and inference code almost always works with log probabilities instead of raw probabilities. Explain why.",
+  "explanation": "The core issue is that probabilities multiply. A model that gives each of 1,000 tokens a probability of 0.1 assigns the whole sequence 0.1¹⁰⁰⁰ = 10⁻¹⁰⁰⁰. A 64-bit float bottoms out near 10⁻³⁰⁸, so the product becomes exactly zero and you can no longer compare sequences or take gradients. In log space the same quantity is 1,000 × ln 0.1 ≈ −2,303, an ordinary number.\n\nThe common incomplete answer stops at underflow. A strong answer also explains why the switch is safe and useful. Log is strictly increasing, so the parameters that maximize the log-likelihood also maximize the likelihood. The sum form makes the loss an average over examples, which is exactly what mini-batch gradient descent estimates. And the negative mean log-likelihood of the correct labels is the cross-entropy, which ties the everyday loss to maximum likelihood.\n\nAnother gap is forgetting overflow. Computing softmax directly can overflow when logits are large, so libraries use log-sum-exp: log Σ exp(zᵢ) = m + log Σ exp(zᵢ − m), where m is the largest logit.",
+  "deeper": "This shows up directly in code. Use a fused loss that takes raw logits and applies log-softmax inside, instead of applying softmax and then taking a log yourself. Perplexity for language models is just exp of the mean negative log-likelihood per token, so it comes from the same sum.",
+  "concepts": [
+   "maximum-likelihood-estimation",
+   "cross-entropy-loss",
+   "softmax"
+  ],
+  "tags": [
+   "log-probabilities",
+   "numerics"
+  ],
+  "answer": "There are three main reasons. First, numerical stability. The likelihood of a dataset or a long token sequence is a product of many probabilities below 1. With enough terms the product falls below the smallest number a float can hold and underflows to zero. Its log is a sum of moderate negative numbers, which stays well within range. Second, sums are easier to work with than products. The log turns the product into a sum over examples, so the gradient is a sum of per-example gradients, which suits mini-batch training. Because log is strictly increasing, maximizing the log-likelihood picks the same parameters as maximizing the likelihood. Third, the negative mean log-likelihood of the correct labels is exactly the cross-entropy loss, so minimizing cross-entropy is maximum likelihood. Frameworks also compute log-softmax with the log-sum-exp trick, subtracting the largest logit before exponentiating to avoid overflow.",
+  "points": [
+   "Products of many small probabilities underflow to zero in floating point",
+   "Logs turn products into sums, so gradients add up over examples",
+   "Log is increasing, so the best parameters do not change",
+   "The negative mean log-likelihood is the cross-entropy loss",
+   "Log-sum-exp keeps softmax and its log numerically stable"
+  ]
+ },
+ {
+  "id": "math-0034",
+  "topic": "math",
+  "subtopic": "a biased estimator can win",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "Sample variance divides by n − 1 so that it is unbiased, yet ridge regression deliberately adds bias to its coefficient estimates. Explain what bias and variance mean for an estimator, and why a biased estimator can be the better choice.",
+  "explanation": "The key idea is that error has two sources, and removing one of them does not minimize the total. Take a sample of 2 values. The sample mean always lies between them, so squared deviations from it are smaller on average than deviations from the true mean. Dividing by n gives an estimate that is, on average, (n − 1)/n of the true variance, half of it when n = 2. Dividing by n − 1 removes that bias.\n\nThe common mistake is to treat \"unbiased\" as \"best\". An unbiased estimator can swing widely from sample to sample. Since MSE = bias² + variance, accepting a little bias for a large drop in variance can lower the total. Ridge regression does this: its penalty pulls coefficients toward zero, which is a bias, but makes them far more stable when data is scarce or features are correlated. The James-Stein result goes further. When estimating three or more means at once under normal noise, shrinking them all by the right amount toward a fixed point, such as zero, gives a lower expected total squared error than the plain sample means.\n\nThe penalty strength sets where you sit on this trade-off, which is why it is tuned on validation data.",
+  "deeper": "This is the bias-variance trade-off at the level of a single estimate, and interviewers like candidates who connect the two. Good follow-ups to prepare: why regularization helps more on small datasets, how a Bayesian prior produces shrinkage, and why the sample standard deviation is biased even though the n − 1 variance is not.",
+  "concepts": [
+   "variance",
+   "bias-variance-tradeoff",
+   "l2-regularization"
+  ],
+  "tags": [
+   "estimators",
+   "bias-variance"
+  ],
+  "answer": "An estimator's bias is the gap between its average value over many samples and the true value. Its variance is how much it moves from sample to sample. Its expected squared error splits as MSE = bias² + variance. Dividing the sum of squared deviations by n underestimates the true variance, because the deviations are measured from the sample mean, which sits closer to the data than the true mean does. Dividing by n − 1 removes that bias. But unbiased does not mean most accurate. For normal data, dividing by n + 1 gives a lower MSE than n − 1, even though it is biased. Ridge regression uses the same idea. Shrinking coefficients toward zero adds bias but can cut variance sharply, especially with few examples or correlated features, so test error falls. The goal is the lowest total error, not zero bias.",
+  "points": [
+   "Bias is the average error of the estimate, variance is its spread across samples",
+   "MSE = bias² + variance",
+   "Dividing by n underestimates variance because deviations use the sample mean",
+   "A biased estimator, such as dividing by n + 1 or ridge, can have lower MSE",
+   "Shrinkage helps most with small samples or correlated features"
+  ]
  }
 ]
