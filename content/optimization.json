@@ -178,5 +178,803 @@
    "speculative-decoding",
    "kv-cache"
   ]
+ },
+ {
+  "id": "opt-0008",
+  "topic": "optimization",
+  "subtopic": "quantizing one value",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A fraud-scoring model runs in int8. One activation tensor uses an affine scheme: a value x is stored as q = round(x / s) + z, clipped to the range −128 to 127, and read back as x̂ = s × (q − z). For this tensor the scale is s = 0.04 and the zero point is z = −20. An incoming value is x = 1.13. What is the absolute rounding error |x − x̂| after quantizing and reading the value back? Give it as a decimal to 3 places.",
+  "answer": 0.01,
+  "tolerance": 0.0005,
+  "check": "s = 0.04\nz = -20\nx = 1.13\nq = round(x / s) + z\nq = max(-128, min(127, q))\nx_hat = s * (q - z)\nresult = abs(x - x_hat)",
+  "explanation": "Work through the scheme one step at a time.\n\n- Divide by the scale: 1.13 / 0.04 = 28.25\n- Round to the nearest integer: 28\n- Add the zero point: q = 28 + (−20) = 8, which is inside −128 to 127, so no clipping\n- Read it back: x̂ = 0.04 × (8 − (−20)) = 0.04 × 28 = 1.12\n- Error: |1.13 − 1.12| = 0.010\n\nThe most common mistake is to forget the zero point when reading the value back and compute 0.04 × 8 = 0.32, which gives an error of 0.81. The zero point must be removed on the way out exactly as it was added on the way in. Another slip is to add z again instead of subtracting it, which gives 0.04 × (8 + (−20)) = −0.48.\n\nFor any value inside the representable range, the rounding error is at most half a step, s / 2 = 0.02 here. Values outside the range get clipped, and their error can be far larger. The zero point lets the real value 0 map exactly to an integer, so zeros from padding or ReLU come back with no error at all.",
+  "deeper": "Choosing the scale is a tradeoff. A wide range avoids clipping rare large values but makes every step coarser, and a narrow range does the reverse. Calibration on sample data picks the range. A strong candidate also mentions per-channel scales for weights, which give each output channel its own step size.",
+  "tags": [
+   "quantization",
+   "int8"
+  ],
+  "concepts": [
+   "quantization"
+  ]
+ },
+ {
+  "id": "opt-0009",
+  "topic": "optimization",
+  "subtopic": "outliers and LLM quantization",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A team quantizes a 13-billion-parameter support chatbot so that both its weights and its activations are int8, each with one scale per tensor, because they want every matrix multiplication to run fully in int8 for speed. Quality falls apart. Profiling shows that a few hidden-state channels carry activation values about 100 times larger than the rest, in the same channels for almost every token. Zeroing those channels in a test run wrecks the outputs, so the model relies on them. The weights have no such outliers. Keeping every matrix multiplication fully int8, which change is most likely to bring quality back?",
+  "options": [
+   "Scale each outlier channel down by a fixed factor and scale the matching weight rows up by the same factor, so the layer's output stays the same.",
+   "Clip activations at their 99.9th percentile before setting the scale, so the few extreme values stop stretching the range for all the other values.",
+   "Switch activations to asymmetric quantization with a zero point, so the int8 range can shift toward the outliers and stop wasting levels on unused values.",
+   "Recalibrate with a much larger and more varied set of prompts, so the activation range estimate settles and stops being thrown off by unusual inputs."
+  ],
+  "answer": 0,
+  "explanation": "With one scale per tensor, the largest activations set the step size. If a few channels are about 100 times larger than the rest, the step is so coarse that ordinary activations collapse onto a handful of int8 levels, and the model loses most of its signal.\n\nThe fix that keeps int8 everywhere is to move the problem. Dividing an activation channel by a factor and multiplying the matching row of the weight matrix by the same factor leaves the product unchanged, because the two factors cancel. The factors are set once from calibration data and folded into the stored weights, so inference does no extra work. The activations now have a much flatter range. The weights started with no outliers, so they can absorb the extra spread, and the factor is usually chosen to split the difficulty evenly between the two.\n\nClipping does flatten the range, but the test run shows the model needs those large values, so cutting them destroys the signal that matters most. Asymmetric quantization only moves where the range sits. It still has to reach the outliers, so the step barely shrinks. A bigger calibration set will not help, because the outliers appear on almost every input. The range estimate is already right. The trouble is that one range cannot fit both kinds of channel.",
+  "deeper": "If int8 activations are not required, simpler fixes exist: keep activations in 16-bit and quantize only the weights, or compute the few outlier channels in 16-bit and the rest in int8. Interviewers like to ask which you would pick. It depends on whether you need the int8 compute speedup or only the memory saving from smaller weights.",
+  "tags": [
+   "quantization",
+   "llm"
+  ],
+  "concepts": [
+   "quantization"
+  ]
+ },
+ {
+  "id": "opt-0010",
+  "topic": "optimization",
+  "subtopic": "memory for full fine-tuning",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "You plan to fully fine-tune a 2.7-billion-parameter language model to summarize clinical notes, using Adam with mixed precision. The setup keeps bf16 weights and bf16 gradients, an fp32 master copy of the weights, and Adam's two moment estimates in fp32. How much GPU memory do these weights, gradients and optimizer states need in total? Ignore activations and temporary buffers. Give the answer in GB, where 1 GB = 10⁹ bytes, to 1 decimal place.",
+  "answer": 43.2,
+  "tolerance": 0.05,
+  "check": "params = 2.7e9\nbf16_weights = 2\nbf16_grads = 2\nfp32_master = 4\nadam_m = 4\nadam_v = 4\nbytes_per_param = bf16_weights + bf16_grads + fp32_master + adam_m + adam_v\nresult = params * bytes_per_param / 1e9",
+  "explanation": "Add up the bytes each parameter needs, then multiply by the parameter count.\n\n- bf16 weights: 2 bytes\n- bf16 gradients: 2 bytes\n- fp32 master copy of the weights: 4 bytes\n- Adam first moment in fp32: 4 bytes\n- Adam second moment in fp32: 4 bytes\n\nThat is 16 bytes per parameter. So 2.7 × 10⁹ × 16 = 43.2 × 10⁹ bytes, or 43.2 GB, before any activations.\n\nThe most common mistake is to think like inference and count only the 2-byte weights, which gives 5.4 GB. Training needs eight times that. Another slip is to forget the fp32 master copy, which gives 12 bytes per parameter and 32.4 GB. The master copy exists because tiny updates added to bf16 weights often round away to nothing, so the optimizer applies them to an fp32 copy instead. Note that 12 of the 16 bytes are the master copy and Adam state, not the model itself. That is why this setup needs far more memory than serving the same model.",
+  "deeper": "This rule of about 16 bytes per parameter is the first number to reach for when someone asks whether a model can be fine-tuned on a given GPU. Strong candidates then name the levers: sharding optimizer state across GPUs, 8-bit optimizer states, offloading to CPU memory, or parameter-efficient methods such as LoRA that train only a small set of extra weights.",
+  "tags": [
+   "memory",
+   "training"
+  ],
+  "concepts": [
+   "adam-optimizer",
+   "mixed-precision-training"
+  ]
+ },
+ {
+  "id": "opt-0011",
+  "topic": "optimization",
+  "subtopic": "effective batch size",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "To fine-tune a support-ticket router, a team uses 4 GPUs with data parallelism. Each GPU runs 16 examples per forward and backward pass, and gradients are accumulated over 8 such passes before each optimizer step. How many examples contribute to each optimizer step? Give a whole number.",
+  "answer": 512,
+  "tolerance": 0.5,
+  "check": "per_device = 16\naccum_steps = 8\ngpus = 4\nresult = per_device * accum_steps * gpus",
+  "explanation": "The effective batch size is the number of examples whose gradients are combined into one update. Each GPU sees 16 examples per pass and accumulates 8 passes, so each GPU contributes 16 × 8 = 128 examples. Data parallelism then averages the gradients from all 4 GPUs, so one optimizer step uses 128 × 4 = 512 examples.\n\nThe common mistake is to leave out one of the three factors. Forgetting the GPUs gives 128, and forgetting accumulation gives 64. Both matter, because accumulation and data parallelism do the same job in different ways. Accumulation spreads a large batch over time on one device, while data parallelism spreads it across devices at the same moment. The optimizer cannot tell the difference, so the effective batch is the product of all three.",
+  "deeper": "Effective batch size is what the learning rate should be tuned against. If you move a recipe from 8 GPUs to 4, doubling accumulation steps keeps the effective batch and the training behaviour the same. Interviewers may ask about batch norm, which by default still sees only each per-device batch of 16, not the full 512.",
+  "tags": [
+   "batch-size",
+   "training"
+  ],
+  "concepts": [
+   "gradient-accumulation",
+   "data-parallelism",
+   "batch-size"
+  ]
+ },
+ {
+  "id": "opt-0012",
+  "topic": "optimization",
+  "subtopic": "16 bits with fp32's range",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A 16-bit floating-point format keeps the same 8 exponent bits as fp32 but only 7 mantissa bits. Because its range matches fp32, mixed-precision training with it rarely needs loss scaling to stop small gradients from underflowing to zero. This format is called ______.",
+  "answer": "bfloat16",
+  "accept": [
+   "bf16",
+   "bfloat 16",
+   "brain float 16",
+   "brainfloat16",
+   "brain floating point",
+   "brain floating point 16",
+   "brain float"
+  ],
+  "explanation": "bfloat16 is fp32 with the bottom 16 mantissa bits cut off. It keeps fp32's 8 exponent bits, so it can represent numbers from about 10⁻³⁸ to about 3 × 10³⁸, the same span as fp32. What it gives up is precision: with 7 mantissa bits it holds only about 2 to 3 significant decimal digits.\n\nThe common mistake is to answer fp16. fp16 makes the opposite trade. It has 10 mantissa bits, so it is more precise, but only 5 exponent bits, so its largest value is about 65,504 and very small gradients underflow to zero. That is why fp16 training usually needs loss scaling, which multiplies the loss by a large factor before the backward pass and divides the gradients back down afterwards. With bfloat16 the gradients stay in range, so training is simpler and less likely to diverge from overflow.",
+  "deeper": "A good follow-up is why bfloat16's low precision does not ruin training. The answer is that the optimizer still updates an fp32 master copy of the weights, so small updates are not lost. Where hardware supports it, bfloat16 is now the usual default for training large models.",
+  "tags": [
+   "precision",
+   "training"
+  ],
+  "concepts": [
+   "mixed-precision-training"
+  ]
+ },
+ {
+  "id": "opt-0013",
+  "topic": "optimization",
+  "subtopic": "data parallel training",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "Four GPUs train a product-recommendation model with data parallelism. The model fits easily on one GPU. What happens on each training step?",
+  "options": [
+   "Each GPU holds a full copy of the model and runs its own slice of the batch, then the GPUs average gradients so every copy makes the same update.",
+   "Each GPU holds a quarter of the layers and passes its activations to the next GPU, so the batch flows through the model like an assembly line.",
+   "Each GPU trains its own copy on its own share of the data with no syncing, and the four sets of weights are averaged once when training ends.",
+   "Each GPU holds a quarter of every weight matrix, and the GPUs exchange partial results inside each layer to build the full output for the batch."
+  ],
+  "answer": 0,
+  "explanation": "In data parallelism, every GPU keeps a complete copy of the model. The batch is split, so with a batch of 256 each GPU runs 64 examples through its own forward and backward pass. The GPUs then average their gradients with an all-reduce, and every copy applies the same averaged gradient. The copies stay identical, and the result matches training on the full batch of 256 on one device.\n\nThe option about passing activations from GPU to GPU describes pipeline parallelism, which splits the layers into stages and is used when a model is too large for one device. The option about splitting every weight matrix describes tensor parallelism, another way to fit a large model. The option about averaging weights only at the end describes training separate models. Without syncing on every step the copies drift apart, and averaging the weights of separately trained networks usually gives a poor model.",
+  "deeper": "Data parallelism is the first scaling tool to reach for when the model fits on one GPU. Its cost is the gradient all-reduce each step, which modern frameworks overlap with the backward pass. Interviewers often follow up by asking what you would change when the model no longer fits.",
+  "tags": [
+   "distributed",
+   "training"
+  ],
+  "concepts": [
+   "data-parallelism"
+  ]
+ },
+ {
+  "id": "opt-0014",
+  "topic": "optimization",
+  "subtopic": "splitting optimizer state across GPUs",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "In plain data parallelism, each of 8 GPUs keeps a full copy of the weights, the gradients and the Adam state. A variant splits all three across the GPUs, so each GPU stores only one eighth of them and gathers the full weights for a layer just before it needs them. Give the common name or acronym for this approach: ______.",
+  "answer": "ZeRO",
+  "accept": [
+   "zero redundancy optimizer",
+   "zero 3",
+   "zero stage 3",
+   "fsdp",
+   "fully sharded data parallel",
+   "fully sharded data parallelism",
+   "sharded data parallel",
+   "sharded data parallelism",
+   "sharded data parallel training"
+  ],
+  "explanation": "The approach is known as ZeRO, short for zero redundancy optimizer, or as fully sharded data parallel (FSDP). Both names describe the same idea. Plain data parallelism stores the same weights, gradients and optimizer state on every GPU, which wastes memory. Sharding gives each GPU one slice of each. Before a layer runs, the GPUs gather its full weights, use them and free them again. After the backward pass, each GPU keeps only the gradients for its own slice and updates only its share of the optimizer state.\n\nA common mistake is to answer model parallelism or tensor parallelism. Those split the computation of the model, so each GPU does a different part of the work. Sharded data parallelism still has each GPU process its own slice of the batch through the whole model. It only splits where the state is stored. The price is more communication, since weights must be gathered for every layer in both passes.",
+  "deeper": "The stages are worth knowing. Sharding only the optimizer state already saves most of the memory, because Adam state is the largest part. Sharding gradients and then weights saves more but adds traffic. Strong candidates note that per-GPU memory falls roughly in proportion to the number of GPUs.",
+  "tags": [
+   "distributed",
+   "memory"
+  ],
+  "concepts": [
+   "sharded-data-parallel",
+   "data-parallelism"
+  ]
+ },
+ {
+  "id": "opt-0015",
+  "topic": "optimization",
+  "subtopic": "tensor vs pipeline parallelism",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "You must train a language model whose weights and training state need about 20 GPUs' worth of memory. The cluster has 4 servers with 8 GPUs each. GPUs inside a server share very fast links, while traffic between servers goes over a network that is several times slower. How should you split the model?",
+  "options": [
+   "Tensor parallelism within each server and pipeline parallelism across servers, as split layers sync constantly over fast links while stages trade data only at edges.",
+   "Pipeline parallelism inside each server and tensor parallelism across servers, since stages sync constantly while each tensor shard syncs only once per training step.",
+   "Pipeline parallelism across all 32 GPUs, since splitting the layers into 32 stages keeps every GPU busy at all times and so leaves no idle waiting at all.",
+   "Tensor parallelism across all 32 GPUs, since splitting each layer's weight matrices needs no traffic until gradients are averaged at the end of each step."
+  ],
+  "answer": 0,
+  "explanation": "Tensor parallelism splits the weight matrices inside each layer, so the GPUs must combine partial results several times per layer, in both the forward and backward passes. That is a lot of traffic, and it only runs well over fast links, which means inside a server. Pipeline parallelism puts groups of whole layers on different devices. Stages only hand activations forward and gradients back at their boundaries, so the slower network between servers can cope.\n\nThe reversed layout puts the chattiest traffic on the slowest links, and the claim that tensor shards sync once per step is false. Pure pipeline parallelism across 32 stages has a real cost called the bubble. At the start and end of each step, many stages sit idle waiting for work, and more stages make the bubble bigger. Splitting the batch into micro-batches shrinks it but never removes it. Pure tensor parallelism across servers would send its per-layer traffic over the slow network, and it does need communication inside every layer, not just at the end.",
+  "deeper": "Large runs usually combine three kinds: tensor parallelism within a server, pipeline parallelism across a few servers, and data parallelism across copies of that whole arrangement. A strong candidate explains that the layout follows the network, with the most frequent communication placed on the fastest links.",
+  "tags": [
+   "distributed",
+   "training"
+  ],
+  "concepts": [
+   "model-parallelism"
+  ]
+ },
+ {
+  "id": "opt-0016",
+  "topic": "optimization",
+  "subtopic": "why decoding is memory-bound",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A coding assistant serves an 8-billion-parameter model with fp16 weights (16 GB in total) on a GPU with about 1 TB/s of memory bandwidth. The KV cache is on and prompts are short. Each new token takes about 20 ms, and a profile shows nearly all of that time inside the layers' matrix multiplications, yet the compute units are only about 5% busy. Serving 8 users in one batch instead of 1 barely changes the time per step. What best explains this?",
+  "options": [
+   "Each step reads all 16 GB of weights from memory but does only about two operations per weight, so memory bandwidth, not compute, sets the step time.",
+   "Each step must wait for the previous token to be sampled, and this dependency stops the GPU from running the model's layers in parallel with each other.",
+   "Each step reads the KV cache for every earlier token, and at this context length the cache is far larger than the weights, so reading it dominates.",
+   "Each step's matrix multiplications are compute-heavy, and fp16 math runs slowly at small batches, so a GPU with more raw compute would cut the step time."
+  ],
+  "answer": 0,
+  "explanation": "To produce one token, the GPU multiplies each weight by one number per sequence and adds it in, about two operations per weight. But every one of the 16 GB of weights must be pulled from memory to do that. At about 1 TB/s, reading 16 GB takes about 16 ms, which matches the 20 ms step. The arithmetic itself would take a fraction of a millisecond, so the compute units sit idle waiting for data. Adding users to the batch reuses each weight once it has been read, so 8 users cost nearly the same time as 1. That is the signature of a memory-bound step.\n\nTokens are generated one after another, but that dependency is between steps and does not explain idle compute inside a step. Layers always run in sequence. The KV cache for a few hundred tokens is tens of megabytes, tiny next to 16 GB of weights, so it matters only at long contexts or large batches. The option that calls the step compute-heavy gets the cause backwards. A GPU with more raw compute would not help, because its math units are already idle waiting for data.",
+  "deeper": "This is why weight quantization speeds up decoding even when the math still runs in 16-bit: fewer bytes to read per token. It is also why batching raises throughput almost for free until the batch is large enough for the step to become compute-bound or the KV cache to fill memory.",
+  "tags": [
+   "inference",
+   "llm"
+  ],
+  "concepts": [
+   "memory-bound-decoding"
+  ]
+ },
+ {
+  "id": "opt-0017",
+  "topic": "optimization",
+  "subtopic": "decode speed ceiling",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A logistics company serves a 20-billion-parameter model with 8-bit weights (1 byte per parameter) on one GPU whose memory bandwidth is 1.8 TB/s, where 1 TB = 10¹² bytes. For a single user, each new token requires reading every weight from memory once. Ignoring the KV cache and all other memory traffic, what is the upper bound on tokens per second for that one stream? Give a whole number.",
+  "answer": 90,
+  "tolerance": 0.5,
+  "check": "params = 20e9\nbytes_per_param = 1\nbandwidth = 1.8e12\nbytes_per_token = params * bytes_per_param\nresult = bandwidth / bytes_per_token",
+  "explanation": "At batch size 1, decoding is limited by how fast the weights can be streamed from memory, because each token needs every weight but does very little math with it.\n\n- Bytes read per token: 20 × 10⁹ parameters × 1 byte = 20 × 10⁹ bytes\n- Bandwidth: 1.8 × 10¹² bytes per second\n- Ceiling: 1.8 × 10¹² / 20 × 10⁹ = 90 tokens per second\n\nThe common mistake is to use 2 bytes per parameter out of habit, which gives 45 tokens per second. That is the fp16 figure, and halving the bytes is exactly why 8-bit weights double the ceiling. Another mistake is to work from the GPU's compute rate. That gives a number many times higher, which is not reachable because memory runs out first.\n\nReal systems land below this bound because of KV cache reads, kernel overheads and bandwidth that is never fully used.",
+  "deeper": "This back-of-the-envelope bound is a favourite in LLM serving interviews. It tells you quickly whether a latency target is even possible on given hardware. A strong candidate adds that the bound is per stream: batching many users shares the same weight reads, so total throughput can be far higher than 90 tokens per second.",
+  "tags": [
+   "inference",
+   "llm"
+  ],
+  "concepts": [
+   "memory-bound-decoding",
+   "quantization"
+  ]
+ },
+ {
+  "id": "opt-0018",
+  "topic": "optimization",
+  "subtopic": "prefill vs decode",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A document Q&A bot sends prompts of about 8,000 tokens, mostly retrieved passages, and gets answers of about 200 tokens, which it streams to the user. Users complain about a long pause before any text appears, but once text starts it flows quickly. Which explanation and fix fit best?",
+  "options": [
+   "The pause is prefill, which processes all 8,000 prompt tokens at once and is compute-bound, so sending fewer retrieved passages shortens it most.",
+   "The pause is decode, which reads every weight for each token and is memory-bound, so quantizing the weights to 4 bits shortens it the most.",
+   "The pause is prefill, which reads all the weights once per prompt token and is memory-bound, so a GPU with faster memory shortens it most.",
+   "The pause comes from generating the 200 answer tokens, which all finish before streaming begins, so capping the answer length shortens it the most."
+  ],
+  "answer": 0,
+  "explanation": "The time before the first token appears is mostly prefill. In prefill the model processes the whole prompt in one pass, with all 8,000 tokens going through each layer together. Every weight read from memory is reused across thousands of tokens, so the step is limited by compute, and its cost grows with prompt length. Cutting the retrieved context is the most direct fix. When part of the prompt repeats across requests, such as a long system prompt, caching its key and value states also helps.\n\nDecode is the phase after the first token, and the users say that part is fast. 4-bit weights mainly speed up decode, so they target the wrong phase. The option claiming prefill reads the weights once per prompt token is wrong, because prefill reads them once for the whole prompt. That reuse is what makes it compute-bound rather than memory-bound. Capping the answer length helps total time, but with streaming the first token is shown as soon as it is generated, so the 200 tokens do not delay the first one.",
+  "deeper": "Serving dashboards should track time to first token and time per output token separately, since they have different causes and fixes. A strong candidate also mentions chunked prefill, which splits a long prompt into pieces so it does not stall the decode steps of other users on the same GPU.",
+  "tags": [
+   "inference",
+   "latency"
+  ],
+  "concepts": [
+   "time-to-first-token",
+   "memory-bound-decoding"
+  ]
+ },
+ {
+  "id": "opt-0019",
+  "topic": "optimization",
+  "subtopic": "what continuous batching improves",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "An LLM endpoint for a travel-booking assistant switches from static batching, where a batch runs until its longest request finishes, to continuous batching. Request lengths vary a lot. Which of these improve as a result? Select all that apply.",
+  "options": [
+   "Total tokens generated per second across all users",
+   "Share of batch slots doing useful work at each decode step",
+   "Time a new request waits in the queue before it starts",
+   "Decode speed of one request running alone on an idle server",
+   "Size of the KV cache that each sequence needs per token",
+   "Time per output token for each request as more requests join"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "Continuous batching schedules at the level of single decode steps. When one request finishes, a waiting request takes its slot at the next step. That keeps the batch full, so the GPU does more useful work per weight read. This raises total throughput and GPU use. New requests no longer wait for the slowest member of the current batch to finish, so queue wait drops a lot, especially when lengths vary.\n\nIt does not make a lone request faster. With nothing else running, each decode step is limited by reading the weights, and batching changes nothing about that. The KV cache per token is set by the model's layers, heads and precision, not by the scheduler. Time per output token for each request actually rises slightly as the batch grows, because each step has more work to do. The trade is a small slowdown per request for a large gain in total throughput and much shorter waits.",
+  "deeper": "A good interview point is that continuous batching works best with a KV cache allocated in small blocks, since requests join and leave at different lengths. Teams usually cap the batch size or token budget per step so that per-token latency stays within the target.",
+  "tags": [
+   "serving",
+   "batching"
+  ],
+  "concepts": [
+   "continuous-batching",
+   "throughput-vs-latency"
+  ]
+ },
+ {
+  "id": "opt-0020",
+  "topic": "optimization",
+  "subtopic": "continuous batching",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A summarization service runs batches of 8 requests. In one batch, a single request needs 500 output tokens and the other seven need about 50. With static batching, the seven short slots sit idle for about 450 decode steps while new requests wait in the queue. What does continuous batching do differently?",
+  "options": [
+   "When a request finishes, a waiting request takes its slot at the next decode step, so the batch stays full while the long request keeps going.",
+   "It sorts waiting requests by expected output length before each batch starts, so requests of similar length are always grouped together.",
+   "It splits the long request into chunks of 50 tokens and spreads them across the free slots, so all eight slots finish their work at the same time.",
+   "It runs every request in its own forward pass as soon as it arrives, so no request ever waits for another one and the batch idea is dropped."
+  ],
+  "answer": 0,
+  "explanation": "Continuous batching makes scheduling decisions at every decode step instead of once per batch. After about 50 steps, the seven short requests finish, and their slots are given to requests from the queue at the next step. The long request carries on alongside them. The GPU keeps working on a full batch, and new requests start almost at once instead of waiting about 450 steps.\n\nSorting by expected length is a separate trick, sometimes called bucketing. It needs output lengths to be known in advance, which they are not, since the model decides when to stop. Splitting one request into chunks across slots cannot work, because each token depends on the one before it, so a single sequence must be generated in order. Running each request alone gives up batching, and with it the reuse of each weight read across many requests, so total throughput falls sharply.",
+  "deeper": "Interviewers sometimes ask what makes this hard to build. Sequences in the batch have different lengths and different KV caches, so the engine needs attention kernels that handle ragged batches and a cache that can grow and shrink per request without wasting memory.",
+  "tags": [
+   "serving",
+   "batching"
+  ],
+  "concepts": [
+   "continuous-batching"
+  ]
+ },
+ {
+  "id": "opt-0021",
+  "topic": "optimization",
+  "subtopic": "paging the KV cache",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "An LLM serving engine used to reserve one contiguous chunk of memory per request, sized for the maximum sequence length, and most of it sat unused. The engine now stores the KV cache in small fixed-size blocks that need not be next to each other, tracked by a per-request block table, much like virtual memory pages in an operating system. This technique is called ______.",
+  "answer": "PagedAttention",
+  "accept": [
+   "paged attention",
+   "paged kv cache",
+   "kv cache paging",
+   "paging",
+   "paged kv caching",
+   "pagedattention"
+  ],
+  "explanation": "PagedAttention borrows the idea of paging from operating systems. Each request's KV cache is a list of small blocks, for example 16 tokens each, and a block table maps the request's token positions to wherever those blocks live in GPU memory. A new block is taken only when the previous one fills up. Waste is limited to the unfilled part of the last block, instead of a large reservation for tokens that may never be generated. That freed memory lets the server run many more requests at once.\n\nThe common mistake is to answer FlashAttention. FlashAttention speeds up the attention computation by working in tiles that fit in fast on-chip memory, which avoids writing the full attention matrix to main memory. It does not decide how the KV cache is laid out across requests. Another near miss is simply KV cache, which is the thing being stored, not the technique for storing it.",
+  "deeper": "Blocks also make sharing cheap. Requests with the same system prompt, or several samples from one prompt, can point to the same physical blocks and copy a block only when they diverge. A strong candidate links this to prefix caching and to the higher batch sizes that continuous batching can then reach.",
+  "tags": [
+   "kv-cache",
+   "serving"
+  ],
+  "concepts": [
+   "kv-cache",
+   "continuous-batching"
+  ]
+ },
+ {
+  "id": "opt-0022",
+  "topic": "optimization",
+  "subtopic": "concurrency limited by KV cache",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "A legal-research assistant serves a 14-billion-parameter model with fp16 weights (2 bytes per parameter) on a GPU with 80 GB of memory. The team sets aside 6 GB for activations and runtime overhead, and the rest after the weights holds the KV cache. The model has 40 layers and uses grouped-query attention with 40 query heads and 8 key-value heads per layer, each of dimension 128. The cache is fp16, and every sequence is given room for 8,192 tokens. How many sequences can run at once? Use 1 GB = 10⁹ bytes and give a whole number, rounding down.",
+  "answer": 34,
+  "tolerance": 0.5,
+  "check": "import math\ngpu = 80e9\nweights = 14e9 * 2\noverhead = 6e9\nfree = gpu - weights - overhead\nlayers = 40\nkv_heads = 8\nhead_dim = 128\nbytes_per_num = 2\nper_token = 2 * layers * kv_heads * head_dim * bytes_per_num\nper_seq = per_token * 8192\nresult = math.floor(free / per_seq)",
+  "explanation": "Find the free memory, then the cache size for one sequence, then divide.\n\n- Weights: 14 × 10⁹ × 2 bytes = 28 GB\n- Free for the cache: 80 − 28 − 6 = 46 GB\n- Cache per token: 2 (key and value) × 40 layers × 8 KV heads × 128 × 2 bytes = 163,840 bytes\n- Cache per sequence: 163,840 × 8,192 = 1,342,177,280 bytes, about 1.34 GB\n- Sequences: 46 × 10⁹ / 1.342 × 10⁹ ≈ 34.3, so 34\n\nThe most common mistake is to use the 40 query heads instead of the 8 key-value heads. That makes the cache five times larger and gives only 6 sequences. Only key and value heads are cached, and grouped-query attention shares each one across 5 query heads. Forgetting the factor of 2 for keys and values gives 68. Forgetting to subtract the weights first gives 55.\n\nNotice that the cache, not the compute, limits how many users this GPU can serve.",
+  "deeper": "Reserving the full 8,192 tokens per sequence is wasteful when most requests are short. Engines that allocate the cache in small blocks as tokens arrive can fit far more real requests. Strong candidates also mention an 8-bit KV cache, which halves the per-token cost, and setting the context cap to match real traffic.",
+  "tags": [
+   "kv-cache",
+   "serving"
+  ],
+  "concepts": [
+   "kv-cache",
+   "grouped-query-attention"
+  ]
+ },
+ {
+  "id": "opt-0023",
+  "topic": "optimization",
+  "subtopic": "sharing key and value heads",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A search team retrains its ranking language model, replacing standard multi-head attention with 32 heads by grouped-query attention that keeps 32 query heads but uses only 4 key-value heads per layer. Head dimension and layer count stay the same. What happens to the KV cache, and why?",
+  "options": [
+   "It shrinks to one eighth, because only 4 key and value heads are stored per layer and each is shared by a group of 8 query heads.",
+   "It shrinks to one eighth, because each of the 32 heads now stores keys and values that are one eighth as wide as they were before.",
+   "It stays the same size, but attention compute drops to one eighth, because only 4 of the heads now compute any attention scores.",
+   "It shrinks to one thirty-second, because all 32 query heads now read from one single shared key head and one shared value head."
+  ],
+  "answer": 0,
+  "explanation": "The KV cache stores one key vector and one value vector per key-value head, per layer, per token. Standard multi-head attention has 32 of each. Grouped-query attention keeps all 32 query heads, so the model still attends in 32 different ways, but splits them into 4 groups of 8. Each group reads the same key and value head. With 4 heads to store instead of 32, the cache shrinks by a factor of 8.\n\nThe option about narrower keys and values gets the size right but the mechanism wrong. Head dimension is unchanged, and the saving comes from storing fewer heads. The option where compute drops has it backwards. All 32 query heads still compute attention scores, and it is the cache that shrinks. The option with a single shared head describes multi-query attention, the extreme case with 1 key-value head, which would shrink the cache by 32 times. This model keeps 4.",
+  "deeper": "Grouped-query attention is a middle ground. Multi-query attention saves the most memory but often costs some quality, while grouping keeps quality close to full multi-head attention. A strong candidate adds that a smaller cache means less memory to read per decode step and more sequences per GPU, so both speed and concurrency improve.",
+  "tags": [
+   "attention",
+   "kv-cache"
+  ],
+  "concepts": [
+   "grouped-query-attention",
+   "kv-cache"
+  ]
+ },
+ {
+  "id": "opt-0024",
+  "topic": "optimization",
+  "subtopic": "draft and verify",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A code-completion service adds speculative decoding. A small draft model proposes the next 4 tokens, and then the large model checks them. Completions now come back faster, and their quality is no worse than before. Which description of the mechanism explains both results?",
+  "options": [
+   "The large model scores all 4 drafts in one forward pass, keeps them up to the first one it rejects, and replaces that one with a token chosen by the large model itself.",
+   "The draft model writes the completion, and the large model checks a random sample of its tokens, regenerating only the spans where the two models disagree with each other.",
+   "The large model still runs one forward pass per token, but the drafted guesses let it skip the softmax over the whole vocabulary, which is the costly part of each step.",
+   "Both models generate a full completion in parallel, and the service returns whichever of the two completions the large model gives the higher total log-probability."
+  ],
+  "answer": 0,
+  "explanation": "Speculative decoding works because checking tokens is cheaper than generating them. A large model's decoding step is limited by reading all of its weights from memory, and it yields one token. Scoring 4 drafted tokens in one forward pass reads the weights once, so it costs about the same as a single step. That is the speed-up.\n\nQuality holds because of the accept rule. With greedy decoding, a drafted token is kept only if it matches the large model's own top choice. With sampling, a token is kept with probability min(1, p / q), where p is the large model's probability and q is the draft's, and the first rejected token is replaced by a sample from the large model's leftover distribution. This makes the output follow exactly the large model's distribution. If all 4 are accepted, the same pass also gives a fifth token.\n\nChecking only a random sample would let the draft model's mistakes through, so quality would drop. Skipping the softmax saves almost nothing, since the cost is in the weight reads, and one pass per token gives no speed-up. Generating two full completions in parallel is slower, and returning the draft's completion would change the output.",
+  "deeper": "Interviewers often ask when speculative decoding stops helping. The answer is when the draft is often rejected, when the draft model itself is slow, or at large batch sizes, where decoding is no longer memory-bound and the spare compute the trick relies on is gone.",
+  "tags": [
+   "speculative",
+   "decoding",
+   "llm"
+  ],
+  "concepts": [
+   "speculative-decoding",
+   "memory-bound-decoding"
+  ]
+ },
+ {
+  "id": "opt-0025",
+  "topic": "optimization",
+  "subtopic": "speculative decoding speed-up",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "A chat service uses speculative decoding with a draft length of 4. A small model proposes 4 tokens, then the large model verifies them in one forward pass. Assume each drafted token is accepted with probability 0.75, independently of the others, and that acceptance stops at the first rejected token, so any drafts after it are thrown away. Every verification pass also adds exactly one token from the large model: the replacement for the first rejected draft, or a bonus token when all 4 drafts are accepted. What is the expected number of tokens produced per verification pass? Give the answer as a decimal to 2 places.",
+  "answer": 3.05,
+  "tolerance": 0.005,
+  "check": "alpha = 0.75\nk = 4\nexpected = 0.0\nfor j in range(k + 1):\n    if j < k:\n        p = alpha ** j * (1 - alpha)\n    else:\n        p = alpha ** k\n    expected += p * (j + 1)\nresult = expected",
+  "explanation": "Let j be the number of drafts accepted before the first rejection. Each pass produces j + 1 tokens, the accepted drafts plus the one token from the large model.\n\n- j = 0: probability 0.25, 1 token\n- j = 1: probability 0.75 × 0.25 = 0.1875, 2 tokens\n- j = 2: probability 0.75² × 0.25 = 0.140625, 3 tokens\n- j = 3: probability 0.75³ × 0.25 = 0.10546875, 4 tokens\n- j = 4: probability 0.75⁴ = 0.31640625, 5 tokens\n\nThe expected value is 0.25 + 0.375 + 0.421875 + 0.421875 + 1.58203125 = 3.05078, so about 3.05. The same sum has a short form: 1 + α + α² + α³ + α⁴ = (1 − α⁵) / (1 − α) = (1 − 0.2373) / 0.25 = 3.05.\n\nThe common mistake is to say 4 × 0.75 + 1 = 4.00. That treats every draft as accepted on its own, but a rejection throws away every draft after it, so the third draft only counts when the first two were both accepted. Another slip is to forget the large model's own token and answer 2.05.",
+  "deeper": "Tokens per pass is not the wall-clock speed-up. If each draft step costs 5% of a large-model step, one cycle costs about 1 + 4 × 0.05 = 1.2 large steps, so the speed-up is near 3.05 / 1.2 ≈ 2.5. Strong candidates note that longer drafts give shrinking returns when the acceptance rate is low.",
+  "tags": [
+   "speculative",
+   "decoding",
+   "latency"
+  ],
+  "concepts": [
+   "speculative-decoding",
+   "expected-value"
+  ]
+ },
+ {
+  "id": "opt-0026",
+  "topic": "optimization",
+  "subtopic": "what FlashAttention changes",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A team trains a document model on 16,384-token sequences. After switching from standard attention to FlashAttention, each training step runs faster and peak memory drops sharply, yet the loss curve matches the old run up to tiny rounding differences. Which explanation is correct?",
+  "options": [
+   "It computes exact attention in blocks held in fast on-chip memory, never writing the full n × n score matrix to main GPU memory, so it cuts memory traffic, not arithmetic.",
+   "It keeps only the highest-scoring keys for each query and skips the rest, so it does far fewer multiplications while changing each output by an amount too small to notice.",
+   "It projects the keys and values down to a fixed low rank before attention, so its cost grows linearly with sequence length and the outputs stay within rounding error.",
+   "It stores each layer's n × n score matrix from the previous step and reuses it, so most attention work is skipped while the weights change only slowly between steps."
+  ],
+  "answer": 0,
+  "explanation": "Standard attention builds the full score matrix QKᵀ, writes it to main GPU memory, reads it back for the softmax, writes the probabilities, and reads them again to multiply by V. At 16,384 tokens one head's matrix has 16,384² ≈ 268 million entries, about 537 MB in fp16 (1 MB = 10⁶ bytes). Moving that data, not the multiplications, is what makes long-context attention slow and memory-hungry.\n\nFlashAttention loads small blocks of Q, K and V into fast on-chip memory and keeps a running maximum and running sum, so it can combine the softmax across blocks exactly. Only the n × d output is written back. Memory for attention grows linearly with n instead of with n², and the result is the same attention up to rounding. In the backward pass it recomputes blocks rather than storing them, so it does slightly more arithmetic, not less.\n\nKeeping only the top keys is sparse attention, which is an approximation and would shift the loss. Low-rank projection is also an approximation, not exact attention. Reusing last step's score matrix is wrong because the inputs and weights change every step, so old scores would be stale.",
+  "deeper": "A good follow-up is why an exact method can be faster. On modern accelerators, arithmetic is cheap and memory traffic is expensive, so cutting reads and writes beats cutting FLOPs. Strong candidates connect this to the same idea behind fused kernels and memory-bound decoding.",
+  "tags": [
+   "attention",
+   "memory",
+   "kernels"
+  ],
+  "concepts": [
+   "flash-attention",
+   "self-attention"
+  ]
+ },
+ {
+  "id": "opt-0027",
+  "topic": "optimization",
+  "subtopic": "soft targets in distillation",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "You are distilling a large 10-class product-defect image classifier into a small model for factory cameras. On most training images the teacher puts more than 0.99 probability on a single class. A colleague suggests dividing both models' logits by a temperature T = 4 inside the distillation loss. What is the main benefit?",
+  "options": [
+   "The teacher's probabilities for the wrong classes become large enough to learn from, so the student sees which defects the teacher finds similar to each other.",
+   "The teacher becomes even more confident in its top class, so the student trains on cleaner targets than the human labels, which contain some annotation mistakes.",
+   "The softened outputs add random noise to the teacher's targets, which acts as a regularizer and stops the student from copying the teacher too closely.",
+   "The gradients of the distillation loss grow by a factor of T², so the student learns faster and the loss can be added to the label loss without a weight."
+  ],
+  "answer": 0,
+  "explanation": "Softmax with temperature computes softmax(z / T). Dividing the logits by T > 1 shrinks the gaps between them, which flattens the distribution. Take three logits of 10, 4 and 1. At T = 1 the probabilities are about 0.997, 0.0025 and 0.0001, almost a hard label. At T = 4 they become about 0.75, 0.17 and 0.08. Now the student can see that the teacher rates the second class as far more plausible than the third, for example that a scratch looks more like a dent than like a missing part. This similarity structure, sometimes called dark knowledge, is what makes soft targets more informative than labels.\n\nThe option about more confidence has the effect backwards. Raising T makes the teacher less confident. The option about random noise is wrong because temperature is a fixed rescaling, with nothing random about it. The option about gradients also has it backwards. Gradients of the softened loss shrink by about 1 / T², which is why the standard recipe multiplies that loss by T² before mixing it with the label loss.",
+  "deeper": "In interviews, mention that T is a tuning knob. Too high and the targets flatten toward uniform and lose the ranking, too low and they collapse to hard labels. Teams often try values from about 2 to 10 and tune the weight between the soft and hard losses on a validation set.",
+  "tags": [
+   "distillation",
+   "temperature",
+   "compression"
+  ],
+  "concepts": [
+   "knowledge-distillation",
+   "temperature",
+   "softmax"
+  ]
+ },
+ {
+  "id": "opt-0028",
+  "topic": "optimization",
+  "subtopic": "structured vs unstructured pruning",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A team prunes a transformer text classifier by zeroing the 50% of individual weights with the smallest magnitudes, then fine-tunes briefly. Accuracy holds, but GPU inference latency barely changes, and the saved model, stored as dense matrices, is the same size. What explains this, and what would give a real speed-up?",
+  "options": [
+   "The zeros are scattered, so dense matrix kernels still multiply every entry. Removing whole attention heads or hidden units shrinks the matrices and cuts latency.",
+   "Zeroed weights are only skipped after several more epochs of fine-tuning, so a longer fine-tune after pruning is what will finally bring the inference latency down.",
+   "Latency in this model is set by the embedding lookup rather than the matrix multiplications, so pruning inside the transformer layers cannot reduce it at all.",
+   "Pruning only cuts training cost, since the backward pass does most of the multiplications. Inference speed needs quantization and cannot come from any pruning."
+  ],
+  "answer": 0,
+  "explanation": "Unstructured pruning zeros individual weights wherever they are small, so the zeros land in random places. A dense matrix multiply on a GPU does not check for zeros. It multiplies every entry, zero or not, so the work and the memory traffic stay the same. Unless you store the weights in a sparse format and use kernels built for it, and sparsity is usually far above 50% before those win on a GPU, there is no speed-up.\n\nStructured pruning removes whole units: attention heads, rows of a feed-forward layer, or entire layers. The matrices that remain are smaller but still dense, so the standard fast kernels run on less data and latency falls.\n\nThe option about fine-tuning longer is wrong because training does not change how the kernels run. Zeros stay zeros that get multiplied. The embedding lookup is cheap next to the many matrix multiplications in each transformer layer, so it does not set latency here. Pruning does not only help training. Structured pruning is a standard way to speed up inference, and it can be combined with quantization.",
+  "deeper": "A strong candidate mentions a middle ground: semi-structured patterns, such as 2 zeros in every block of 4 weights, which some accelerators can run faster. They also note that structured pruning usually costs more accuracy than unstructured at the same sparsity, so it needs fine-tuning and a careful check on slices.",
+  "tags": [
+   "pruning",
+   "latency",
+   "compression"
+  ],
+  "concepts": [
+   "pruning"
+  ]
+ },
+ {
+  "id": "opt-0029",
+  "topic": "optimization",
+  "subtopic": "wait before the first token",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A support chatbot streams its replies word by word. Users complain that after they press send, nothing appears for about 4 seconds, although the reply then streams quickly. The latency metric for this blank wait, from sending the request until the first piece of output arrives, is called ______.",
+  "answer": "time to first token",
+  "accept": [
+   "ttft",
+   "first token latency",
+   "time to first output token",
+   "first-token latency",
+   "latency to first token"
+  ],
+  "explanation": "Time to first token measures how long a user stares at an empty reply. In LLM serving it is mostly queue time plus prefill, the step where the model processes every input token in one pass and builds the KV cache. Prefill grows with prompt length, so a long system prompt, a long chat history or many retrieved documents push it up.\n\nThe common mistake is to answer time per output token, also called inter-token latency. That measures the gap between tokens once streaming has started, and here the stream is already fast. Another near miss is end-to-end latency, which runs until the last token and mixes the wait with the length of the reply. Keeping these apart matters because they have different fixes. A slow first token calls for shorter prompts, prefix caching or less queueing. Slow streaming calls for faster decoding.",
+  "deeper": "Teams usually set separate targets, such as p95 time to first token under 1 second and a minimum tokens-per-second rate while streaming. In an interview, say which of the two a complaint points to before proposing a fix, and mention that queueing at peak traffic often dominates the first-token wait.",
+  "tags": [
+   "latency",
+   "streaming",
+   "llm"
+  ],
+  "concepts": [
+   "time-to-first-token",
+   "streaming-responses"
+  ]
+ },
+ {
+  "id": "opt-0030",
+  "topic": "optimization",
+  "subtopic": "starved GPUs in training",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A team trains an image classifier on 4 GPUs. The monitor shows each GPU busy only about 35% of the time, while every CPU core on the machine sits near 100%, mostly decoding JPEG files and running augmentations. Explain how you would confirm the cause and what you would change.",
+  "answer": "The pattern suggests the GPUs are starved: they finish each batch and then wait for the input pipeline. I would confirm it by timing each training step and splitting the time spent waiting for the next batch from the time in the forward and backward passes. A second test is to train a few hundred steps on one batch kept in GPU memory. If that runs much faster, the loader is the bottleneck. Then I would fix it, cheapest first: raise the number of loader worker processes, use pinned memory and prefetch a few batches so loading overlaps with compute, and move heavy augmentations onto the GPU. If decoding is still the limit, I would decode and resize the images once, store them in a faster format and cache them. After each change I would re-measure images per second and GPU utilization.",
+  "points": [
+   "GPUs are idle waiting for data, and CPU decoding is the bottleneck",
+   "Confirm with per-step timing or a run on synthetic or cached data",
+   "Add loader workers, pinned memory and prefetching so loading overlaps compute",
+   "Move augmentation to the GPU, or pre-decode, resize and cache the images",
+   "Re-measure images per second after each change"
+  ],
+  "explanation": "Training throughput is set by the slowest stage. Here the CPU has to decode and augment every image before a GPU can use it. When all cores are maxed out and the GPUs sit idle most of the time, the GPUs are not the limit. Measuring first matters, because the synthetic-data test separates a slow pipeline from a slow model in a few minutes.\n\nThe common mistake is to tune the GPU side. A bigger batch or more GPUs does not help, because the CPU still has to prepare the same number of images per second, and more GPUs only means more idle GPUs. Switching on mixed precision speeds up the GPU step, which makes the GPUs wait even longer. Another mistake is to judge success by the GPU utilization number alone. The goal is more images per second, so that is the number to track.",
+  "deeper": "A follow-up interviewers like is what happens at scale. Strong candidates mention storing data in sharded, pre-processed files that stream sequentially from disk, decoding on the GPU, and checking disk or network read speed when the data lives on remote storage. They also check that the dataset is not being re-shuffled from slow storage every epoch.",
+  "tags": [
+   "training",
+   "throughput",
+   "data-loading"
+  ],
+  "concepts": [
+   "throughput-vs-latency"
+  ]
+ },
+ {
+  "id": "opt-0031",
+  "topic": "optimization",
+  "subtopic": "tail latency",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A fraud-scoring API logged these 20 response times in milliseconds:\n\n120, 95, 110, 480, 105, 130, 98, 115, 125, 102, 140, 108, 118, 900, 112, 100, 135, 122, 128, 107\n\nUse the nearest-rank method: sort the values, and the p-th percentile is the value at position ⌈p / 100 × n⌉, counting from 1. How many milliseconds higher is the p95 latency than the p50 latency? Give a whole number.",
+  "answer": 365,
+  "tolerance": 0.5,
+  "check": "import math\nt = [120, 95, 110, 480, 105, 130, 98, 115, 125, 102, 140, 108, 118, 900, 112, 100, 135, 122, 128, 107]\ns = sorted(t)\nn = len(s)\ndef pct(p):\n    return s[math.ceil(p / 100 * n) - 1]\nresult = pct(95) - pct(50)",
+  "explanation": "Sort the 20 values: 95, 98, 100, 102, 105, 107, 108, 110, 112, 115, 118, 120, 122, 125, 128, 130, 135, 140, 480, 900.\n\n- p50: position ⌈0.50 × 20⌉ = 10, which is 115 ms\n- p95: position ⌈0.95 × 20⌉ = 19, which is 480 ms\n- Difference: 480 − 115 = 365 ms\n\nThe common mistake is to take p95 as the largest value, 900 ms. With 20 values, the 19th is the 95th percentile, and the 20th is the maximum. Another slip is to use a different percentile rule. Interpolating between ranks, as many libraries do by default, gives a p95 of 501 ms and a p50 of 116.5 ms, which is why the prompt fixes the method.\n\nNotice what the numbers say. The typical request takes about 115 ms, but the slowest 2 of the 20 take four times as long or more. The mean is about 172.5 ms, which describes neither group. Users remember the slow requests, and a page that makes several calls in a row hits the tail far more often than 1 time in 20.",
+  "deeper": "Latency targets are usually written on p95 or p99, not the mean. A strong candidate adds that percentiles cannot be averaged across servers or time windows. To get a fleet-wide p95, you merge the raw data or histograms first. They would also look for the cause of the 480 and 900 ms outliers, such as garbage-collection pauses, cold caches or slow downstream calls.",
+  "tags": [
+   "latency",
+   "percentiles",
+   "serving"
+  ],
+  "concepts": [
+   "throughput-vs-latency",
+   "service-level-objective"
+  ]
+ },
+ {
+  "id": "opt-0032",
+  "topic": "optimization",
+  "subtopic": "batch size under a latency target",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A search service sends every query to a text-embedding model on GPU servers with dynamic batching. The p95 target for the embedding call is 50 ms. Profiling one GPU gives these forward-pass times: batch 1 takes 6 ms, batch 8 takes 9 ms, batch 16 takes 13 ms, batch 32 takes 22 ms and batch 64 takes 45 ms. Peak traffic is 3,000 queries per second. How would you choose the maximum batch size, the maximum queue wait and the number of GPUs?",
+  "answer": "As a simple worst case, a request waits the full queue time, then for a batch already running on the GPU, then for its own forward pass. This ignores network time and backlogs longer than one batch, so I want the maximum wait plus two batch times well under 50 ms. Batch 64 is out, because one pass alone takes 45 ms. Batch 32 gives 22 + 22 = 44 ms before any wait, which is too tight. Batch 16 gives 13 + 13 = 26 ms, so a maximum wait of about 5 ms keeps the worst case near 31 ms. With full batches of 16, one GPU handles about 16 / 0.013 ≈ 1,230 queries per second. So 3,000 per second needs at least three GPUs, and I would run four, at about 60% of their full-batch capacity, which leaves room for bursts and failover. Then I would load test at peak and at low traffic, check p95 and p99, and tune the wait.",
+  "points": [
+   "Simplified worst case: queue wait plus one in-flight batch plus the request's own pass",
+   "Rule out batch sizes whose pass time leaves no room in the 50 ms budget",
+   "Choose a cap near 16 with a maximum wait of a few milliseconds",
+   "Size the GPU count from throughput at that batch size, with headroom",
+   "Load test at peak and low traffic and watch p95 and p99"
+  ],
+  "explanation": "The key idea is that batching trades latency for throughput, and a latency target caps how far you can push it. Throughput per GPU is batch size divided by pass time: about 167 queries per second at batch 1, 1,230 at batch 16, 1,455 at batch 32 and 1,422 at batch 64. Going from 16 to 32 adds only about 18% throughput but nearly doubles the pass time, and 64 adds nothing at all. That is why a modest cap is the right call.\n\nThe common mistake is to count only the forward pass. Under load, a request often arrives while another batch is running, so it waits for that batch, then for its own. Another mistake is to run GPUs close to 100% busy. Near full load, queues grow quickly and p95 climbs far faster than the average, so headroom is part of meeting the target, not waste.",
+  "deeper": "Strong candidates add that the right settings shift with traffic. At night batches rarely fill, so the maximum wait sets latency, and autoscaling should add or remove replicas rather than changing the batch cap. They also check that query length varies little, since long inputs make some batches slower than the profile suggests.",
+  "tags": [
+   "batching",
+   "latency",
+   "capacity"
+  ],
+  "concepts": [
+   "throughput-vs-latency",
+   "service-level-objective",
+   "capacity-estimation",
+   "latency-budget"
+  ]
+ },
+ {
+  "id": "opt-0033",
+  "topic": "optimization",
+  "subtopic": "fitting a model onto a smaller GPU",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "You must serve a 13-billion-parameter chat model on a single GPU with 24 GB of memory (1 GB = 10⁹ bytes). In fp16 its weights take 26 GB, and its KV cache in fp16 takes about 0.8 MB per token (1 MB = 10⁶ bytes). Product wants up to 8 conversations at once, each with a 4,096-token context. Lay out your plan and the checks you would run.",
+  "answer": "First the budget. The fp16 weights, 26 GB, do not fit, and a full KV cache needs 8 × 4,096 × 0.8 MB ≈ 26.2 GB, which is more than the whole GPU. So both must shrink. With 4-bit weights the model takes about 6.5 GB, say 7.5 GB with quantization scales. Leaving about 2 GB for activations and runtime overhead gives roughly 14 GB for the cache. An 8-bit KV cache halves it to 0.4 MB per token, so 8 full contexts need about 13.1 GB, which just fits. If that is too tight, I would cap the context lower or allow fewer concurrent chats, and use paged cache allocation so short chats do not reserve full-length space. Then quality: compare the compressed model with the fp16 model on a held-out chat eval set, including long-context and rare-topic slices, and measure latency. If quality drops too far, I would try 8-bit weights with a shorter context, or a smaller distilled model.",
+  "points": [
+   "Do the memory budget: 26 GB of weights and about 26 GB of full KV cache, so neither fits as is",
+   "Quantize the weights to 4 bits, or 8 bits if quality needs it",
+   "Shrink the cache: 8-bit KV cache, a context cap or fewer concurrent chats, paged allocation",
+   "Leave headroom for activations and runtime overhead",
+   "Compare quality with the fp16 model on an eval set with slices, with a distilled model as fallback"
+  ],
+  "explanation": "This question tests whether you budget memory before choosing a technique. Serving memory is weights plus KV cache plus overhead, and the KV cache scales with concurrent requests times context length. Here the cache is as large as the weights, so shrinking only the weights is not enough.\n\nThe common mistake is to quantize the weights to 8 bits, see 13 GB, and declare that it fits. That leaves about 9 GB after overhead, room for about 11,000 fp16 cache tokens, while the requirement is 32,768. The service would load and then run out of memory under real traffic, usually at the worst moment. Another mistake is to skip the quality check. Four-bit weights and an 8-bit cache both add error, and the damage is often worst on long contexts and rare topics, so the evaluation needs those slices, not just an overall score.",
+  "deeper": "Interviewers often push on the tradeoffs. Strong candidates explain that cutting context hurts users with long chats, while cutting concurrency raises queueing at peaks. They might propose summarizing old turns to keep context short, and they set a hard admission limit so the server rejects or queues requests instead of crashing when the cache is full.",
+  "tags": [
+   "memory",
+   "serving",
+   "quantization"
+  ],
+  "concepts": [
+   "quantization",
+   "kv-cache",
+   "knowledge-distillation"
+  ]
+ },
+ {
+  "id": "opt-0034",
+  "topic": "optimization",
+  "subtopic": "lossy vs exact speed-ups",
+  "format": "multi",
+  "difficulty": 3,
+  "prompt": "A team wants a faster LLM endpoint without re-running its quality evaluation. Ignoring tiny floating-point rounding differences, which of these changes can alter the distribution of text the model generates, so the evaluation must be re-run? Select all that apply.",
+  "options": [
+   "Quantizing the weights from 16-bit floats to 4-bit integers",
+   "Removing the 20% of attention heads scored as least important",
+   "Speculative decoding that accepts any draft token in the large model's top 5",
+   "Speculative decoding using the standard accept or reject sampling rule",
+   "Replacing the standard attention kernels with FlashAttention kernels",
+   "Caching keys and values of earlier tokens instead of recomputing them"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "A change is safe to ship without re-evaluating only if it computes the same function, or samples from the same distribution, as the original model.\n\nThree changes alter the model's behaviour. Four-bit quantization rounds every weight to one of 16 levels, which shifts the logits and so the generated text. Removing attention heads deletes part of the network, which is lossy even when the removed heads seem unimportant. Speculative decoding that accepts any draft token in the top 5 lets the small model's choices through even when the large model would rarely pick them, so the output drifts toward the draft model.\n\nThree changes keep outputs the same. Standard speculative decoding accepts a draft with probability min(1, p / q) and resamples on rejection, which provably reproduces the large model's distribution. FlashAttention computes exact attention, only in a different order, so results differ by rounding alone. A KV cache stores keys and values that would otherwise be recomputed identically, so it saves work without changing the result.\n\nThe common trap is to file all of speculative decoding as either safe or unsafe. Whether it is exact depends on the accept rule.",
+  "deeper": "In practice even exact changes can shift outputs slightly, because a different order of floating-point additions can flip a near-tie under greedy decoding. Strong candidates still run a quick regression check after any serving change, but save the full evaluation for lossy ones such as quantization, pruning or swapping in a distilled model.",
+  "tags": [
+   "llm",
+   "serving",
+   "quality"
+  ],
+  "concepts": [
+   "quantization",
+   "speculative-decoding",
+   "flash-attention",
+   "kv-cache"
+  ]
+ },
+ {
+  "id": "opt-0035",
+  "topic": "optimization",
+  "subtopic": "what the KV cache holds",
+  "format": "multi",
+  "difficulty": 1,
+  "prompt": "A transformer decoder generates a reply one token at a time, and it keeps a KV cache so it does not redo work for earlier tokens. Which of these does the KV cache store? Select all that apply.",
+  "options": [
+   "Key vectors for every earlier token, at every attention layer",
+   "Value vectors for every earlier token, at every attention layer",
+   "Query vectors for every earlier token, at every attention layer",
+   "The projection weight matrices that turn hidden states into keys",
+   "The output logits over the vocabulary for every earlier position"
+  ],
+  "answer": [
+   0,
+   1
+  ],
+  "explanation": "At each step, the new token's query is compared with the keys of all earlier tokens, and the resulting weights are used to average their values. Those keys and values never change once computed, because a causal mask stops earlier tokens from seeing later ones. So the model stores them, layer by layer, and only computes the new token's key and value at each step. That is what the KV cache holds.\n\nQueries of earlier tokens are not needed again. Each query is used once, to compute the attention output for its own position, and later tokens only look at past keys and values. The projection weights are part of the model, loaded once and shared by every request, so they are not part of any request's cache. Logits for earlier positions are thrown away after the token at that position is chosen, since generation only needs the logits for the newest position.",
+  "deeper": "This is why the cache grows with every token: 2 (keys and values) × layers × key-value heads × head size × tokens × bytes per number. Strong candidates connect it to serving limits, since at long contexts the cache can rival the weights in size.",
+  "tags": [
+   "kv-cache",
+   "llm",
+   "inference"
+  ],
+  "concepts": [
+   "kv-cache",
+   "causal-mask"
+  ]
+ },
+ {
+  "id": "opt-0036",
+  "topic": "optimization",
+  "subtopic": "shrinking KV cache memory",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A contract-review assistant handles very long documents, and the KV cache of a single long request uses too much GPU memory. Which of these changes reduce the KV cache memory one request can take, with the number of layers and the head size unchanged? Select all that apply.",
+  "options": [
+   "Moving to a version of the model trained with 8 key-value heads in place of 32",
+   "Storing the cached keys and values as 8-bit numbers instead of 16-bit floats",
+   "Capping each request's context at 8,192 tokens instead of 32,768 tokens",
+   "Quantizing the model weights to 4 bits while keeping the cache in 16-bit floats",
+   "Computing attention with FlashAttention instead of the standard kernels",
+   "Raising the batch size so that more requests share each forward pass"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "KV cache memory for one request is 2 × layers × key-value heads × head size × tokens × bytes per number. With layers and head size fixed, the levers are key-value heads, bytes per number and tokens.\n\nGrouped-query attention with 8 key-value heads instead of 32 cuts the cache to a quarter, because several query heads share each cached key and value head. An 8-bit cache halves the bytes per number. A context cap of 8,192 tokens instead of 32,768 cuts the worst-case cache per request to a quarter.\n\nQuantizing the weights frees memory for the cache, which helps overall, but the cache of one request stays exactly the same size. FlashAttention avoids storing the n × n attention score matrix during the computation, yet the keys and values it reads are cached just as before. A larger batch serves more requests at once, so total cache memory goes up, while each request's share is unchanged.",
+  "deeper": "A strong candidate adds the tradeoffs. Grouped-query attention needs a model trained or adapted for it, an 8-bit cache can slightly hurt quality on long contexts, and a context cap may cut off parts of long contracts, so it may need chunking or retrieval instead.",
+  "tags": [
+   "kv-cache",
+   "memory",
+   "llm"
+  ],
+  "concepts": [
+   "kv-cache",
+   "grouped-query-attention",
+   "quantization"
+  ]
+ },
+ {
+  "id": "opt-0037",
+  "topic": "optimization",
+  "subtopic": "summing gradients across GPUs",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "In data-parallel training on 8 GPUs, each GPU computes gradients on its own slice of the batch. Before the optimizer step, a collective communication operation sums these gradients and leaves the full result on every GPU, so all 8 copies of the model apply the same update. This operation is called ______.",
+  "answer": "all-reduce",
+  "accept": [
+   "allreduce",
+   "ring all-reduce",
+   "ring allreduce",
+   "all reduce"
+  ],
+  "explanation": "All-reduce combines a value from every worker, usually by summing, and gives every worker the combined result. In data parallelism each GPU holds a full copy of the model, so every GPU needs the summed or averaged gradient to make the same update and keep the copies in sync.\n\nThe common mistake is to answer reduce. A plain reduce sends the sum to a single GPU only, and the others would still need a broadcast to receive it. Another near miss is all-gather, which collects each GPU's piece so everyone has all the pieces, but does not add them up. In fact a common way to implement all-reduce is a reduce-scatter, where each GPU ends up with the sum for one slice of the gradients, followed by an all-gather of those slices. Done in a ring, each GPU sends about 2 × (N − 1) / N times the gradient size, which barely grows with the number of GPUs.",
+  "deeper": "Interviewers may ask how to hide this communication cost. Strong candidates mention starting the all-reduce for later layers' gradients while the backward pass is still computing earlier layers, grouping small tensors into larger buckets, and using gradient accumulation to all-reduce less often.",
+  "tags": [
+   "distributed",
+   "training"
+  ],
+  "concepts": [
+   "data-parallelism"
+  ]
+ },
+ {
+  "id": "opt-0038",
+  "topic": "optimization",
+  "subtopic": "fine-tuning a 7B model on few GPUs",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "You need to fine-tune a 7-billion-parameter language model for a medical-coding task on 2 GPUs with 24 GB of memory each (1 GB = 10⁹ bytes). Compare full fine-tuning with sharding, LoRA and quantized LoRA (QLoRA), with rough memory numbers for each, and say which you would pick.",
+  "answer": "Full fine-tuning with Adam in mixed precision needs about 16 bytes per parameter: 16-bit weights and gradients, an fp32 master copy and two fp32 Adam moments. That is about 112 GB before activations. Sharding it across both GPUs still leaves about 56 GB each, so it only fits with heavy CPU offloading, which is slow. LoRA freezes the base model in 16-bit, about 14 GB, and trains small adapters. Even 20 million adapter parameters with their optimizer state need well under 1 GB. With gradient checkpointing to limit activations, this fits on one 24 GB GPU, so the two GPUs can run data parallel. QLoRA stores the frozen base in 4 bits, about 3.5 GB plus scales, which leaves room for longer inputs or bigger batches, at some cost in speed and a small risk to quality. I would pick LoRA in 16-bit, switch to QLoRA if long inputs push memory, and compare the result with the base model on a held-out set.",
+  "points": [
+   "Full fine-tuning at about 16 bytes per parameter is about 112 GB, still about 56 GB per GPU when sharded",
+   "LoRA keeps a frozen 16-bit base of about 14 GB plus small adapters, which fits one GPU",
+   "QLoRA cuts the base to about 3.5 GB in 4 bits, with more room but slower steps and slight quality risk",
+   "Gradient checkpointing keeps activation memory in check",
+   "Pick one with reasons and validate it on a held-out set"
+  ],
+  "explanation": "The deciding numbers come from what each method must keep in memory. Full fine-tuning updates every weight, so it stores a gradient and Adam state for all 7 billion parameters. LoRA freezes the base, so only the adapters need gradients and optimizer state, and the frozen weights need just their 16-bit copy. QLoRA shrinks that frozen copy further by storing it in 4 bits and turning it back into 16-bit numbers on the fly during each forward pass.\n\nThe most common mistake is to count only the weights. A candidate sees 14 GB for 16-bit weights, notes 48 GB in total across two GPUs, and concludes that full fine-tuning fits. Gradients and Adam state make it about eight times larger. Another mistake is to forget activations, which grow with batch size and sequence length and can exceed the weights on long medical notes. That is why gradient checkpointing or a smaller micro-batch is part of the plan.",
+  "deeper": "Interviewers often ask about quality. Strong candidates say LoRA usually comes close to full fine-tuning on narrow tasks like coding, and that the adapter rank and which layers get adapters are worth tuning. They also mention that adapters are small files, so one base model can serve several tasks.",
+  "tags": [
+   "fine-tuning",
+   "memory",
+   "lora"
+  ],
+  "concepts": [
+   "sharded-data-parallel",
+   "lora",
+   "quantization",
+   "gradient-checkpointing"
+  ]
  }
 ]
