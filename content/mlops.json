@@ -631,5 +631,421 @@
    "model-monitoring",
    "service-level-objective"
   ]
+ },
+ {
+  "id": "ops-0025",
+  "topic": "mlops",
+  "subtopic": "tracing an LLM app",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "An internal HR assistant answers policy questions using retrieval over the company handbook. An employee reports that yesterday it gave the wrong number of parental leave weeks. The team only logs each user question and the final answer, so they cannot tell what went wrong. Which per-request trace would best let them find out whether the fault was in retrieval, the prompt or the model?",
+  "options": [
+   "The question, final answer, model version, total latency and an error flag, logged for every request",
+   "The final answer and its token cost, plus a nightly snapshot of the whole handbook index and its embeddings",
+   "Prompt template version, retrieved passages with document IDs, tool calls, and tokens and latency per step",
+   "The question, the final answer, the sampling temperature used and a thumbs-up or thumbs-down rating"
+  ],
+  "answer": 2,
+  "explanation": "To debug one bad answer you need to see what the model actually saw and did on that request. The retrieved passages show whether the right handbook section was found. If it was missing, the fault is retrieval. If it was there and the answer still got the number wrong, the prompt or the model is at fault. If the passage itself was out of date, the handbook is. The prompt template version tells you which instructions were in force, since prompts change often. Tool calls, tokens and latency per step complete the picture and also feed cost and speed dashboards.\n\nModel version, total latency and an error flag per request tell you which model answered and that nothing crashed. They still hide what context the model was given, so you cannot tell a retrieval miss from a model mistake. A snapshot of the index shows what could have been retrieved, not what was retrieved for this question, and retrieval results depend on the exact query. A rating and the temperature tell you the answer was bad and how random the sampling was, but not why it was wrong.",
+  "deeper": "A strong answer ties every step to one trace ID, so a thumbs-down or a complaint links straight to the prompt, context and tool calls behind it. Interviewers may also ask about privacy: traces hold user text, so they need access controls, retention limits and redaction of personal data.",
+  "tags": [
+   "llm",
+   "tracing"
+  ],
+  "concepts": [
+   "llm-observability"
+  ]
+ },
+ {
+  "id": "ops-0026",
+  "topic": "mlops",
+  "subtopic": "online quality signals for LLM features",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "An airline's customer chatbot answers baggage and booking questions. Live conversations come with no ground-truth labels. Which of these signals tell the team something useful about answer quality in production? Select all that apply.",
+  "options": [
+   "The share of conversations where the customer asks to speak to a human agent",
+   "BLEU overlap between each live answer and the reference answer for that question",
+   "How often users click to regenerate an answer or rephrase the same question",
+   "Average answer length in tokens, with longer answers read as more helpful",
+   "Scores from an LLM judge on a daily random sample of chats, checked against human reviewers",
+   "The validation loss recorded at the end of the model's last fine-tuning run"
+  ],
+  "answer": [
+   0,
+   2,
+   4
+  ],
+  "explanation": "With no labels, you look for behaviour that shows an answer failed, and for an independent grade on a sample of answers. A request for a human is a strong sign the bot did not solve the problem. Regenerating or asking the same thing again suggests the first answer missed. A judge model that scores a random sample against a rubric gives a direct quality reading at low cost, and checking it against human reviewers on part of the sample shows whether the judge can be trusted.\n\nBLEU needs a reference answer, and live questions do not come with one, so it cannot be computed. Even with references, word overlap rewards matching phrasing rather than being correct. Answer length is not quality. Longer answers can be padded or wrong, and judges and users can be swayed by length. The last fine-tuning validation loss is a single fixed number from before launch. It cannot change as live traffic changes, so it tells you nothing about current answers.",
+  "deeper": "Explicit ratings help too, but few users leave them and those who do skew unhappy, so treat them as a trend rather than a score. A strong candidate adds that behavioural signals need care: a customer may ask for a human because policy requires it, so compare rates over time and by topic rather than reading one number alone.",
+  "tags": [
+   "llm",
+   "monitoring"
+  ],
+  "concepts": [
+   "llm-observability",
+   "llm-as-judge"
+  ]
+ },
+ {
+  "id": "ops-0027",
+  "topic": "mlops",
+  "subtopic": "pinned environments",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A churn model was trained and saved as a pickle file. Months later, the serving container is rebuilt from a requirements file that lists library names without version numbers. After the rebuild the service logs a warning that the model was saved with an older version of the library, and some scores differ slightly from those logged for the same inputs last month. Nothing else changed. What is the best fix?",
+  "options": [
+   "Pin exact library versions and build the serving image from the same locked environment used for training",
+   "Retrain the model every night so it always matches whatever library versions the server has installed",
+   "Silence the version warning, since small differences in scores are expected each time a service restarts",
+   "Add a drift monitor on the score distribution so the team is alerted when outputs move over time"
+  ],
+  "answer": 0,
+  "explanation": "The model file holds objects whose meaning depends on the library code that loads them. When the rebuild pulled newer versions, that code changed. Defaults, numerical routines or the internal layout of saved objects can all shift, which is exactly what the warning and the small score changes show. Pinning exact versions in a lock file, and building both training and serving from it, makes the environment part of the model release, so this cannot happen silently.\n\nRetraining every night on whatever is installed hides the problem rather than fixing it. Each rebuild could still change behaviour, and you could never reproduce an old model. Silencing the warning is wrong because a healthy service gives the same score for the same input every time, so different scores mean something changed. A drift monitor watches for changes caused by the world. It might notice the shift, but it does not fix the cause, and it would point the team toward drift when the real issue is the environment.",
+  "deeper": "A strong answer also mentions recording the environment, such as the image digest or lock file hash, in the model registry next to the weights. Upgrades then become deliberate: bump versions, rerun evaluation, compare scores on a fixed set of inputs, and release like any other change.",
+  "tags": [
+   "environments",
+   "containers"
+  ],
+  "concepts": [
+   "reproducibility",
+   "training-serving-skew"
+  ]
+ },
+ {
+  "id": "ops-0028",
+  "topic": "mlops",
+  "subtopic": "online and offline predictions disagree",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A food delivery app serves a delivery-time model online. To check it, the team takes 2,000 logged requests and reruns them through the offline batch pipeline used to build training data. For about 15% of requests the offline prediction differs from the one served, sometimes by more than 10 minutes. The model file is the same in both. How would you track down the cause, and what are the likely culprits?",
+  "answer": "Since the model file is identical, the difference must come from the inputs or the code around the model. I would log the exact feature vector served for each request and compare it, column by column, with the vector the offline pipeline builds for the same request. The columns that differ point to the cause. Likely culprits are two separate implementations of one feature, such as a rolling average over different windows, missing values filled differently, for example 0 online but the median offline, and time handling, such as offline code using UTC event time while the service uses local server time. Other suspects are different library versions or preprocessing artifacts, such as an encoder that maps new restaurants to different codes, and offline features that use data not yet available at request time. The lasting fix is one shared feature definition, training on logged served features, and a parity test in CI.",
+  "points": [
+   "Model is the same, so diff the inputs: log served features and compare column by column",
+   "Two implementations of one feature, such as different windows or joins",
+   "Missing-value defaults that differ between online and offline code",
+   "Time zone, timestamp or point-in-time differences, including offline using later data",
+   "Library or preprocessing artifact versions, such as encoders and scalers",
+   "Fix with one shared feature definition, logged features and a parity test"
+  ],
+  "explanation": "The key move is to stop looking at the model and compare inputs. The same model file with the same feature vector must give the same output, so any gap lives in how features are built. Logging served feature vectors and diffing them against the offline rows turns a vague problem into a list of columns that disagree. The 15% of affected requests often share a trait, such as late-night orders or new restaurants, that points to the cause.\n\nThe common mistake is to treat this as drift and retrain. Drift is a change in the world over time, but here the same requests give two different answers today. Retraining keeps both code paths, so the gap comes back. Another mistake is to trust the offline pipeline as the truth. Offline code can be the buggy one, for example by joining data that arrived after the order was placed, which the live service could never see.",
+  "deeper": "Interviewers like a concrete guard. A strong answer proposes a daily parity job that replays a sample of live requests offline and alerts when more than a small share of predictions differ beyond a tolerance. It also says which side to trust: the online path defines what the model really sees, so training data is often rebuilt from logged served features.",
+  "tags": [
+   "skew",
+   "debugging"
+  ],
+  "concepts": [
+   "training-serving-skew",
+   "feature-store"
+  ]
+ },
+ {
+  "id": "ops-0029",
+  "topic": "mlops",
+  "subtopic": "a model that shapes its own labels",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "An online marketplace cancels any order its fraud model scores above 0.8. Fraud labels come from chargebacks, which only exist for orders that went through. Each quarter the team retrains and evaluates on orders with a known outcome, and each time the offline metrics look better. The team suspects the numbers flatter the model. What is the soundest way to get an honest measure of performance and clean data for future retraining?",
+  "options": [
+   "Label every cancelled order as fraud, since the model was confident, and add those rows to the next training set",
+   "Retrain every week instead of every quarter, so the model keeps up with new fraud patterns sooner",
+   "Reweight the training rows so that fraud and non-fraud orders count equally before each retrain",
+   "Let a small random slice of orders through whatever their score, and measure and retrain on their outcomes"
+  ],
+  "answer": 3,
+  "explanation": "The model decides which orders get a label. Orders it cancels never produce a chargeback, so the data has a hole exactly where the model acts. Metrics computed on orders that went through only measure the model on the easier part of traffic, and the fraud it blocks is invisible. Worse, the next model never sees those blocked patterns labelled as fraud, so it may learn to let them through. A random slice of orders exempt from cancelling gives outcomes across the full range of scores, unbiased by the model's own choices. You pay for it in some accepted fraud, so the slice is kept small and often capped by order value.\n\nLabelling every cancelled order as fraud feeds the model its own guesses back as truth, so its false positives become permanent and its precision looks perfect. Retraining more often repeats the same biased sampling, just faster. Reweighting the classes fixes imbalance, but the rows still come only from orders the model allowed, so the hole stays.",
+  "deeper": "This is a feedback loop, and it appears wherever the model's action hides the outcome: blocked logins, rejected applications, items never shown in a feed. A strong candidate mentions weighting holdout rows by the inverse of their sampling rate when estimating metrics, and agreeing the cost of the holdout with the business up front, since it means knowingly accepting some fraud.",
+  "tags": [
+   "feedback-loop",
+   "fraud"
+  ],
+  "concepts": [
+   "feedback-loop"
+  ]
+ },
+ {
+  "id": "ops-0030",
+  "topic": "mlops",
+  "subtopic": "lineage during an audit",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A regulator asks a health insurer two questions about the claims-triage model now in production: exactly which data and code produced it, and who approved its release. Explain how a model registry with lineage answers these questions, and what has to be in place before the audit for it to work.",
+  "answer": "The production endpoint records which registered model version it serves. In the registry, that version links to the training run that created it. The run record holds the ID of the data snapshot it read, the code commit, the config and hyperparameters, the environment or container image, and the evaluation report. The registry also logs each stage change, such as staging to production, with who approved it, when, and the evidence they saw. So the answer is a chain of IDs you can follow from what is serving today back to its inputs. For this to work, the pipeline must record these links automatically on every run, data snapshots must be immutable and kept for the retention period, no deploy path may skip the registry, and approval must be a recorded step rather than a chat message.",
+  "points": [
+   "Serving endpoint points to a registry version, which links to its training run",
+   "Run record holds data snapshot ID, code commit, config, environment and evaluation report",
+   "Registry logs stage changes with approver, time and evidence",
+   "Links are recorded automatically by the pipeline, not by hand",
+   "Snapshots are immutable and retained, and no deploy path bypasses the registry"
+  ],
+  "explanation": "Lineage is a chain of records, each pointing to the next, so an auditor's question becomes a lookup rather than an investigation. The registry is the hub because it sits between training and serving: everything that produced the model points into it, and the serving system points out of it.\n\nThe common mistake is to describe a registry as a folder of model files with names like `triage_v7_final.pkl`. That stores the artifact but answers neither question. Without the run link you cannot name the data or code, and without recorded stage changes you cannot name the approver. A second mistake is to rely on people to fill in this metadata. Under deadline pressure someone skips it, and the one model that matters has a gap. Lineage only holds up if the pipeline writes it every time and the deploy step refuses models without it.",
+  "deeper": "Interviewers may push on data retention. If the data snapshot is only a pointer to a table that has since been overwritten, the lineage is broken. Strong answers mention immutable, dated snapshots or table versions kept as long as the regulator requires, plus access controls, since the snapshots hold health data.",
+  "tags": [
+   "lineage",
+   "governance"
+  ],
+  "concepts": [
+   "model-registry",
+   "reproducibility"
+  ]
+ },
+ {
+  "id": "ops-0031",
+  "topic": "mlops",
+  "subtopic": "serving cost per prediction",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "An image-moderation model runs on 2 GPU instances that stay on all month (30 days, 24 hours a day). Suppose each instance costs $3.60 per hour. One instance can handle 20 predictions per second at full load, but average utilization over the month is 25%. What is the serving cost per 1,000 predictions? Give it in dollars to 2 decimal places.",
+  "answer": 0.2,
+  "tolerance": 0.005,
+  "check": "instances = 2\nprice_per_hour = 3.60\nhours = 30 * 24\ncapacity_per_sec = 20\nutil = 0.25\ncost = instances * price_per_hour * hours\npreds = instances * capacity_per_sec * util * hours * 3600\nresult = cost / (preds / 1000)",
+  "explanation": "You pay for instance hours whether or not they are busy, but you only get the predictions that actually arrive.\n\n- Hours in the month: 30 × 24 = 720\n- Monthly cost: 2 × $3.60 × 720 = $5,184\n- Predictions per second across both instances at 25% utilization: 2 × 20 × 0.25 = 10\n- Predictions per month: 10 × 3,600 × 720 = 25,920,000\n- Cost per 1,000: $5,184 / 25,920 = $0.20\n\nThe common mistake is to use full capacity, 40 predictions per second. That gives 103,680,000 predictions and $0.05 per 1,000, four times too cheap. Utilization divides straight into the unit cost, so a service that idles three quarters of the time costs four times as much per prediction as one that runs flat out.",
+  "deeper": "This calculation drives real setup choices. Strong answers name the levers: scaling down at night, batching requests on the GPU to raise throughput, a smaller or quantized model, or moving work that is not urgent to a batch job that runs near full utilization. They also note an online service cannot target 100%, since it needs headroom for spikes and latency targets.",
+  "tags": [
+   "cost",
+   "serving"
+  ],
+  "concepts": [
+   "batch-vs-online-inference"
+  ]
+ },
+ {
+  "id": "ops-0032",
+  "topic": "mlops",
+  "subtopic": "autoscaling a GPU service",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A speech-to-text model runs on GPU servers behind a load balancer, with autoscaling set to add a server when average CPU use passes 70%. During a traffic spike, p95 latency triples and request queues grow, but CPU use stays near 25% and no servers are added. A new server takes about 6 minutes to boot and load the model. Which change best fixes this?",
+  "options": [
+   "Lower the CPU target to 20% so the autoscaler reacts sooner, and keep the rest of the setup as it is",
+   "Scale on queue depth or in-flight requests per server, and keep warm spare servers for the slow start",
+   "Scale on GPU memory use per server, since a busy server holds more data in memory than an idle one",
+   "Keep scaling on CPU but give each server more CPU cores, so the CPU no longer limits how fast it serves"
+  ],
+  "answer": 1,
+  "explanation": "The heavy work happens on the GPU, while the CPU mostly moves data in and out. So CPU use can sit low while the GPU is saturated and requests pile up. Queue depth or concurrent requests per server measure what drives latency directly: how much work is waiting. A 6-minute start-up also means any scale-out arrives late, so you keep some warm headroom, or scale earlier, to absorb a spike while new servers load.\n\nLowering the CPU target to 20% would add servers in this spike, but only by luck. The signal still does not track GPU load, so it would scale out when the GPU is idle and miss spikes that barely raise CPU use. GPU memory is mostly taken by the model weights and buffers reserved at start-up, so it stays nearly flat whether the server is busy or idle. Adding CPU cores does nothing when the CPU was never the bottleneck.",
+  "deeper": "Interviewers often follow up on targets. A good answer sets the queue or concurrency target from the latency objective, for example the number of in-flight requests a server can hold while keeping p95 under the agreed limit. It also mentions scaling down slowly, since removing a server that took 6 minutes to warm up and then needing it back is costly.",
+  "tags": [
+   "autoscaling",
+   "gpu"
+  ],
+  "concepts": [
+   "throughput-vs-latency",
+   "service-level-objective"
+  ]
+ },
+ {
+  "id": "ops-0033",
+  "topic": "mlops",
+  "subtopic": "a deploy that predicts a constant",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "Twenty minutes after a new version of a messaging app's spam model is deployed, the trust team notices that every message gets a spam score of exactly 0.12. The service shows no errors and latency is normal. Walk through how you would handle this incident, from detection to making sure it cannot happen again.",
+  "answer": "First, mitigate: roll back to the previous model version from the registry, since that is fast and the old model was known to work, then confirm scores look normal again. Spam was flowing meanwhile, so I would tell the trust team and check what got through. Then find the root cause by replaying logged requests against the bad version in staging. A constant score almost always means the model sees constant inputs or ignores them: features arriving null and filled with defaults, a renamed column that new code silently drops, a missing or mismatched preprocessing artifact such as a tokenizer, or the wrong file, such as a placeholder baseline, registered as the model. Finally, add guards: a pre-deploy test that scores a fixed set of known messages and fails if scores barely vary or differ sharply from the current model, a canary with an automatic check on score spread, and an alert when prediction variance collapses.",
+  "points": [
+   "Mitigate first: roll back to the last good version from the registry and confirm recovery",
+   "Assess impact, such as spam let through, and keep the trust team informed",
+   "Reproduce offline by replaying logged requests against the bad version",
+   "Suspect constant inputs: null features, dropped columns, missing preprocessing, wrong artifact",
+   "Guards: fixed-set test before deploy, canary with a score-spread check, variance alert"
+  ],
+  "explanation": "A constant output with no errors is a classic silent failure. The service is healthy by every operational metric, so only a check on the predictions themselves catches it. That is why the first move is to roll back, not to debug live. Rolling back is quick and safe because the registry keeps the previous version ready, and debugging can then happen without users being harmed.\n\nThe common mistake is to dive into the model code while bad scores keep flowing. Another is to stop at the immediate bug, such as a renamed field, without asking why the release process let a broken model reach users. The lasting value of the incident is the guard: a release check that compares the new model's scores on a fixed set of inputs with the current model's would have failed this deploy in minutes, before any user saw it.",
+  "deeper": "In an interview, mention a blameless post-mortem with a timeline, impact and actions with owners. A sharp follow-up is how to detect this automatically. Good answers track the spread of scores, such as the standard deviation or the number of distinct values per minute, since a check on the mean can miss a constant that happens to sit near the old average.",
+  "tags": [
+   "incident",
+   "rollback"
+  ],
+  "concepts": [
+   "model-monitoring",
+   "canary-release",
+   "model-registry"
+  ]
+ },
+ {
+  "id": "ops-0034",
+  "topic": "mlops",
+  "subtopic": "from notebook to production",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A data scientist has built a churn model in a notebook. It reads a CSV exported by hand and has a good validation AUC. The business wants a fresh churn score for every customer each week, for the retention team to act on. Describe the steps to turn this into a production system.",
+  "answer": "First, move the code out of the notebook into versioned modules with tests for the feature logic, and pin the environment in a container so it runs the same anywhere. Next, replace the hand export with a training pipeline that reads the source tables directly, validates the data, splits by time, trains, and evaluates against the current model. Each run logs its data snapshot, code commit, config and metrics. A model that passes is registered in a model registry and promoted through a recorded approval. Since scores are needed weekly, serving is a scheduled batch job that loads the approved version, scores every customer and writes results to a table the retention team uses. CI runs the tests on every change. Finally, monitor data quality, feature and score drift, and job failures, compare predictions with real churn as labels arrive, and retrain on a schedule or when performance drops.",
+  "points": [
+   "Refactor into versioned, tested code with a pinned, containerized environment",
+   "Automated training pipeline from source data with validation and a time-based split",
+   "Evaluate against the current model and register the winner with lineage",
+   "A weekly need means scheduled batch scoring that writes to a table",
+   "Monitor data quality, drift, job health and real churn outcomes, with a retraining plan"
+  ],
+  "explanation": "The notebook proves the idea works once, on one export. Production needs it to work every week without a person in the loop, and to be explainable later. Each step removes a manual or fragile part. Code in modules can be tested and reviewed. A pinned container removes the works-on-my-laptop problem. A pipeline that reads source tables removes the hand export, which is also where training data can quietly differ from what scoring sees.\n\nThe common mistake is to wrap the notebook model in a real-time API because that feels like production. The business needs a weekly score, so a batch job is simpler, cheaper and easier to monitor. A second mistake is to stop at deployment. Churn labels arrive weeks later, so without monitoring and a link back to real outcomes, the team will not notice when the model stops working.",
+  "deeper": "Interviewers often ask what you would build first. A strong answer starts small, with a scheduled pipeline, a registry entry and basic data checks, then adds automated retraining once the team has seen a few cycles of real results. It also notes that the retention team's offers change who churns, which affects future labels.",
+  "tags": [
+   "pipelines",
+   "deployment"
+  ],
+  "concepts": [
+   "ci-cd-for-ml",
+   "model-registry",
+   "model-monitoring"
+  ]
+ },
+ {
+  "id": "ops-0035",
+  "topic": "mlops",
+  "subtopic": "monitoring an LLM support assistant",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A telecom company launches an LLM assistant in its app. It answers billing and plan questions using retrieval over help articles, and it can open a refund request through a tool. Design the monitoring you would run for the first three months after launch.",
+  "answer": "I would trace every conversation with the prompt version, retrieved articles, tool calls, tokens and latency. For operations, I would track latency percentiles per step, error and tool failure rates, and cost per conversation against a budget. For quality, an LLM judge scores a daily random sample against a rubric covering correctness, grounding in the retrieved articles and tone, and human reviewers grade part of the same sample each week to check the judge. Hand-offs to agents, repeat contacts and ratings sit alongside. Safety gets its own track: every refund the tool opens is logged and a sample is audited, and alerts fire on personal data in answers, prompt injection attempts and policy breaches, each handled as an incident. Finally, I would cluster user questions to spot shifts in what people ask, such as a new plan or an outage, and watch for retrieval misses. Failures found go into the evaluation set.",
+  "points": [
+   "Per-conversation traces: prompt version, retrieved context, tool calls, tokens, latency",
+   "Operational: latency per step, errors, tool failures, cost per conversation against a budget",
+   "Quality: daily sampled judge scores checked by human review, plus hand-off and repeat-contact rates",
+   "Safety: audit refund tool calls, alert on data leaks, injection and policy breaches as incidents",
+   "Input shift: cluster questions over time and watch retrieval misses and new topics",
+   "Feed failures back into the evaluation set"
+  ],
+  "explanation": "An LLM assistant can fail in ways a classic model cannot: a fluent answer that is wrong, an action taken by mistake, or a cost that creeps up as conversations get longer. So monitoring needs layers. Operational metrics say whether it runs. Sampled grading says whether it answers well. Safety checks catch rare but costly events, and they need their own alerts because a sample may miss them. Topic tracking shows when users start asking things the help articles do not cover, which is often the first sign that quality will fall.\n\nThe common mistake is to rely only on an LLM judge. A judge can share the assistant's blind spots and shift when its own prompt changes, so it needs regular checks against people. Another mistake is to treat the refund tool like text. An action with money attached needs a full log and audits, not just a quality score on the chat.",
+  "deeper": "Interviewers often ask how you would size the human review. A good answer reviews more in the first weeks, when failure modes are unknown, then shifts effort toward the risky slices the judge flags. Strong candidates also plan a fallback, such as switching off the refund tool on its own, if safety alerts spike.",
+  "tags": [
+   "llm",
+   "monitoring"
+  ],
+  "concepts": [
+   "llm-observability",
+   "llm-as-judge",
+   "model-monitoring"
+  ]
+ },
+ {
+  "id": "ops-0036",
+  "topic": "mlops",
+  "subtopic": "switching between two environments",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A team runs two complete copies of its prediction service. One serves all live traffic with the current model. The other sits idle with the new model installed and tested. At release time the router moves all traffic to the new copy at once, and the old copy keeps running so traffic can be moved back within seconds. This release pattern is called a ______ deployment.",
+  "answer": "blue-green",
+  "accept": [
+   "blue green",
+   "blue/green",
+   "blue-green deployment",
+   "blue green deployment",
+   "red-black",
+   "red black",
+   "red/black"
+  ],
+  "explanation": "In a blue-green deployment there are two full copies of the service, often called blue and green. One serves all traffic while the other gets the new version and is tested in place. The switch is a single change at the router, and because the old copy keeps running, rolling back is just switching back.\n\nThe common mistake is to call this a canary release. A canary sends only a small share of traffic to the new version and grows it step by step, so a bad model only reaches a few users. Blue-green moves everyone at once. Its strength is a fast, clean rollback, not limited exposure. It also differs from a shadow deployment, where the new model sees live traffic but its outputs are never used.",
+  "deeper": "The cost of blue-green is running two full environments during the release. A strong answer notes what the switch does not undo: if the new model wrote bad scores to a database or triggered actions before rollback, moving traffic back leaves those in place. Teams often send a small canary share to the green side before the full switch.",
+  "tags": [
+   "deployment",
+   "rollback"
+  ],
+  "concepts": [
+   "canary-release"
+  ]
+ },
+ {
+  "id": "ops-0037",
+  "topic": "mlops",
+  "subtopic": "a retrained model that is worse",
+  "format": "multi",
+  "difficulty": 3,
+  "prompt": "A grocery delivery app predicts at checkout which orders will arrive late, and the operations team reassigns couriers for orders flagged as high risk. A retrained model beats the current one by 5 AUC points on the offline evaluation set of 200,000 orders. After launch, it catches clearly fewer late orders than the old model did. Which of these could explain the gap? Select all that apply.",
+  "options": [
+   "A new feature, the count of customer messages about the order, is partly written after the order is already late",
+   "The evaluation set is twice as large as at the last retrain, which makes the offline AUC estimate more precise",
+   "The labels in the new training data use a new definition of late, but live results are judged by the old one",
+   "The fixed evaluation set comes from last year, and the new training window now covers those same months",
+   "The retrain used a different random seed, and on 200,000 orders that alone can move AUC by 5 points",
+   "The old model's flags led to courier reassignments, so many risky orders in the new training data arrived on time"
+  ],
+  "answer": [
+   0,
+   2,
+   3,
+   5
+  ],
+  "explanation": "Each true option breaks the link between the offline number and live results. The message-count feature leaks the outcome. In historical rows it is complete, including messages sent because the order was already late, but at checkout it is near zero. The model leans on it offline and loses it live. If training labels follow a new definition of late while live results use the old one, the model is optimised for a different target from the one it is graded on. An evaluation set from months now inside the training window means the model is tested on rows it has seen, so its AUC is inflated. The feedback loop matters too: the old model's flags triggered reassignments that rescued risky orders, so the new data teaches the model that those patterns end on time, and it stops flagging them.\n\nA larger evaluation set gives a more precise estimate, which makes a 5-point gain more believable, not less. A different seed adds noise, but on 200,000 orders that noise is a small fraction of a point, and it would not favour the new model offline while hurting it live.",
+  "deeper": "A strong answer adds the check that would catch each cause: a point-in-time audit of features, a label definition recorded with every dataset version, an evaluation set drawn from the weeks after the training cutoff, and a small random holdout where flags are not acted on. Interviewers like candidates who question a big offline jump before celebrating it.",
+  "tags": [
+   "retraining",
+   "leakage"
+  ],
+  "concepts": [
+   "retraining-policy",
+   "data-leakage",
+   "feedback-loop"
+  ]
+ },
+ {
+  "id": "ops-0038",
+  "topic": "mlops",
+  "subtopic": "silent pipeline failures",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A hotel pricing model uses a feature holding competitors' average room price, refreshed every night by an upstream job. Nine days ago that job broke. Since then the feature pipeline has quietly reused the last value it had for each hotel. The pricing service showed no errors and normal latency, and booking labels take about 30 days to arrive. Which check would have caught this problem soonest?",
+  "options": [
+   "A weekly comparison of model accuracy against booking outcomes as soon as their labels arrive",
+   "Alerts on the pricing service's HTTP error rate and p99 latency, paging when either crosses its limit",
+   "A freshness check that alerts when a feature's source has not updated within its expected window",
+   "A schema check that every request contains each expected feature with the correct data type"
+  ],
+  "answer": 2,
+  "explanation": "A stale feature looks perfectly valid. The values are numbers in the right range, the type is right and the service runs fine, so only a check that asks when the data last changed will notice. A freshness check compares each feature's last update time with how often it should update, here once a night, and would have fired after the first missed run.\n\nAccuracy against outcomes would catch the damage eventually, but labels take about 30 days, so the model would have priced on old data for weeks first. Error rate and latency watch the service, not the data, and the service was healthy throughout. A schema check confirms each feature is present with the right type, and a reused old price passes it easily.\n\nThe same idea covers the other common silent failure, a feature that suddenly arrives empty and gets filled with a default. A completeness check on null or default-value rates against their normal level catches that one.",
+  "deeper": "In interviews, name freshness and completeness together as part of a data contract for each feature, with an expected update cadence and a normal null rate. A good follow-up is what the service should do when a check fails, such as falling back to a simpler model or a safe default price, rather than serving on stale inputs.",
+  "tags": [
+   "data-quality",
+   "monitoring"
+  ],
+  "concepts": [
+   "data-validation",
+   "model-monitoring"
+  ]
+ },
+ {
+  "id": "ops-0039",
+  "topic": "mlops",
+  "subtopic": "false alarms across many features",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "A churn model has 80 monitored features. Every night a drift test runs on each feature, and each test raises a false alarm 1% of the time when nothing has really changed. Assume no feature truly drifts during the month and all tests are independent. Over a 30-day month, on how many days would you expect on-call to receive at least one false drift alert? Give the answer to 1 decimal place.",
+  "answer": 16.6,
+  "tolerance": 0.05,
+  "check": "features = 80\nalpha = 0.01\ndays = 30\np_day = 1 - (1 - alpha) ** features\nresult = days * p_day",
+  "explanation": "Work out the chance of a quiet night first, then flip it.\n\n- Chance one test stays quiet: 1 − 0.01 = 0.99\n- Chance all 80 stay quiet on a night: 0.99⁸⁰ ≈ 0.448\n- Chance of at least one false alert on a night: 1 − 0.448 = 0.552\n- Expected days with an alert in 30: 30 × 0.552 ≈ 16.6\n\nSo on more than half of all days someone is paged about drift that is not there.\n\nThe common mistake is to treat 80 × 0.01 = 0.8 as the daily probability, which gives 24 days. That number is the expected count of false alerts per night, not the chance of getting at least one, because some nights bring two or three alerts at once. Over the month the expected total is 80 × 30 × 0.01 = 24 false alerts, spread over about 16.6 days. Both numbers teach the same lesson: a small false alarm rate per test adds up fast across many tests.",
+  "deeper": "Strong answers propose fixes. Correct for many tests, for example by splitting the error rate across features, alert only when drift persists for several days, focus alerts on the most important features, and require an effect size such as PSI above a set level instead of a bare p-value. Each trades a little sensitivity to real drift for far fewer false pages.",
+  "tags": [
+   "drift",
+   "alerting"
+  ],
+  "concepts": [
+   "data-drift",
+   "multiple-comparisons"
+  ]
+ },
+ {
+  "id": "ops-0040",
+  "topic": "mlops",
+  "subtopic": "downstream thresholds after a model swap",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A social app sends posts scoring 0.7 or higher on its abuse model to human review, and the review team can handle about 5,000 posts a day. A new model has higher AUC, but it was trained with abusive examples up-weighted. On a week of replayed traffic it scores about 14,000 posts a day at 0.7 or above. What should the team do before switching models?",
+  "options": [
+   "Recalibrate the new scores or pick a new threshold that keeps review near 5,000 a day, then check on a canary",
+   "Keep the 0.7 threshold, because a model with higher AUC will do better than the old one at any fixed threshold",
+   "Rescale the new scores linearly so their minimum and maximum line up with the old model's minimum and maximum",
+   "Keep 0.7 and let the review team work through the extra posts, since the backlog will settle once traffic does"
+  ],
+  "answer": 0,
+  "explanation": "AUC only measures how well a model ranks posts. It says nothing about what a score of 0.7 means. Up-weighting abusive examples in training pushes scores upward, so the old threshold now sits at a very different point in the new model's distribution, and review volume nearly triples. The fix is to set the operating point again for the new model. Calibrating its scores on recent labelled data, or mapping them onto the old model's score distribution, gives the scores a stable meaning, and the threshold is then chosen so about 5,000 posts a day go to review. Then check precision and recall at that point and confirm on a canary before the full switch.\n\nHigher AUC does not mean better results at a fixed threshold, since the two models' scores are on different scales. Matching the minimum and maximum aligns the ends of the range but not the middle, where the threshold sits, so volume can still be far off. Asking reviewers to absorb almost three times their capacity means harmful posts wait longer, and the backlog keeps growing, because the extra volume comes from the model, not from a traffic spike.",
+  "deeper": "Strong candidates treat the score as an interface. Thresholds, business rules and reports downstream all depend on its scale, so a model swap is also an interface change. A common practice is a calibration step in the serving pipeline, so a new model can drop in while scores keep a stable meaning. Interviewers may ask how to check calibration: a reliability plot on recent labelled data.",
+  "tags": [
+   "thresholds",
+   "calibration"
+  ],
+  "concepts": [
+   "calibration",
+   "decision-threshold",
+   "canary-release"
+  ]
  }
 ]
