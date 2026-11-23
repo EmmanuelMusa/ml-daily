@@ -133,5 +133,642 @@
    "matrix-factorization",
    "collaborative-filtering"
   ]
+ },
+ {
+  "id": "sysd-0006",
+  "subtopic": "collaborative vs content-based",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A music streaming service is choosing how to recommend songs. Which statement correctly contrasts collaborative filtering with content-based recommendation?",
+  "options": [
+   "Collaborative filtering needs song attributes such as genre and tempo, while content-based uses only other listeners' play history.",
+   "Collaborative filtering uses who played what and can find surprising matches, while content-based can score a new song from its attributes.",
+   "Content-based struggles most with brand-new songs that have no plays yet, while collaborative filtering can rank them well from day one.",
+   "The two use the same inputs, but collaborative filtering always relies on a deep network while content-based is a linear model."
+  ],
+  "answer": 1,
+  "explanation": "Collaborative filtering learns from behaviour: listeners who played the same songs probably share taste, so a song loved by people like you is a good bet. It never looks at the audio, which is why it can link a jazz track and a hip-hop track that the same crowd enjoys. Content-based recommendation scores a song by what it is, such as genre, tempo, lyrics or an audio embedding, compared with what the user liked before. That means a brand-new song can be scored on the day it is uploaded.\n\nThe option claiming collaborative filtering needs genre and tempo has the inputs swapped. The option about brand-new songs is also reversed: a song with no plays has nothing for collaborative filtering to learn from, which is the item cold-start problem, while content features exist from the start. Both families can be built as simple or deep models. Matrix factorisation is a classic collaborative method with no deep network, so model type is not what separates them.",
+  "deeper": "Interviewers like the follow-up \"so which would you build?\" A strong answer is a hybrid: content features carry new items and niche catalogues, and collaborative signals take over as plays build up. Mention the weakness of content-based alone too. It tends to recommend more of the same, since it only knows what the user already liked.",
+  "tags": [
+   "recsys",
+   "music"
+  ],
+  "concepts": [
+   "collaborative-filtering",
+   "content-based-filtering",
+   "cold-start"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0007",
+  "subtopic": "two-tower retrieval",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A job site uses a two-tower model to pull candidate jobs for each visitor from 8 million open postings. The user tower and the job tower each output a 128-number vector, and the score is their dot product. Which property of this design lets retrieval finish in a few milliseconds?",
+  "options": [
+   "The two towers share all their weights, so a single forward pass scores the user against every posting at once.",
+   "The job tower is small enough that running it on all 8 million postings during each request is still cheap.",
+   "Job vectors do not depend on the user, so they are computed ahead of time and searched with a nearest-neighbour index.",
+   "User and job features are crossed inside the network, so the most relevant postings come out directly without any index."
+  ],
+  "answer": 2,
+  "explanation": "The two towers only meet at the final dot product. Nothing about a job vector depends on who is searching, so the system can run the job tower over all 8 million postings offline and load the vectors into an approximate nearest-neighbour index. At request time it runs the user tower once and asks the index for the closest job vectors, which takes milliseconds.\n\nShared weights would not change the cost, since every posting would still need scoring. Running the job tower on 8 million postings per request, however small the tower, means millions of forward passes per visitor, which is far too slow. The option about crossed features describes the opposite of a two-tower model. Crossing user and job features inside the network is exactly what this design gives up. That loss of early interaction is the price of speed, and it is why a heavier ranker with cross features usually scores the few hundred retrieved jobs afterwards.",
+  "deeper": "Expect follow-ups on freshness and training. New postings need their vectors computed and added to the index quickly, or they are invisible. Training usually uses in-batch negatives, where other jobs in the batch act as negatives, and a strong candidate mentions correcting for popular items showing up as negatives too often.",
+  "tags": [
+   "retrieval",
+   "embeddings"
+  ],
+  "concepts": [
+   "two-tower-model",
+   "approximate-nearest-neighbor",
+   "embedding"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0008",
+  "subtopic": "position bias in click logs",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A hotel booking site trains its search ranker on click logs. The first result gets about five times the clicks of the fifth, even when an editor judges the two hotels equally relevant. Which change best corrects for this when training the next ranker?",
+  "options": [
+   "Shuffle results for a small slice of traffic to learn how often each slot is seen, then weight clicks by the inverse of that rate.",
+   "Add display position as a model feature, and at serving time give each hotel the position it held in the previous ranking for that query.",
+   "Drop all clicks from the top three slots, since those are the clicks that position bias has inflated the most.",
+   "Treat every shown hotel that was not clicked as a confirmed negative, so the model sees a balanced set of labels."
+  ],
+  "answer": 0,
+  "explanation": "Users click the top result partly because it is on top. A click means \"seen and liked\", and top slots are seen far more often. Propensity weighting separates the two. A small slice of randomised result orders shows how likely each slot is to be examined, whatever is placed there. Weighting each click by one over that chance gives more credit to clicks low on the page, which were harder to earn.\n\nUsing position as a feature can work, but only if serving sets it to one fixed value for every hotel. Feeding in last time's position bakes the old ranking into the new one, so the model keeps whatever order it inherited. Dropping the top three slots throws away most of the data and leaves bias in the remaining slots. Treating every unclicked hotel as a firm negative is the source of the problem, since many were never looked at.",
+  "deeper": "A strong candidate notes the cost of randomisation: shuffled results hurt bookings, so the slice is kept small or only swaps neighbouring positions. They may also mention that propensity weights get large for low slots, so teams clip them to keep training stable.",
+  "tags": [
+   "ranking",
+   "clicks",
+   "search"
+  ],
+  "concepts": [
+   "position-bias",
+   "learning-to-rank"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0009",
+  "subtopic": "pointwise, pairwise, listwise",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A legal research tool ranks court rulings for each query. Each training query has 200 or so candidate rulings graded by lawyers from 0 (irrelevant) to 3 (key ruling). Users rarely read past the first page, so the team judges models by NDCG@10. Which training loss fits this goal best, and why?",
+  "options": [
+   "A pointwise regression loss, because predicting each grade exactly is the same thing as getting the order right.",
+   "A pairwise loss that counts every wrongly ordered pair equally, because NDCG@10 also counts each swap the same.",
+   "A pointwise classification loss, because queries with many candidates would otherwise dominate a listwise loss.",
+   "A listwise loss, because it optimises a smooth stand-in for the list metric, so mistakes at the top cost most."
+  ],
+  "answer": 3,
+  "explanation": "NDCG@10 cares about order, and mostly about order at the very top. A listwise loss looks at all candidates for a query together and approximates the list metric, so pushing a grade 3 ruling from slot 12 to slot 1 earns far more than tidying up slots 150 to 160. That matches the goal.\n\nPointwise regression treats each ruling alone. A model can predict grades fairly well and still order the top few wrongly, and it spends as much effort on rulings deep in the list as on the top ten. Plain pairwise loss is closer, since it learns order, but treating every swapped pair alike is the problem. NDCG discounts by position, so a swap at slots 1 and 2 matters far more than one at 180 and 181. A pairwise loss that weights each swap by how much it changes NDCG, as LambdaRank does, would also fit the goal, which is why the equal weighting in that option is the flaw. The claim about long queries is backwards. Pointwise losses let queries with many rows dominate, while listwise losses usually treat each query as one unit.",
+  "deeper": "A good follow-up is when pointwise is the right call: when you need calibrated scores, such as click probabilities for an ads auction, or when labels are sparse binary clicks. Strong candidates also mention LambdaRank-style methods, which weight pairwise gradients by the change in NDCG and sit between pairwise and listwise.",
+  "tags": [
+   "ranking",
+   "search"
+  ],
+  "concepts": [
+   "learning-to-rank",
+   "ndcg"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0010",
+  "subtopic": "bandits vs fixed A/B tests",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A news site writes 6 candidate headlines for each article. Most articles get nearly all their readers in the first 24 hours. The team wants to pick headlines by click-through rate. Why does a multi-armed bandit suit this better than a fixed 6-way A/B test?",
+  "options": [
+   "A bandit gives a more precise and unbiased estimate of how much each headline differs than an equal traffic split does.",
+   "A bandit moves traffic to stronger headlines while the test runs, so fewer readers of a short-lived article see weak ones.",
+   "A bandit needs no click data to start, so it can choose the best headline before the article has been published.",
+   "A bandit avoids novelty effects, because it keeps showing all six headlines equally often until the article finally expires."
+  ],
+  "answer": 1,
+  "explanation": "A fixed A/B test gives each headline one sixth of the traffic until the end, then you switch to the winner. For an article that is only read for a day, \"the end\" comes after most readers have gone, so five sixths of them saw weaker headlines. A bandit learns as it goes. As clicks come in it shifts traffic toward headlines that are doing well, while still testing the others a little. Less traffic is wasted on losers, which is called lower regret.\n\nThe claim about precise estimates is backwards. Because a bandit starves weak arms of traffic, its estimates of their click rates are noisy and its data is not an equal random split, so a fixed test is better when you need a clean measure of the difference. A bandit still needs clicks to learn, so it cannot pick a winner before publishing. And keeping all six arms at equal traffic describes the fixed test, not a bandit.",
+  "deeper": "The rule of thumb interviewers want: use a bandit when you care about reward during the test and the decision is short-lived or repeated often, such as headlines, thumbnails or promotions. Use a fixed A/B test when you need a trustworthy effect size and guardrail metrics for a lasting launch decision.",
+  "tags": [
+   "bandits",
+   "ab-testing",
+   "news"
+  ],
+  "concepts": [
+   "multi-armed-bandit",
+   "ab-testing"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0011",
+  "subtopic": "epsilon-greedy odds",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "An online bookshop tests 5 home-page banner designs with an epsilon-greedy bandit, using ε = 0.2. On each visit, with probability 0.8 it shows the banner with the highest click rate so far. Otherwise it picks one of the 5 banners uniformly at random, which may include the current best. What is the probability that a given visit sees the current best banner? Give it as a decimal to 2 places.",
+  "answer": 0.84,
+  "tolerance": 0.005,
+  "check": "epsilon = 0.2\narms = 5\nresult = (1 - epsilon) + epsilon / arms",
+  "explanation": "The best banner can be shown in two ways, so add the two chances.\n\n- Exploit: with probability 1 - 0.2 = 0.8 the app shows the best banner.\n- Explore: with probability 0.2 it picks at random among 5 banners, and the best one is chosen 1 time in 5. That adds 0.2 × 1/5 = 0.04.\n- Total: 0.8 + 0.04 = 0.84.\n\nThe common mistake is to answer 0.80, forgetting that the random pick can land on the best banner too. Some people also answer 0.2 / 4 for each other banner, assuming exploration skips the best arm. That is a different design. Here exploration covers all 5, so each of the other 4 banners is shown with probability 0.04, and 0.84 + 4 × 0.04 = 1.",
+  "deeper": "Interviewers often follow with \"what is wrong with a fixed ε?\" It keeps spending 20% of traffic exploring forever, even after the best arm is obvious. Teams decay ε over time or move to methods such as Thompson sampling, which explore less as they grow confident.",
+  "tags": [
+   "bandits"
+  ],
+  "concepts": [
+   "multi-armed-bandit"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0012",
+  "subtopic": "storage for a year of events",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A ride-hailing app logs 300 million events a day, such as app opens, searches and trip updates, for training its models. Each event takes 600 bytes on disk. How much storage does one year of raw events need, before compression or replication? Use 365 days and 1 TB = 10¹² bytes, and give the answer in TB to 1 decimal place.",
+  "answer": 65.7,
+  "tolerance": 0.05,
+  "check": "events_per_day = 300_000_000\nbytes_per_event = 600\ndays = 365\nresult = events_per_day * bytes_per_event * days / 1e12",
+  "explanation": "Multiply events by size to get bytes per day, then scale to a year.\n\n- Bytes per day: 300,000,000 × 600 = 180,000,000,000 bytes, which is 0.18 TB.\n- Bytes per year: 0.18 TB × 365 = 65.7 TB.\n\nThe usual slip is with units. Dividing by 2⁴⁰ instead of 10¹² gives about 59.8, which is TiB rather than TB. Another is losing a factor of 1,000 by stopping at GB: 180 GB a day is right, but 180 × 365 = 65,700 GB, which is 65.7 TB, not 65,700 TB. Writing the powers of ten out once, as above, avoids both.",
+  "deeper": "In an interview, take the number one step further. Columnar formats with compression often shrink event logs several times over, while three-way replication triples them. Strong candidates also ask how long data must be kept for retraining and privacy rules, since retention often matters more than the raw size.",
+  "tags": [
+   "capacity",
+   "storage"
+  ],
+  "concepts": [
+   "capacity-estimation"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0013",
+  "subtopic": "GPUs for peak LLM traffic",
+  "format": "numeric",
+  "difficulty": 3,
+  "prompt": "A writing assistant handles 3.6 million requests a day. Peak traffic is 2.5 times the daily average rate. Each request generates 400 output tokens on average. Load tests with realistic prompts show one GPU sustains 3,000 output tokens per second while meeting the latency target. To leave headroom for spikes, each GPU should run at no more than 75% of that throughput. Using 86,400 seconds in a day, how many GPUs are needed at peak? Round up to a whole number.",
+  "answer": 19,
+  "tolerance": 0.5,
+  "check": "import math\nrequests_per_day = 3_600_000\npeak_factor = 2.5\ntokens_per_request = 400\ngpu_tokens_per_sec = 3_000\nmax_utilisation = 0.75\npeak_rps = requests_per_day / 86_400 * peak_factor\ntokens_needed = peak_rps * tokens_per_request\nresult = math.ceil(tokens_needed / (gpu_tokens_per_sec * max_utilisation))",
+  "explanation": "Turn traffic into tokens per second at peak, then divide by what one GPU may safely carry.\n\n- Average rate: 3,600,000 / 86,400 ≈ 41.67 requests per second.\n- Peak rate: 41.67 × 2.5 ≈ 104.17 requests per second.\n- Tokens per second at peak: 104.17 × 400 ≈ 41,667.\n- Usable throughput per GPU: 3,000 × 0.75 = 2,250 tokens per second.\n- GPUs: 41,667 / 2,250 ≈ 18.52, which rounds up to 19.\n\nThe most common mistake is handling headroom wrongly. Without it you get 13.89, so 14 GPUs that run flat out and miss the latency target on any spike. Adding 25% instead of capping use at 75% gives 13.89 × 1.25 ≈ 17.4, so 18 GPUs, which is one short, since running at 75% means dividing by 0.75. Rounding down is also wrong, because 18 GPUs cannot carry 18.52 GPUs of load.",
+  "deeper": "Strong candidates say where the 3,000 figure comes from and why it moves. LLM throughput depends on batch size, prompt length and the latency target, so it must be measured with real traffic. They also add capacity for a failed GPU or zone, and note that peaks in different regions may not line up.",
+  "tags": [
+   "capacity",
+   "llm",
+   "gpu"
+  ],
+  "concepts": [
+   "capacity-estimation",
+   "throughput-vs-latency",
+   "continuous-batching"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0014",
+  "subtopic": "splitting a latency budget",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A shopping app's personalised feed must load within 200 ms, measured on the phone. The team holds back 20% of the total budget as a safety margin. The other steps take these times:\n\n- Network round trip between phone and data centre: 60 ms\n- API gateway and authentication: 10 ms\n- User feature lookup: 15 ms, which runs in parallel with candidate retrieval: 25 ms\n- Re-ranking and business rules after the model: 10 ms\n\nHow many milliseconds are left for the ranking model? Give a whole number.",
+  "answer": 55,
+  "tolerance": 0.5,
+  "check": "total = 200\nmargin = 0.20 * total\nnetwork = 60\ngateway = 10\nfeature_lookup = 15\nretrieval = 25\nrerank = 10\nparallel_step = max(feature_lookup, retrieval)\nresult = total - margin - network - gateway - parallel_step - rerank",
+  "explanation": "Take off the margin first, then each step that sits on the path the request must wait for.\n\n- Margin: 20% of 200 = 40 ms, which leaves 160 ms.\n- Network and gateway: 60 + 10 = 70 ms, which leaves 90 ms.\n- Feature lookup and retrieval run side by side, so the wait is the slower one, 25 ms, which leaves 65 ms.\n- Re-ranking: 10 ms, which leaves 55 ms for the model.\n\nThe common mistake is adding the two parallel steps, 15 + 25 = 40 ms, which gives 40 ms. Parallel steps cost the time of the longest one, not the sum. Forgetting the margin gives 95 ms, a budget the model would hit on a normal day and blow on a slow one.",
+  "deeper": "Interviewers may push on whether budgets at p99 can simply be added. They cannot exactly, since the slow tails of different steps rarely line up, so adding them is a safe overestimate. Strong candidates also set a timeout on each call and decide what the feed shows when a step runs over.",
+  "tags": [
+   "latency",
+   "recsys"
+  ],
+  "concepts": [
+   "latency-budget"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0015",
+  "subtopic": "cheap model first",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A bank sorts incoming support emails by topic. A small, fast classifier reads every email. Its label is kept when its confidence is at or above a threshold, and otherwise the email goes to a large, costly language model. What happens if the team raises that threshold?",
+  "options": [
+   "Fewer emails reach the large model, which cuts cost and latency but lowers accuracy on the harder emails.",
+   "The small classifier becomes more accurate on every email, because it now trains toward a stricter target.",
+   "More emails reach the large model, which raises cost and latency but usually raises overall accuracy.",
+   "Cost stays the same, since both models already read every email and the threshold only picks the final label."
+  ],
+  "answer": 2,
+  "explanation": "The threshold decides how sure the small model must be before its answer is trusted. Raise it, and fewer emails clear the bar, so more are passed up to the large model. That costs more money and time per email on average, but the hard cases now get the stronger model, so accuracy usually goes up. Lower the threshold and the trade runs the other way.\n\nThe option saying fewer emails reach the large model has the direction backwards. The threshold does not retrain the small model, so its accuracy on any single email is unchanged. Only the choice of which answers to keep moves. And the whole point of a cascade is that the costly model runs only on escalated emails, not on everything, so cost does change with the threshold.",
+  "deeper": "In practice teams plot accuracy and cost against the threshold on a labelled set and pick the point that meets the budget. A strong candidate adds that this only works if the small model's confidence is calibrated. An overconfident small model keeps wrong answers that should have been escalated.",
+  "tags": [
+   "cascade",
+   "cost"
+  ],
+  "concepts": [
+   "model-cascade",
+   "calibration"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0016",
+  "subtopic": "cost of a cascade",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A marketplace checks new product listings with a two-stage cascade. Every listing first goes through a small model that costs $0.30 per 1,000 listings. The small model escalates 18% of listings to a large model that costs $6.00 per 1,000 listings, and escalated listings still pay for the small model. What is the average cost per 1,000 listings, in dollars to 2 decimal places?",
+  "answer": 1.38,
+  "tolerance": 0.005,
+  "check": "small_cost = 0.30\nlarge_cost = 6.00\nescalated = 0.18\nresult = small_cost + escalated * large_cost",
+  "explanation": "Every listing pays for the small model, and only the escalated share also pays for the large one.\n\n- Small model on all listings: $0.30 per 1,000.\n- Large model on 18% of them: 0.18 × $6.00 = $1.08 per 1,000.\n- Total: $0.30 + $1.08 = $1.38 per 1,000 listings.\n\nThe common mistake is to treat the stages as a split, as if 82% used the small model and 18% the large one: 0.82 × 0.30 + 0.18 × 6.00 ≈ $1.33. That forgets that escalated listings ran through the small model first. The same logic applies to latency: escalated requests wait for both models, so average latency is the small model's time plus 18% of the large model's time.",
+  "deeper": "Compare against running the large model on everything, $6.00 per 1,000, and the cascade is over four times cheaper. Interviewers then ask what the escalation rate depends on. The answer is the confidence threshold, so a strong candidate shows how cost and accuracy move as that threshold changes.",
+  "tags": [
+   "cascade",
+   "cost"
+  ],
+  "concepts": [
+   "model-cascade"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0017",
+  "subtopic": "fallbacks when a dependency fails",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A video streaming service builds each user's home page with a ranking service. During a recent incident the ranking service timed out for 15 minutes and home pages took 8 seconds to load. Which are sound parts of the fallback design? Select all that apply.",
+  "options": [
+   "Serve the user's last ranked home page from a cache, as long as it is no more than a day old",
+   "Serve a list of titles popular in the user's region when no cached page exists for that user",
+   "Show an empty row in place of recommendations and skip logging, so the page loads and no alerts fire",
+   "Retry the ranking call in a tight loop until it answers, keeping the page request open the whole time",
+   "Count every fallback served and alert when the share of fallback pages rises above a set level",
+   "Fill missing features with zeros and keep scoring, without marking those requests as degraded"
+  ],
+  "answer": [
+   0,
+   1,
+   4
+  ],
+  "explanation": "A good fallback gives users something reasonable quickly and makes the failure visible to the team. A recent cached page is personal and cheap to serve, and the age limit stops it from showing stale content for days. Popular titles by region are a safe default for users with no cache, such as new sign-ups. Counting fallbacks and alerting on their rate turns a silent degradation into an incident someone can fix.\n\nAn empty row with no logging hides the failure, so the outage could run for hours unnoticed while engagement drops. Retrying in a tight loop holds the page open, which is exactly how a timeout turns into 8-second page loads, and the extra calls pile more load onto a service that is already struggling. Retries need a short timeout, a small limit and backoff. Scoring with zeros in place of missing features can be a fair fallback if the model was trained to handle it, but doing it without marking the requests means nobody knows the scores are degraded, and those requests also pollute the training logs.",
+  "deeper": "A strong candidate pairs fallbacks with timeouts: give the ranking call, say, 150 ms, then fall back, so a slow dependency cannot drag the whole page down. They also mark fallback impressions in the logs so they are excluded from or flagged in training data, since they were not chosen by the model.",
+  "tags": [
+   "reliability",
+   "fallback"
+  ],
+  "concepts": [
+   "graceful-degradation"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0018",
+  "subtopic": "fail open or fail closed",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A payment processor's fraud model is down for an hour. The card network needs an approve or decline answer within 2 seconds. Without screening, 0.3% of payments are fraud, and each approved fraud costs $120 on average. Each good payment that is declined costs about $5 in lost fees and goodwill. A set of backup rules is ready: it would catch half of the fraud and decline 1% of good payments. Which response is best for the outage?",
+  "options": [
+   "Fail closed and decline every payment until the model returns, so no fraud gets through during the outage.",
+   "Hold each payment until the model recovers, then score the queued payments and settle them in order.",
+   "Fail open with no checks at all, approving every payment until the model returns.",
+   "Fail open with the backup rules, approving every payment the rules do not flag until the model returns."
+  ],
+  "answer": 3,
+  "explanation": "Compare the cost of each choice per 10,000 payments. Of these, 30 are fraud and 9,970 are good.\n\n- Fail open, no checks: 30 × $120 = $3,600.\n- Fail open with rules: 15 frauds slip through, 15 × $120 = $1,800, plus about 100 good payments declined, 100 × $5 = $500. Total about $2,300.\n- Fail closed: no fraud, but 9,970 × $5 ≈ $49,850 in declined good payments.\n\nThe rules give the lowest cost, and they also limit the damage if fraudsters notice the outage and rush in, which plain fail open does not.\n\nFail closed does stop all fraud, but at about $49,850 per 10,000 payments it is the most expensive choice by far and drives away good customers. Holding payments until the model returns breaks the 2-second limit, so each one times out and is declined anyway, which makes it fail closed under another name. Plain fail open, at $3,600, is cheaper than declining everything but costs about $1,300 more per 10,000 payments than the rules.",
+  "deeper": "The answer flips when the numbers flip. For high-value wire transfers, one fraud may cost more than many declines, so failing closed or holding for manual review can be right. A strong candidate states the outage policy in advance, tests the fallback rules regularly, and alerts the fraud team so they watch the open window closely.",
+  "tags": [
+   "fraud",
+   "reliability"
+  ],
+  "concepts": [
+   "graceful-degradation",
+   "latency-budget"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0019",
+  "subtopic": "rich-get-richer recommendations",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A podcast app retrains its recommender every week on listening logs. The top 1% of shows now get 60% of all recommendation slots, up from 35% a year ago, and new shows rarely appear. What is the most likely cause and a sound fix?",
+  "options": [
+   "The model learns from plays of what it already showed, so popular shows gain data each week. Reserve some slots to explore other shows.",
+   "The model is underfitting, so it falls back on popular shows. Add more layers so it can learn the long tail of niche podcasts.",
+   "Popular shows are simply better, so the rising share reflects real taste. Keep the model as it is and add more popular shows.",
+   "Weekly retraining causes the drift by chasing recent trends. Retrain once a quarter so that slots spread more evenly."
+  ],
+  "answer": 0,
+  "explanation": "This is a feedback loop. The model can only learn from plays of shows it chose to recommend. Popular shows get shown, so they get played, so next week's training data says they are even more popular. Shows that were never shown never collect evidence, so the model never learns they might be good. Each retrain tightens the loop. Exploration breaks it: give a small share of slots to less-shown or new shows, ideally with a bandit that backs off once a show proves weak, so they get a fair chance to collect plays.\n\nMore layers do not help, because the long tail is missing from the data, not too hard to fit. Assuming popular shows are just better ignores that the model created much of their popularity, since a show nobody is shown cannot be played. Retraining less often only slows the loop. The data is still collected under the same skewed exposure.",
+  "deeper": "Strong candidates add ways to measure the problem, such as catalogue coverage and the share of impressions going to new shows, and to judge exploration fairly with an A/B test on long-term retention rather than short-term plays. Logging the probability each item was shown also lets later models correct for exposure.",
+  "tags": [
+   "recsys",
+   "feedback-loop"
+  ],
+  "concepts": [
+   "feedback-loop",
+   "multi-armed-bandit"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0020",
+  "subtopic": "product search ranking",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "Design the search ranking for a home goods store with 2 million products and 5 million searches a day. Cover how you find candidates, what the ranker uses, how you learn from user behaviour, and how you evaluate it offline and online.",
+  "answer": "Retrieve a few thousand candidates by combining keyword matching on titles and attributes with embedding search, which catches synonyms and vague queries, then filter out items that are out of stock. A learned ranker, such as gradient-boosted trees, scores them with features like query-to-product text match, category match, price, rating, stock and past click and purchase rates for similar queries. Labels come from logs, with purchases and add-to-cart worth more than clicks. Clicks carry position bias, so log the position shown, randomise a small slice of traffic or use propensity weights, and do not treat unclicked items low on the page as firm negatives. Offline, measure NDCG on human-judged queries and on held-out logs, split into frequent and rare queries. Online, A/B test conversion rate, revenue per search and the share of searches with no click, with latency as a guardrail.",
+  "points": [
+   "Hybrid retrieval: keyword plus embedding search, then filters",
+   "A learned ranker over query-product match, quality, price and behaviour features",
+   "Graded labels from clicks, carts and purchases",
+   "Correct position bias in click data",
+   "Offline NDCG split by frequent and rare queries",
+   "Online A/B on conversion and revenue per search, latency as a guardrail"
+  ],
+  "explanation": "Search ranking is a two-stage problem like recommendation, except the query gives a strong signal of intent. Keyword matching is precise for exact terms such as \"oak bookshelf\", while embeddings rescue queries like \"small table for a balcony\" whose words may not appear in the title. The ranker then combines relevance with what makes a sale: price, rating, stock and how similar searches behaved.\n\nThe common mistake is to train on raw clicks as if they were relevance labels. Top results are clicked partly because they are on top, so a ranker trained this way learns to copy the old order. Weighting purchases above clicks and correcting for position bias gives cleaner signal.\n\nEvaluation needs both sides. Offline NDCG lets you compare many ideas cheaply, but logs are shaped by the old ranker, so the launch decision comes from an online test. Splitting results by frequent and rare queries matters because rare queries make up a large share of traffic in total and are where models usually fail.",
+  "deeper": "Interviewers often probe rare queries and new products. Good answers mention query rewriting or spelling correction, content features for products with no history, and a small boost or exploration budget so new items can earn clicks. Watch the share of searches that end in reformulation, a strong sign of a bad result page.",
+  "tags": [
+   "search",
+   "ranking",
+   "ecommerce"
+  ],
+  "concepts": [
+   "learning-to-rank",
+   "position-bias",
+   "two-stage-recommender",
+   "hybrid-search"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0021",
+  "subtopic": "delivery time estimates",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A food delivery app shows an estimated delivery time at checkout and updates it until the food arrives. Customers are far more upset by late food than by early food. Design the prediction system: features, real-time inputs, the training loss and monitoring.",
+  "answer": "Split the estimate into parts: kitchen prep time, wait for a courier, and travel to the customer. Features include the restaurant's past prep times by hour and day, order size, distance, time of day and weather. Real-time inputs matter most: open orders at the restaurant, couriers nearby and live traffic. Keep these in a streaming feature store so the checkout call stays inside its latency budget, with historical averages as a fallback if a feed is down. Because late is worse than early, train with a quantile (pinball) loss at, say, the 80th percentile rather than mean squared error, which targets the average, so many orders arrive after the quoted time. After pickup, re-estimate travel from the courier's live location. Monitor mean absolute error, the share of orders later than promised, and bias by city, restaurant and time of day, with alerts when the late rate drifts.",
+  "points": [
+   "Break the estimate into prep, courier wait and travel",
+   "Real-time signals: kitchen load, courier supply, traffic",
+   "Streaming feature store within the checkout latency budget, with fallbacks",
+   "Asymmetric loss such as quantile loss instead of mean squared error",
+   "Update the estimate as the order progresses",
+   "Monitor late-order rate and bias by segment, not just average error"
+  ],
+  "explanation": "The key design choice is the loss. Mean squared error is minimised by the average delivery time, so a large share of orders, often close to half, arrive after the estimate, which is the outcome customers hate most. A quantile loss at the 80th percentile charges 4 times more for being late than for being early, so the model learns to quote a time that is met about 80% of the time.\n\nThe common mistake is to describe a single model on static features. Delivery time depends heavily on what is happening right now: a kitchen with 30 open orders or a dinner rush with few couriers. Those signals must be fresh and fast to read, which is why a streaming feature store and a fallback belong in the design.\n\nSplitting the estimate into parts also helps debugging. If late orders cluster at pickup, the prep model is wrong, not the routing. Monitoring by segment catches problems that a good overall average hides, such as one city that is always late.",
+  "deeper": "Strong candidates discuss the product trade-off. A padded estimate is rarely late but may scare off customers, so the percentile is a business choice tested online, using order conversion and late rate together. They also note a feedback effect: the quoted time changes courier behaviour and customer orders, so offline data does not fully predict it.",
+  "tags": [
+   "forecasting",
+   "logistics"
+  ],
+  "concepts": [
+   "feature-store",
+   "loss-function",
+   "latency-budget"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0022",
+  "subtopic": "ad click prediction",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "Design the click prediction model for an ad platform. Each auction ranks ads by bid times predicted click probability, and advertisers can also bid on conversions such as purchases. Cover the model and features, how labels arrive, how often you update the model, and what you monitor.",
+  "answer": "The auction multiplies bids by predicted probabilities, so the model must be calibrated, not just good at ranking. If it says 2% where the truth is 1%, ads are misordered and advertisers are mispriced. Use logistic regression or a deep model over very sparse features: user, ad, advertiser, placement, query and their crosses. Hash these into a fixed number of buckets to cap memory and handle unseen IDs, accepting some collisions. Clicks arrive within minutes, but conversions can take days, so either wait a set window before calling an example negative, or model the delay and correct labels when late conversions arrive. Ads and campaigns change daily, so update the model often, for example hourly and incrementally from streaming logs. If you downsample non-clicks for training, correct the predicted probabilities afterwards. Monitor log loss and the ratio of predicted to actual clicks by segment, and recalibrate when it drifts.",
+  "points": [
+   "Calibration matters because bids are multiplied by the prediction",
+   "Very sparse ID and cross features, hashed into fixed buckets",
+   "Delayed conversions: a label window or a delay model",
+   "Frequent incremental updates as ads and campaigns change",
+   "Correct probabilities after negative downsampling",
+   "Monitor log loss and predicted-to-actual ratio by segment"
+  ],
+  "explanation": "Most ranking problems only need the right order. Ads are different because the predicted probability is a price input. An ad with a $2 bid and a 3% predicted click rate beats one with a $5 bid and 1%, so a systematic overestimate for one advertiser shifts real money. That is why log loss and calibration, not AUC alone, are the main offline checks.\n\nThe common mistake is to treat a conversion that has not happened yet as a negative. If you train on yesterday's clicks, many purchases are still to come, so the model learns that conversions are rarer than they are and ranks ads bid on conversions too low. A fixed attribution window or a delay model fixes this.\n\nFeature hashing keeps the model a fixed size when there are billions of user and ad IDs, and lets brand-new IDs map somewhere instead of failing. Frequent updates matter because new campaigns launch every day and an ad's appeal fades quickly. Downsampling non-clicks speeds training, but it inflates predicted rates, so the scores must be scaled back down before the auction uses them.",
+  "deeper": "Interviewers often ask how to handle a brand-new ad with no history. Good answers use advertiser and creative features, a prior from similar ads, and some exploration. Strong candidates also mention checking calibration per advertiser, since an overall ratio of 1.0 can hide one advertiser at 1.5 and another at 0.6.",
+  "tags": [
+   "ads",
+   "ctr",
+   "calibration"
+  ],
+  "concepts": [
+   "calibration",
+   "feature-hashing",
+   "label-delay"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0023",
+  "subtopic": "LLM support assistant with hand-off",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A broadband provider wants an LLM chat assistant that answers customer questions and hands off to human agents when needed. It handles about 50,000 conversations a day. Design it, covering retrieval, routing and hand-off, guardrails, evaluation and cost per conversation.",
+  "answer": "A small classifier routes each conversation by intent and risk. Cancellations, billing disputes, complaints, safety issues and requests for a person go straight to an agent. For the rest, the assistant retrieves from help articles and network status, and reads the customer's own account through tools limited to that customer. It answers only from that context and cites its sources. Guardrails check inputs for prompt injection, mask personal data in logs, block promises outside policy such as unapproved credits, and check answers are grounded in what was retrieved. Hand off when retrieval finds nothing relevant, confidence is low or the customer repeats a question, passing a summary so they never start over. Evaluate offline on past conversations graded with a rubric by an LLM judge that is checked against human ratings. Online, track resolution without a repeat contact, hand-off rate and satisfaction. Cost per conversation is turns times tokens per turn times price, so cap context and cache common answers.",
+  "points": [
+   "Route by intent and risk, with sensitive cases straight to people",
+   "Retrieval from help content plus scoped tools for account data",
+   "Guardrails: injection checks, personal data, policy limits, grounding",
+   "Clear hand-off triggers that pass a summary to the agent",
+   "Offline rubric evaluation with a checked LLM judge, online resolution and hand-off rates",
+   "Estimate and control cost per conversation"
+  ],
+  "explanation": "The assistant is a cascade with people at the top. Cheap routing sends risky or emotional cases to agents at once, the LLM handles routine questions, and anything it cannot answer well climbs back to a person. Retrieval keeps answers tied to real policy and the customer's real account, and limiting tools to that one customer stops the model from leaking someone else's data.\n\nThe common mistake is to judge the system by how fluent the answers sound, or by deflection rate alone. A bot that refuses to hand off can deflect almost everything while customers give up angry and call back. Resolution without a repeat contact, checked alongside satisfaction, is the honest measure.\n\nCost needs real numbers. Suppose an average conversation has 6 turns, each sending 3,000 tokens of context, at a hypothetical $2 per million tokens, ignoring the smaller output cost. That is about 3.6 cents per conversation, or about $1,800 a day at 50,000 conversations. Long retrieved context is often the biggest cost, so trimming it pays off.",
+  "deeper": "Interviewers like to ask what happens when the assistant is wrong. Strong answers include a way for agents to flag bad answers, a weekly review of failed conversations that feeds new test cases, and staged rollout to a small share of traffic. They also plan agent staffing, since the hand-off rate sets how many people are needed.",
+  "tags": [
+   "llm",
+   "support",
+   "rag"
+  ],
+  "concepts": [
+   "retrieval-augmented-generation",
+   "model-cascade",
+   "guardrails",
+   "llm-as-judge"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0024",
+  "subtopic": "clarifying requirements first",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "An interviewer says \"Design a system that detects fake reviews on our marketplace\" and then waits. What would you pin down in the first few minutes before drawing any components, and why does each point matter?",
+  "answer": "Start with the business goal: protecting buyers from misleading ratings, catching paid review rings, or both. That decides what counts as success. Agree a main metric tied to it, such as the share of fake reviews buyers actually see, plus a guardrail like the rate of genuine reviews wrongly removed, since honest sellers suffer from false alarms. Ask about scale: reviews per day, peak rate and the size of the catalogue. Ask whether a review must be checked before it is published or whether a batch check a few hours later is fine, because that sets the latency budget and the whole serving design. Ask where labels come from: moderator decisions, user reports or confirmed fraud rings, and how trustworthy they are. Finally ask about constraints and what exists today, such as reviewer capacity, privacy rules and current rules, which become the baseline to beat. Repeat these back as stated assumptions before designing.",
+  "points": [
+   "Business goal, which defines success",
+   "A main metric plus a guardrail for the cost of false alarms",
+   "Scale: volume, peak rate, catalogue size",
+   "Latency: real time before publishing or batch afterwards",
+   "Label source and quality",
+   "Constraints and the current baseline to beat"
+  ],
+  "explanation": "Each question changes the design. A real-time check before publishing needs a fast model and features ready in milliseconds, while a batch job can run heavy graph analysis over reviewer networks. Labels decide whether you can train a supervised model at all or must start with rules and anomaly detection. Scale sets how much compute and human review you can afford. And without a metric agreed up front, you cannot justify any trade-off later.\n\nThe common mistake is to jump straight to a model, such as \"I would fine-tune a text classifier on review text\". That skips the facts that decide whether text is even the right signal. Many fake reviews read naturally, and the stronger signal is often behaviour: accounts created together, bursts of five-star reviews, or reviewers who only rate one seller.\n\nAsking too many questions is also a mistake. Interviewers want a few sharp ones, then stated assumptions so the design can move on.",
+  "deeper": "A useful habit is to write the assumptions on the board, such as \"2 million reviews a day, batch check within an hour, labels from moderators\". The interviewer can correct them, and you can point back to them when justifying each choice later. A simple baseline, such as rules on account age and review bursts, shows you think about what to beat.",
+  "tags": [
+   "interview",
+   "requirements"
+  ],
+  "concepts": [
+   "latency-budget",
+   "capacity-estimation",
+   "baseline-model"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0025",
+  "subtopic": "sampling from the posterior",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "An ad server keeps a Beta distribution over the click rate of each of its creatives, updated after every impression. For each request it draws one random value from every creative's distribution and shows the creative with the highest draw. This bandit method is called ______.",
+  "answer": "Thompson sampling",
+  "accept": [
+   "thompson",
+   "thompson sampling bandit",
+   "posterior sampling",
+   "bayesian thompson sampling"
+  ],
+  "explanation": "Thompson sampling picks each arm with the probability that it is the best one, given the data so far. Drawing one sample from each posterior and taking the largest does exactly that. A creative with few impressions has a wide Beta distribution, so it sometimes draws a high value and gets shown, which is exploration. A creative with many impressions has a narrow distribution near its true rate, so it wins only if it really is strong. Exploration fades on its own as evidence builds up.\n\nThe common mistake is to answer UCB, upper confidence bound. UCB also favours uncertain arms, but it does so deterministically: it adds a bonus based on how few times an arm has been tried and picks the highest score, with no random draw. Epsilon-greedy is also wrong here, since it explores by picking a uniformly random arm a fixed share of the time and keeps no distribution at all.",
+  "deeper": "Thompson sampling is popular in production because it is simple and handles delayed rewards well. With click data the Beta prior is easy: start at Beta(1, 1), add 1 to the first number for each click and 1 to the second for each non-click. A follow-up is how to add context, such as user features, which leads to contextual bandits.",
+  "tags": [
+   "bandits",
+   "ads"
+  ],
+  "concepts": [
+   "multi-armed-bandit"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0026",
+  "subtopic": "feedback from behaviour",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A streaming service has few star ratings, so it trains its recommender on clicks, plays, skips and watch time instead. Preference signals read from behaviour like this, rather than given as ratings, are called ______ feedback.",
+  "answer": "implicit",
+  "accept": [
+   "implicit feedback"
+  ],
+  "explanation": "Implicit feedback is preference read from what people do, not what they say. A user who watches a series to the end probably liked it, and one who skips after 10 seconds probably did not. It is plentiful, since every session produces it, while explicit feedback such as star ratings or thumbs-up is rare because few users bother.\n\nThe common mistake is to answer \"explicit\", which is the opposite: ratings and likes that the user gives on purpose. Another is \"negative\", which names only one kind of signal.\n\nImplicit feedback has traps. A play does not always mean liking, since autoplay and clickbait thumbnails cause plays too. And a missing play does not mean dislike, because the user may never have seen the item. It was only shown what the recommender chose, which is a selection bias. That is why models on implicit data treat unobserved items as weak negatives and weight signals by confidence, such as watch time.",
+  "deeper": "In interviews, say which implicit signal you would optimise and why. Clicks are fast but easy to game, while completion rate or return visits track real value better. Strong candidates combine several signals into a label, for example a play counts only after 30 seconds, and explain the choice.",
+  "tags": [
+   "recsys",
+   "labels"
+  ],
+  "concepts": [
+   "collaborative-filtering",
+   "selection-bias"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0027",
+  "subtopic": "diversity and rules in re-ranking",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A news app's ranker returns its top 50 articles for each user, scored for click probability. Feeds are often 8 stories on one topic from one publisher, and editors change business rules every week. The team wants more variety, fresher stories and editor rules without retraining the ranker each time. Which re-ranking steps fit? Select all that apply.",
+  "options": [
+   "Build the feed greedily, at each step taking the article with the best score minus a penalty for similarity to articles already picked",
+   "Cap the number of articles from any one publisher in the top 10, pulling up the next best articles to fill the gaps",
+   "Add a small score boost for articles published in the last few hours, with its size tuned by an A/B test",
+   "Shuffle the 50 articles randomly before showing them, so that every topic has the same chance of reaching the top",
+   "Retrieve 5,000 candidates instead of 500 before ranking, since a larger pool makes the final feed diverse on its own",
+   "Retrain the ranker with each new editor rule turned into training labels, so the rules are learned instead of coded"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "Re-ranking sits after the ranker and adjusts its order with cheap, editable logic. The greedy similarity penalty is maximal marginal relevance: each pick trades relevance against how much it repeats what is already in the feed, which spreads topics without throwing away the scores. A per-publisher cap is a simple hard rule that editors can change in config. A recency boost favours fresh stories, and tuning its size online keeps it from swamping relevance.\n\nShuffling randomly does add variety, but it discards the ranker's work, so a highly relevant story is as likely to land at slot 50 as at slot 1. A larger candidate pool does not change what the ranker puts on top. If one topic scores highest, the top of a bigger list is just as uniform. Turning weekly rules into training labels means retraining every week, which is exactly what the team wants to avoid, and a learned rule is soft, so a firm editorial limit may still be broken.",
+  "deeper": "Strong candidates measure the effect, since every adjustment costs some predicted clicks. Track diversity and freshness per feed alongside engagement and retention in an A/B test. They also note that re-ranking changes what users see, so training logs should record the final position, not the ranker's original order.",
+  "tags": [
+   "recsys",
+   "news",
+   "diversity"
+  ],
+  "concepts": [
+   "two-stage-recommender"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0028",
+  "subtopic": "online metrics for a recommender launch",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A short-video app will A/B test a new recommender for four weeks before deciding whether to launch it. The new model was trained to maximise clicks. Which metrics belong in the launch decision as success or guardrail metrics? Select all that apply.",
+  "options": [
+   "The share of users in each arm who come back 7 and 28 days after first being exposed to it",
+   "How many distinct creators and topics make up each user's watch time in each arm",
+   "The rate of \"not interested\" taps, reports and hides per 1,000 videos shown in each arm",
+   "Click-through rate as the single launch criterion, since it has the most data and moves fastest",
+   "The average click probability the new model predicts for the videos it shows in each arm",
+   "Offline NDCG of the new model on last month's logs, recomputed for each week of the test"
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "A model trained on clicks will probably raise clicks, so clicks alone cannot tell you whether the app got better. Return rate at 7 and 28 days measures lasting value, and the longer window catches novelty effects that fade. Creator and topic diversity is a guardrail against a narrow, repetitive feed that may win in week one and bore users by week four. Negative feedback rates catch clickbait and harmful content, which can raise clicks while users grow annoyed.\n\nUsing click-through rate as the only criterion is the trap: it is easy to game with sensational thumbnails, and it is the very thing the model was trained to push up. The model's own predicted click probability is not a measurement of users at all. It differs between arms because the models differ, so comparing it says nothing about outcomes. Offline NDCG on old logs does not change during an online test and is biased toward the old model's choices, so it has no place in an online launch decision.",
+  "deeper": "Interviewers like to ask what you do if clicks rise but 28-day return falls. A strong answer treats the long-term metric as the decision maker and digs into segments. Some teams also keep a small long-running holdout to measure effects that take months, such as creator supply and user churn.",
+  "tags": [
+   "recsys",
+   "ab-testing",
+   "metrics"
+  ],
+  "concepts": [
+   "offline-online-evaluation",
+   "ab-testing"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0029",
+  "subtopic": "cache hits and backend load",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "As users type, a search box shows query suggestions. At peak it receives 12,000 requests per second. A cache in front of the suggestion model answers 65% of requests, and the rest go to the model. How many requests per second reach the model at peak? Give a whole number.",
+  "answer": 4200,
+  "tolerance": 0.5,
+  "check": "total_rps = 12_000\nhit_rate = 0.65\nresult = total_rps * (1 - hit_rate)",
+  "explanation": "Only cache misses reach the model. The miss rate is 1 - 0.65 = 0.35, so the model sees 12,000 × 0.35 = 4,200 requests per second.\n\nThe common mistake is to multiply by the hit rate instead: 12,000 × 0.65 = 7,800. That is the load the cache absorbs, not the load the model must carry. A quick sense check helps. A good cache should leave the model with less than half the traffic when the hit rate is above 50%, and 7,800 is more than half.\n\nThe number also shows how sensitive the backend is to the hit rate. If the hit rate falls from 65% to 50%, model load rises from 4,200 to 6,000 requests per second, a jump of over 40%, even though total traffic did not change.",
+  "deeper": "A strong candidate sizes the model for a lower hit rate than normal, since caches are often empty after a deploy or restart, and a cold cache at peak can overload the backend. Typing suggestions cache well because many users type the same prefixes, but personalised suggestions cache poorly, which is a trade-off worth naming.",
+  "tags": [
+   "capacity",
+   "caching",
+   "search"
+  ],
+  "concepts": [
+   "capacity-estimation"
+  ],
+  "topic": "design"
+ },
+ {
+  "id": "sysd-0030",
+  "subtopic": "one global model or many",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A grocery delivery service forecasts daily demand per product in 40 cities. Five large cities have three years of history. The other 35 launched in the last six months and have little data. Cities differ in holidays, weather and price levels, but most shopping patterns are shared. A team of three maintains the forecasts. Which modelling approach fits best?",
+  "options": [
+   "Train 40 separate city models, since each city's demand pattern is different and a shared model would blur them.",
+   "Train one global model with no city features, so small cities borrow strength from large ones without any noise.",
+   "Train one global model with city features, and split off a city's own model only where error stays clearly worse.",
+   "Train a model on the five large cities only, and apply it to the 35 small ones without using their own short history."
+  ],
+  "answer": 2,
+  "explanation": "A global model learns the shared patterns, such as weekly cycles and promotions, from all cities at once. Small cities borrow strength from large ones, which cuts the variance that would ruin a model trained on six months of data. City features, such as city ID, local holidays, weather and price level, let the same model learn where cities really differ. Splitting off a dedicated model only when one city's error stays clearly worse keeps the team at one pipeline in most cases.\n\nForty separate models give the small cities high variance, since each learns from little data, and they mean forty pipelines to retrain and monitor for a team of three. A global model with no city features goes too far the other way. It has high bias, because it cannot represent real differences like a regional holiday. Training only on the large cities ignores data that exists and assumes the small cities behave like big ones, which their different prices and weather suggest is not true.",
+  "deeper": "Interviewers may ask how you would check the choice. Compare per-city error on a time-based holdout for the global model against a per-city model where data allows. Strong candidates also mention that the global model needs one retraining schedule and drift checks per city, since a new city can shift faster than the rest.",
+  "tags": [
+   "forecasting",
+   "modelling"
+  ],
+  "concepts": [
+   "bias-variance-tradeoff",
+   "retraining-policy",
+   "time-series-split"
+  ],
+  "topic": "design"
  }
 ]
