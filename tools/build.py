@@ -62,22 +62,23 @@ def normalize_fill(s):
     return s.rstrip(".").strip()
 
 
+_NUM = re.compile(r"[+-]?(\d+\.?\d*|\.\d+)(e[+-]?\d+)?", re.I)
+
+
 def parse_number(s):
-    s = str(s).strip().replace(",", "").replace(" ", "")
-    if s.endswith("%"):
-        s = s[:-1]
-    if not s:
+    """Same rules as parseNumber in assets/js/grade.js."""
+    t = re.sub(r"[\s,]", "", str(s))
+    if t.endswith("%"):
+        t = t[:-1]
+    if not t:
         return None
-    try:
-        if "/" in s:
-            a, b = s.split("/", 1)
-            b = float(b)
-            if b == 0:
-                return None
-            return float(a) / b
-        return float(s)
-    except ValueError:
+    parts = t.split("/")
+    if len(parts) > 2 or not all(_NUM.fullmatch(p) for p in parts):
         return None
+    if len(parts) == 2:
+        b = float(parts[1])
+        return None if b == 0 else float(parts[0]) / b
+    return float(t)
 
 
 def _word_count(text):
