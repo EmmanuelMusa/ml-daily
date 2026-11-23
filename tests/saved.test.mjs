@@ -73,3 +73,16 @@ test('progress with saved items is valid and survives a progress code', () => {
   assert.equal(isProgress({ ...p, saved: 'x' }), false);
   assert.equal(isProgress({ ...p, saved: [{ day: '2026-11-23' }] }), false);
 });
+
+test('import rejects malformed saved items', () => {
+  const base = emptyProgress();
+  const bad = [
+    [{ concept: 5, day: '2026-11-23' }],
+    [{ concept: 'a', term: 'b', day: '2026-11-23' }],
+    [{ concept: '', day: '2026-11-23' }],
+    [{ term: 'x'.repeat(81), day: '2026-11-23' }],
+    [{ concept: 'precision', day: 'yesterday' }],
+  ];
+  for (const saved of bad) assert.equal(isProgress({ ...base, saved }), false, JSON.stringify(saved));
+  assert.equal(isProgress({ ...base, saved: [{ term: 'Platt scaling', from: null, day: '2026-11-23' }] }), true);
+});

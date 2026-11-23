@@ -48,7 +48,7 @@ export function renderConcept(ctx, id) {
     main.innerHTML = `<section class="page concept">
       <a class="back" href="#concepts">${ctx.icon('back')}All concepts</a>
       <h2 tabindex="-1">Not found</h2>
-      <p class="lede">This concept is not in the glossary yet.</p></section>`;
+      <p class="lede">${G ? 'This concept is not in the glossary yet.' : 'The glossary could not be loaded. Check your connection and reload the page.'}</p></section>`;
     return;
   }
   const saved = isSaved(S.progress, id);
@@ -62,7 +62,7 @@ export function renderConcept(ctx, id) {
       <p class="concept-topic">${escapeHtml(topic)}</p>
       <h2 id="concept-name" tabindex="-1">${escapeHtml(c.name)}</h2>
       ${c.aka?.length ? `<p class="aka">Other names and variants: ${c.aka.map(escapeHtml).join(', ')}</p>` : ''}
-      <button type="button" class="btn ${saved ? '' : 'quiet'} save-btn" data-act="save-concept" aria-pressed="${saved}">
+      <button type="button" class="btn ${saved ? '' : 'quiet'} save-btn" data-act="save-concept">
         ${ctx.icon(saved ? 'bookmarkFilled' : 'bookmark')}<span>${saved ? 'Saved' : 'Save for later'}</span></button>
     </header>
     <p class="concept-summary">${escapeHtml(c.summary)}</p>
@@ -81,9 +81,10 @@ export function renderConcept(ctx, id) {
     main.querySelector('[data-act="save-concept"]').focus();
   });
   main.querySelector('[data-act="back"]').addEventListener('click', (e) => {
-    if (S.cameFromQuestion || history.length > 1) {
+    // Back to the question unwinds every concept card opened from it. Otherwise the link's own href applies.
+    if (S.cameFromQuestion && S.conceptDepth > 0) {
       e.preventDefault();
-      history.back();
+      history.go(-S.conceptDepth);
     }
   });
 }

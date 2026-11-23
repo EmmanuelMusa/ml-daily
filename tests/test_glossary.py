@@ -67,6 +67,9 @@ class SvgTests(unittest.TestCase):
             '<svg width="100" viewBox="0 0 10 10"></svg>',
             '<svg><rect width="1" height="1"/></svg>',
             'not xml',
+            '<svg viewBox="0 0 1 1"><?x ><img src=x onerror=alert(1)>?></svg>',
+            '<svg viewBox="0 0 1 1"><!--><img src=x onerror=alert(1)>--></svg>',
+            '<svg viewBox="0 0 1 1"><![CDATA[x]]></svg>',
         ]
         for s in bad:
             self.assertNotEqual(build.svg_problems(s), [], s)

@@ -279,8 +279,11 @@ def _local(name):
 def svg_problems(text):
     """Problems that make a diagram unsafe or off the app's palette. Empty means clean."""
     import xml.etree.ElementTree as ET
-    if "<!DOCTYPE" in text or "<!ENTITY" in text:
-        return ["doctype or entity declarations are not allowed"]
+    # The page injects the raw text with the HTML parser, which reads <!...> and <?...> differently
+    # from an XML parser. Refuse them outright so the two parsers cannot disagree.
+    body = re.sub(r"^\s*<\?xml[^>]*\?>", "", text)
+    if "<!" in body or "<?" in body or "]]>" in body:
+        return ["comments, CDATA, doctypes and processing instructions are not allowed"]
     try:
         root = ET.fromstring(text)
     except ET.ParseError as e:

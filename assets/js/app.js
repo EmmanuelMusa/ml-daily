@@ -3,10 +3,10 @@ import { renderMarkup, escapeHtml } from './markup.js';
 import { grade, hasResponse, optionOrder } from './grade.js';
 import { dayKey, ensureToday, dealMore, nextNew, recordResult, overrideResult, stats, emptyProgress } from './schedule.js';
 import { loadProgress, saveProgress, pruneUnknown } from './store.js';
-import { ICONS } from './icons.js?v=5';
+import { ICONS } from './icons.js?v=6';
 import { isMidAnswer } from './session.js';
 import { makeLookup } from './saved.js';
-import { conceptChipsHtml, renderConcept, renderConcepts, renderProgress, renderSettings } from './pages.js?v=5';
+import { conceptChipsHtml, renderConcept, renderConcepts, renderProgress, renderSettings } from './pages.js?v=6';
 
 const main = document.getElementById('main');
 const dayLabel = document.getElementById('day-label');
@@ -423,9 +423,12 @@ function parseHash() {
   return { view: VIEWS.includes(raw) ? raw : null };
 }
 
-function route() {
-  const { view, id } = parseHash();
-  if (!view) return; // a hash such as #main from the skip link, not a view
+function route(atBoot = false) {
+  let { view, id } = parseHash();
+  if (!view) {
+    if (!atBoot) return; // a hash such as #main from the skip link, not a view
+    view = 'today';
+  }
   const tab = view === 'concept' ? 'concepts' : view;
   S.view = view;
   document.querySelectorAll('.tabs a').forEach((a) => {
@@ -433,6 +436,11 @@ function route() {
     else a.removeAttribute('aria-current');
   });
   setDayLabel();
+  if ((view === 'concept' || view === 'concepts') && !S.glossary && !S.glossaryFailed) {
+    main.innerHTML = '<p class="loading">Loading concepts</p>';
+    ensureGlossary().then(() => { if (S.view === view) route(); });
+    return;
+  }
   if (view !== 'today') takeFx();
   if (view === 'concept') renderConcept(ctx, id);
   else if (view === 'concepts') renderConcepts(ctx);
@@ -448,10 +456,37 @@ function buildGlossary(data) {
   return { list, byId: new Map(list.map((c) => [c.id, c])), lookup: makeLookup(list), usage };
 }
 
+// The glossary is fetched after the first screen is up, or straight away when a concept view needs it.
+let glossaryLoad = null;
+function ensureGlossary() {
+  glossaryLoad ??= fetch('data/glossary.json', { cache: 'no-cache' })
+    .then((r) => (r.ok ? r.json() : Promise.reject(new Error(String(r.status)))))
+    .then((data) => {
+      S.glossary = buildGlossary(data);
+      // An answer screen that is already showing gains its concept buttons.
+      if (S.view === 'today' && S.ui.checked) renderToday();
+    })
+    .catch(() => { S.glossaryFailed = true; });
+  return glossaryLoad;
+}
+
+// Remembers how many concept cards deep the person is, so "Back to the question" can return in one step.
+function trackConceptVisit(prevView) {
+  const st = history.state;
+  if (st && typeof st.conceptDepth === 'number') {
+    S.conceptDepth = st.conceptDepth;
+    S.cameFromQuestion = Boolean(st.fromQuestion);
+    return;
+  }
+  const fromQuestion = prevView === 'today' && S.ui.checked;
+  const chained = prevView === 'concept';
+  S.cameFromQuestion = fromQuestion || (chained && S.cameFromQuestion);
+  S.conceptDepth = chained ? (S.conceptDepth || 0) + 1 : 1;
+  history.replaceState({ conceptDepth: S.conceptDepth, fromQuestion: S.cameFromQuestion }, '');
+}
+
 async function boot() {
   document.querySelectorAll('.ico[data-icon]').forEach((el) => { el.innerHTML = ICONS[el.dataset.icon]; });
-  const glossaryPromise = fetch('data/glossary.json', { cache: 'no-cache' })
-    .then((r) => (r.ok ? r.json() : null)).catch(() => null);
   try {
     const res = await fetch('data/bank.json', { cache: 'no-cache' });
     if (!res.ok) throw new Error(String(res.status));
@@ -463,8 +498,6 @@ async function boot() {
   S.byId = new Map(S.bank.questions.map((q) => [q.id, q]));
   S.ids = S.bank.questions.map((q) => q.id);
   S.titles = Object.fromEntries(S.bank.topics.map((t) => [t.key, t.title]));
-  const glossary = await glossaryPromise;
-  if (glossary) S.glossary = buildGlossary(glossary);
   const loaded = loadProgress();
   S.progress = pruneUnknown(loaded.progress, S.ids);
   S.persistent = loaded.persistent;
@@ -472,22 +505,33 @@ async function boot() {
   rollover();
   save();
   window.addEventListener('hashchange', () => {
+    const prev = S.view;
     const next = parseHash();
-    if (next.view === 'concept') {
-      // Opened from the answer screen, or moving between related concepts from there.
-      S.cameFromQuestion = (S.view === 'today' && S.ui.checked) || (S.view === 'concept' && S.cameFromQuestion);
-    } else if (next.view) {
-      S.cameFromQuestion = false;
-    }
+    if (next.view === 'concept') trackConceptVisit(prev);
+    else if (next.view) S.cameFromQuestion = false;
+    if (!next.view) return;
     S.fx = 'page';
     route();
-    if (parseHash().view) main.querySelector('h2, #prompt')?.focus();
+    if (prev === 'concept' && next.view === 'today' && S.ui.checked) {
+      // Back from a concept card: return to the concept buttons, not the top of the question.
+      const block = main.querySelector('.concepts-block');
+      if (block) {
+        block.setAttribute('tabindex', '-1');
+        block.scrollIntoView({ block: 'center' });
+        block.focus({ preventScroll: true });
+        return;
+      }
+    }
+    main.querySelector('h2, #prompt')?.focus();
   });
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && rollover() && S.view === 'today') renderToday();
   });
   S.fx = 'page';
-  route();
+  if (parseHash().view === 'concept') trackConceptVisit(null);
+  route(true);
+  const later = window.requestIdleCallback ?? ((fn) => setTimeout(fn, 800));
+  later(() => ensureGlossary());
 }
 
 boot();

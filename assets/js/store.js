@@ -18,9 +18,16 @@ export function isProgress(x) {
     && (x.saved === undefined || (Array.isArray(x.saved) && x.saved.every(isSavedItem)));
 }
 
+const DAY = /^\d{4}-\d{2}-\d{2}$/;
+const filled = (v, max) => typeof v === 'string' && v.trim() !== '' && v.length <= max;
+
+// Exactly one of concept or term, a real day, and a term no longer than the save form allows.
 function isSavedItem(s) {
-  return isObj(s) && typeof s.day === 'string'
-    && (typeof s.concept === 'string' || typeof s.term === 'string');
+  if (!isObj(s) || typeof s.day !== 'string' || !DAY.test(s.day)) return false;
+  const hasConcept = s.concept !== undefined;
+  const hasTerm = s.term !== undefined;
+  if (hasConcept === hasTerm) return false;
+  return hasConcept ? filled(s.concept, 200) : filled(s.term, 80);
 }
 
 export function loadProgress(storage) {
