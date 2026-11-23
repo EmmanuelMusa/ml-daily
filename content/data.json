@@ -162,5 +162,746 @@
    "inter-annotator-agreement",
    "active-learning"
   ]
+ },
+ {
+  "id": "data-0007",
+  "topic": "data",
+  "subtopic": "leakage across a user's rows",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A dermatology startup trains an image classifier on 20,000 skin-lesion photos from 3,000 patients. Most patients have 3 to 10 photos, often of the same lesion from different angles. The photos were split 80/20 at random. Validation AUC is 0.94. On photos of 400 new patients from the same clinics and cameras, taken the following month, AUC is 0.79. What is the most likely cause, and the fix?",
+  "options": [
+   "The label mix differs by chance, so stratify the random photo split by diagnosis",
+   "The model is overfitting, so add stronger augmentation and keep the same random split",
+   "Photos of one patient sit in both sets, so use a group split keyed on patient ID",
+   "The validation set is too small, so hold out 40% of the photos at random instead"
+  ],
+  "answer": 2,
+  "explanation": "A random split over photos puts different shots of the same patient, often the same lesion, on both sides. The model can then recognise the patient from skin tone, lesion shape or lighting and recall the label it saw in training. Validation measures how well it recognises people it has already met, not how it handles new ones. The new patients came from the same clinics and cameras, which rules out a change in equipment and points at the split. The fix is to split by patient ID, so all of a patient's photos land on one side. Expect validation AUC to fall toward 0.79. That lower number is the honest one.\n\nA bigger random holdout still mixes the same patients across both sets, so it stays inflated. Stratifying by diagnosis keeps the label share equal but still splits patients across sets. Stronger augmentation may help a model that overfits, but a contaminated validation set cannot show you whether it worked, so the split has to be fixed first.",
+  "deeper": "In scikit-learn, `GroupKFold`, `StratifiedGroupKFold` and `GroupShuffleSplit` take a `groups` array for this. A good interview follow-up is which unit to group by. Pick the unit the model must generalise to in production: the patient here, the user for a recommender, the store for a store-level forecast.",
+  "tags": [
+   "leakage",
+   "splitting",
+   "healthcare"
+  ],
+  "concepts": [
+   "data-leakage",
+   "train-validation-test-split",
+   "cross-validation"
+  ]
+ },
+ {
+  "id": "data-0008",
+  "topic": "data",
+  "subtopic": "point-in-time joins",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A card fraud model scores each transaction the moment it happens. One feature counts the card's chargebacks over the last 90 days. Each row in the chargeback table has two timestamps: `event_time`, when the disputed purchase happened, and `recorded_time`, when the bank learned of the dispute, usually 30 to 60 days later. The table is also copied into a snapshot every night at 23:59. When building training rows for last year's transactions, how should this feature be computed?",
+  "options": [
+   "Take the card's count from today's table, since it holds the most complete chargeback history",
+   "Count chargebacks whose `recorded_time` is in the 90 days before the transaction's timestamp",
+   "Count chargebacks whose `event_time` is in the 90 days before the transaction's timestamp",
+   "Take the card's count from the nightly snapshot dated the same day as the transaction"
+  ],
+  "answer": 1,
+  "explanation": "Training rows must show the model exactly what the live system could see at scoring time. Live, a chargeback only exists once the bank has recorded it, so the window has to use `recorded_time`, and only records from before the transaction count.\n\nUsing `event_time` is the subtle trap. A purchase disputed 45 days from now has an `event_time` inside the window, but at scoring time nobody knew about it yet. Training rows would count chargebacks that the live feature never sees, and those late chargebacks are strongly tied to fraud on the card, so the offline score looks better than production ever will.\n\nThe same-day snapshot is taken at 23:59, so it includes chargebacks recorded later that day, after the transaction. The leak is smaller but real. The safe snapshot is the previous night's one. Today's table is the worst choice. It contains every chargeback learned since, including those for last year's fraud itself.",
+  "deeper": "Feature stores solve this with as-of joins keyed on the time a value became known. In interviews, mention that late-arriving data needs two timestamps, event time and arrival time, and that backfills must use arrival time or offline metrics will drift away from what you see online.",
+  "tags": [
+   "leakage",
+   "fraud",
+   "joins"
+  ],
+  "concepts": [
+   "point-in-time-correctness",
+   "data-leakage",
+   "feature-store"
+  ]
+ },
+ {
+  "id": "data-0009",
+  "topic": "data",
+  "subtopic": "near-duplicates across the split",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A marketplace trains a text classifier to flag scam listings. Scammers often repost the same listing many times with small edits, such as a new price or a swapped emoji. The team removed exact duplicate rows, split the listings 80/20 at random and got a test F1 of 0.96. In production, F1 is 0.71. Which change gives a test score the team can trust?",
+  "options": [
+   "Remove exact duplicates once more after the split, from the training set this time",
+   "Stratify the random split by label so the test set keeps the same share of scams",
+   "Grow the test set to 40% of the listings so the duplicates average out over more rows",
+   "Group near-duplicate listings before the split and keep each group on one side only"
+  ],
+  "answer": 3,
+  "explanation": "A listing with a new price or a swapped emoji is still the same example. After a random split, most test scams have a near-copy in training, so the test score mostly measures memory of those copies. Finding near-duplicates, for example with MinHash or embedding similarity on the text, and then deduplicating or keeping each group on one side, makes every test listing new to the model. This has to happen before the split, because once copies are on both sides the damage is done.\n\nRemoving exact duplicates again misses the point twice: the copies differ slightly, so exact matching does not catch them, and cleaning only the training side does not stop pairs from straddling the split. Stratifying fixes the label share, not the overlap. A bigger test set holds proportionally just as many near-copies, so the score stays inflated, it just has a narrower error bar around the wrong number.",
+  "deeper": "The same problem hits LLM evaluation, where benchmark questions leak into training data in slightly edited forms. A strong answer mentions measuring the overlap directly: report the score on test items with no near-match in training, and compare it with the full test score.",
+  "tags": [
+   "deduplication",
+   "leakage",
+   "nlp"
+  ],
+  "concepts": [
+   "deduplication",
+   "data-leakage"
+  ]
+ },
+ {
+  "id": "data-0010",
+  "topic": "data",
+  "subtopic": "MCAR, MAR and MNAR",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A telehealth team predicts hospital admission from patient records. Three columns have gaps:\n\n- `heart_rate` is missing on 4% of rows because a sensor bug dropped uploads at random.\n- `bmi` is missing far more often for patients under 25, and age is recorded for everyone.\n- `alcohol_units` is mostly missing for heavy drinkers, who tend to skip that question.\n\nWhich statement is correct?",
+  "options": [
+   "All three are MAR, since in each case something about the patient explains the gap",
+   "The `heart_rate` gaps are MCAR, so dropping those rows loses data but adds no bias",
+   "The `bmi` gaps are MNAR, because the chance of a gap differs between age groups",
+   "The `alcohol_units` gaps are MAR, so imputing from the other columns removes the bias"
+  ],
+  "answer": 1,
+  "explanation": "Missing completely at random (MCAR) means the chance of a gap has nothing to do with any value, seen or unseen. A bug that drops uploads at random fits that. The rows that keep `heart_rate` are then a random subsample of all rows, so dropping the others loses data and statistical power but does not tilt the sample.\n\nThe `bmi` gaps depend on age, which is observed for everyone. That is missing at random (MAR), not MNAR. MAR means the gap is explained by other recorded columns, so methods that condition on age can correct for it. Simply dropping those rows would under-represent young patients.\n\nThe `alcohol_units` gaps depend on the missing value itself, heavy drinking. That is missing not at random (MNAR). Imputing from other columns cannot recover what is driving the gap, so the bias remains. Calling all three MAR mixes up the definitions: the sensor gaps depend on nothing, and the alcohol gaps depend on the unseen value.",
+  "deeper": "You can never prove MCAR or rule out MNAR from the data alone. In practice you test whether missingness relates to observed columns, ask how the data was collected, and for likely MNAR fields add a missing indicator, because the gap itself may be one of the strongest signals.",
+  "tags": [
+   "missing-data",
+   "healthcare"
+  ],
+  "concepts": [
+   "missing-data-mechanisms",
+   "imputation"
+  ]
+ },
+ {
+  "id": "data-0011",
+  "topic": "data",
+  "subtopic": "missing-value indicators",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A lender's default model is a logistic regression. One column, `months_since_last_missed_payment`, is blank for 60% of applicants, almost always because they have never missed a payment. What is the best way to handle the blanks?",
+  "options": [
+   "Drop the rows with blanks, since those applicants have incomplete and unreliable data",
+   "Drop the column, since a feature that is blank for most applicants carries little signal",
+   "Fill the blanks with a constant and add a 0/1 column that marks which rows were blank",
+   "Fill the blanks with the column mean, which keeps every row and preserves the average"
+  ],
+  "answer": 2,
+  "explanation": "Here the blank is itself information: it means a clean payment history, one of the strongest low-risk signals a lender has. A 0/1 indicator column lets the model learn a separate weight for \"never missed a payment\", while the filled column still carries the months value for everyone else. The exact constant matters little, since the indicator's weight absorbs the offset.\n\nFilling with the mean alone makes a spotless history look like someone who missed a payment an average number of months ago, which erases the most useful distinction in the column. Dropping the rows throws away 60% of applicants, and they are the safest ones, so the model would train on a skewed, riskier sample. Dropping the column discards both the blank signal and the useful months value for the other 40%.",
+  "deeper": "scikit-learn's `SimpleImputer(add_indicator=True)` adds these flags automatically. Tree models such as gradient boosting can route missing values down their own branch, but an explicit flag still makes the pattern easy to see and to explain to a credit risk reviewer.",
+  "tags": [
+   "missing-data",
+   "credit"
+  ],
+  "concepts": [
+   "imputation",
+   "missing-data-mechanisms"
+  ]
+ },
+ {
+  "id": "data-0012",
+  "topic": "data",
+  "subtopic": "mean vs median imputation",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A retailer's churn model uses `annual_spend`. Of 5,000 customers, most spend between $200 and $2,000, but 40 corporate accounts spend over $600,000 each. The median is $780 and the mean is $6,400. During a system migration, `annual_spend` was lost at random for 5% of customers, all of whom made purchases that year. Which fill value is the best choice for those blanks?",
+  "options": [
+   "The mean, since it is computed from every value and so carries more information than the median",
+   "The mean, since a few outliers among thousands of rows cancel out and barely move the average",
+   "Zero, since a missing spend value most likely means the customer bought nothing that year",
+   "The median, since it sits near a typical customer while a few huge accounts pull the mean up"
+  ],
+  "answer": 3,
+  "explanation": "The gaps are random, so the fill should look like a typical customer. The median, $780, does. The mean, $6,400, is about eight times what almost every customer spends, because 40 huge accounts drag it up. Filling with the mean would turn 250 ordinary shoppers into apparent big spenders, which could mislead a churn model that links spend to loyalty.\n\nThe mean does use every value, but that is exactly why it is fragile here: each corporate account pulls it hard. The claim that outliers cancel out is the common mistake. Outliers on one side of a skewed column all push the mean the same way, which is why it sits far above the median. Zero contradicts the facts given, since every affected customer bought something, and it would make them look like churners.",
+  "deeper": "Interviewers often follow up with: would you fill per segment? Filling corporate and retail accounts with their own medians is usually better still. Fit the fill values on training data only, and consider a missing flag if the gaps might not be random.",
+  "tags": [
+   "imputation",
+   "outliers"
+  ],
+  "concepts": [
+   "imputation",
+   "outliers"
+  ]
+ },
+ {
+  "id": "data-0013",
+  "topic": "data",
+  "subtopic": "standardizing a value",
+  "format": "numeric",
+  "difficulty": 1,
+  "prompt": "A hotel booking model standardizes `nightly_rate`. On the training data the mean is $142 and the standard deviation is $36. Today's live traffic has a mean of $150 and a standard deviation of $40. What standardized value should the model receive for a booking at $205? Give it as a decimal to 2 places.",
+  "answer": 1.75,
+  "tolerance": 0.005,
+  "check": "train_mean = 142\ntrain_std = 36\nx = 205\nresult = (x - train_mean) / train_std",
+  "explanation": "A z-score is (x − mean) / standard deviation, and the mean and standard deviation must come from the training data, because those are the numbers the model's weights were learned against.\n\nWorking: 205 − 142 = 63. Then 63 / 36 = 1.75. So the booking is 1.75 training standard deviations above the training mean.\n\nThe common mistake is to use today's live statistics: (205 − 150) / 40 = 1.375, which rounds to 1.38. That quietly shifts every input whenever traffic changes, so the same $205 booking would get a different feature value each day and the model's learned weights would no longer line up with its inputs. If live prices have really moved, that is a drift problem to detect and handle by retraining, not by refitting the scaler on serving data.",
+  "deeper": "In scikit-learn this is why you call `fit` on the training set and only `transform` afterwards, and why the fitted scaler is saved with the model. A difference between training and live statistics is worth logging as a drift signal.",
+  "tags": [
+   "scaling",
+   "serving"
+  ],
+  "concepts": [
+   "feature-scaling",
+   "training-serving-skew"
+  ]
+ },
+ {
+  "id": "data-0014",
+  "topic": "data",
+  "subtopic": "squeezing values into 0 to 1",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A music app feeds `track_length_sec` and `play_count` into a k-nearest neighbours model. Before computing distances, it rescales each feature so that the smallest training value becomes 0, the largest becomes 1, and every other value sits proportionally in between. This is called ______ scaling.",
+  "answer": "min-max",
+  "accept": [
+   "min max",
+   "minmax",
+   "min-max scaling",
+   "min max scaling",
+   "minmax scaling",
+   "min-max normalization",
+   "min-max normalisation",
+   "minmaxscaler"
+  ],
+  "explanation": "Min-max scaling computes (x − min) / (max − min) for each feature, using the training minimum and maximum. For k-nearest neighbours this matters a lot. Raw `play_count` can run into the millions while track length is a few hundred seconds, so without scaling the distance would be decided almost entirely by play count.\n\nThe common mix-up is with standardization, the z-score, which subtracts the mean and divides by the standard deviation. That gives mean 0 and standard deviation 1 but no fixed range. Min-max has two weak spots worth knowing. One extreme value squeezes everything else into a narrow band near 0. And new values outside the training range map below 0 or above 1, so code that assumes a strict 0 to 1 range can break.",
+  "deeper": "A heavily skewed count like `play_count` often works better log-transformed first and then scaled. In interviews, say which models need scaling at all: distance and gradient-based models do, tree models do not.",
+  "tags": [
+   "scaling",
+   "knn"
+  ],
+  "concepts": [
+   "feature-scaling",
+   "k-nearest-neighbors"
+  ]
+ },
+ {
+  "id": "data-0015",
+  "topic": "data",
+  "subtopic": "skewed features and targets",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A job board predicts the advertised salary of each posting. Salaries are right-skewed, with a long tail of executive roles. The team trains a linear regression on `np.log1p(salary)` instead of the raw salary. How should they turn the model's outputs back into dollars?",
+  "options": [
+   "Multiply each output by the mean training salary to restore units",
+   "Apply `np.expm1`, which computes exp(x) − 1 and reverses `np.log1p`",
+   "Apply `np.exp` and then add 1, which reverses the `np.log1p` step",
+   "Apply `np.log1p` once more, which maps the outputs back into dollars"
+  ],
+  "answer": 1,
+  "explanation": "`np.log1p(x)` computes log(1 + x). To undo it, take the exponential and then subtract 1, which is exactly what `np.expm1` does. The log helps here because salary errors are roughly proportional (a $10,000 miss matters more on a $40,000 role than on a $400,000 one), and because the long executive tail no longer dominates the squared loss.\n\nAdding 1 after `np.exp` gets the sign backwards. The error is tiny for salaries but would be large for a target near zero, such as a count. Applying `np.log1p` again compresses the outputs further instead of reversing them. Multiplying by the mean salary has no mathematical link to the log and produces nonsense values.\n\nOne more point: the model predicts the mean of the log salary. Undoing the log gives something close to the median for similar postings, which sits below their mean salary. If you need mean dollars, apply a correction such as Duan's smearing.",
+  "deeper": "scikit-learn's `TransformedTargetRegressor(func=np.log1p, inverse_func=np.expm1)` handles both directions so no one forgets. Interviewers may ask why metrics should be reported in dollars after the inverse, not on the log scale, since the business cares about dollar errors.",
+  "tags": [
+   "transforms",
+   "regression"
+  ],
+  "concepts": [
+   "outliers",
+   "feature-scaling",
+   "linear-regression"
+  ]
+ },
+ {
+  "id": "data-0016",
+  "topic": "data",
+  "subtopic": "one column per category",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A food delivery model has a `cuisine` column with values such as thai, pizza and sushi. The team turns it into one 0/1 column per cuisine, with a 1 only in the column that matches the row. This is called ______ encoding.",
+  "answer": "one-hot",
+  "accept": [
+   "one hot",
+   "onehot",
+   "one-hot encoding",
+   "1-hot",
+   "dummy",
+   "dummy variable",
+   "dummy variables",
+   "one of k",
+   "one-of-k"
+  ],
+  "explanation": "One-hot encoding gives each category its own binary column. A thai order becomes 1 in `cuisine_thai` and 0 in every other cuisine column. The model can then learn a separate effect for each cuisine without assuming any order between them.\n\nThe common mistake is label encoding, also called ordinal encoding, which maps thai to 0, pizza to 1 and sushi to 2. A linear model reads that as \"sushi is twice pizza\", an order and spacing that mean nothing. Ordinal encoding is right only when categories really have an order, such as small, medium and large. One-hot has its own limit: with thousands of categories it creates thousands of sparse columns, and then target encoding, hashing or embeddings scale better.",
+  "deeper": "In production, decide up front what happens to a cuisine never seen in training. scikit-learn's `OneHotEncoder(handle_unknown=\"ignore\")` maps it to all zeros instead of crashing, and you can group rare categories into an \"other\" column with `min_frequency`.",
+  "tags": [
+   "encoding",
+   "categorical"
+  ],
+  "concepts": [
+   "one-hot-encoding"
+  ]
+ },
+ {
+  "id": "data-0017",
+  "topic": "data",
+  "subtopic": "the dummy variable trap",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "A linear regression for apartment rent includes an intercept and one-hot columns for all four districts in the city. Every row has exactly one district column set to 1, so the four columns always add up to the intercept column. The coefficients then have no unique least-squares solution. This problem is known as the ______ trap.",
+  "answer": "dummy variable",
+  "accept": [
+   "dummy",
+   "dummy variables",
+   "dummy-variable"
+  ],
+  "explanation": "One-hot columns are also called dummy variables, and keeping all of them alongside an intercept is the dummy variable trap. The four district columns sum to 1 on every row, exactly like the intercept column, so the columns are perfectly collinear. You could add 100 to the intercept and subtract 100 from every district coefficient and get identical predictions, so there is no single best set of weights.\n\nA common wrong answer is \"multicollinearity\". That is the underlying cause, perfect multicollinearity, but the named pitfall is the dummy variable trap. The usual fix is to drop one category, which becomes the reference level, with `drop=\"first\"` in `OneHotEncoder` or `drop_first=True` in `pd.get_dummies`. Each remaining coefficient then reads as the rent difference from that reference district. Removing the intercept or adding ridge regularization also gives a unique solution.",
+  "deeper": "scikit-learn's `LinearRegression` will not crash here. Its solver returns one of the infinitely many solutions, so predictions look fine but the coefficients cannot be interpreted. Tree models are not affected, so dropping a column matters mainly for linear and logistic models.",
+  "tags": [
+   "encoding",
+   "linear-models"
+  ],
+  "concepts": [
+   "one-hot-encoding",
+   "linear-regression"
+  ]
+ },
+ {
+  "id": "data-0018",
+  "topic": "data",
+  "subtopic": "smoothed target encoding",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "An insurance fraud model target-encodes `repair_shop_id`. One shop appears in only 8 training claims, and 6 of them were fraud. Across all training claims the fraud rate is 0.05. The encoding blends each shop's fraud rate with the global rate, treating the global rate as if it were backed by m = 20 extra claims:\n\n(count × shop rate + m × global rate) / (count + m)\n\nWhat encoded value does this shop get? Give it as a decimal to 2 places.",
+  "answer": 0.25,
+  "tolerance": 0.005,
+  "check": "count = 8\nfraud = 6\nglobal_rate = 0.05\nm = 20\nshop_rate = fraud / count\nresult = (count * shop_rate + m * global_rate) / (count + m)",
+  "explanation": "Step 1: the shop's own fraud rate is 6 / 8 = 0.75.\n\nStep 2: the numerator is 8 × 0.75 + 20 × 0.05 = 6 + 1 = 7.\n\nStep 3: the denominator is 8 + 20 = 28, so the encoding is 7 / 28 = 0.25.\n\nSmoothing pulls rare categories toward the global rate. Eight claims is too few to trust a 75% fraud rate, since a couple of unlucky claims could produce it. With m = 20, the global rate gets more weight than the shop's own 8 claims. A shop with 800 claims would barely move from its own rate.\n\nThe common mistakes are using the raw 0.75, which lets a tiny sample dominate, or taking a plain average of the two rates, (0.75 + 0.05) / 2 = 0.40, which ignores how many claims back each one. The weights should depend on the counts.",
+  "deeper": "Smoothing reduces noise but does not stop leakage, because each claim's own label is still inside its shop's rate. Compute the encoding out-of-fold or from earlier data, and pick m by validation. scikit-learn's `TargetEncoder` does both cross-fitting and smoothing.",
+  "tags": [
+   "encoding",
+   "insurance"
+  ],
+  "concepts": [
+   "target-encoding"
+  ]
+ },
+ {
+  "id": "data-0019",
+  "topic": "data",
+  "subtopic": "the hashing trick",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "An ad model hashes the cross of `app_id` and `country`, which has about 3 million distinct values, into 2²⁰ (about 1 million) buckets. To save memory, an engineer cuts this to 2¹² (4,096) buckets. Which statement about hashing and this change is correct?",
+  "options": [
+   "Apps first seen at serving time cannot be mapped, because the hash function was fit on training data",
+   "Collisions become rarer, because with fewer buckets each one receives more training examples",
+   "Far more values now share each bucket, so their effects get blended and accuracy usually drops",
+   "Memory now grows as new apps appear, because the hasher must store a table of the values it has seen"
+  ],
+  "answer": 2,
+  "explanation": "Feature hashing sends each value through a fixed hash function to a bucket index, and the model learns one weight per bucket. With 3 million values and 4,096 buckets, each bucket holds about 730 values on average, so a high-click app and a low-click app can share one weight. The model can only learn their blended effect, and accuracy usually falls. Even at 2²⁰ buckets there were already collisions, but far fewer per bucket.\n\nThe other statements describe hashing wrongly. A hasher stores no table of seen values. That is its main advantage: memory is fixed by the bucket count, whatever arrives. For the same reason it is never fit, so a brand new app at serving time still hashes to some bucket. Fewer buckets mean more values per bucket, so collisions become more common, not rarer. More examples per bucket does not help when those examples come from different values.",
+  "deeper": "Teams usually pick the bucket count by trying a few sizes and plotting validation loss against memory. A strong candidate also mentions signed hashing, used by scikit-learn's `FeatureHasher`, which lets colliding values partly cancel instead of always adding up.",
+  "tags": [
+   "hashing",
+   "ads"
+  ],
+  "concepts": [
+   "feature-hashing"
+  ]
+ },
+ {
+  "id": "data-0020",
+  "topic": "data",
+  "subtopic": "finding outliers",
+  "format": "multi",
+  "difficulty": 1,
+  "prompt": "A ride-hailing team is cleaning a table of 2 million trips, with duration, distance and fare, before training a fare model. Which steps are sensible for finding and handling outliers? Select all that apply.",
+  "options": [
+   "Drop the trips the current model predicts worst, since large errors mean the rows are bad data",
+   "Flag trips more than 1.5 IQRs below the first quartile or above the third, then inspect them",
+   "Check domain limits, such as fares below zero or average speeds above 200 km/h",
+   "Flag values with a z-score beyond ±3 on columns that are roughly bell-shaped",
+   "Delete every row outside the 1st to 99th percentile of each column, without looking at them"
+  ],
+  "answer": [
+   1,
+   2,
+   3
+  ],
+  "explanation": "The IQR rule flags points far outside the middle half of the data and is robust, because quartiles barely move when extreme values are added. Inspecting the flags matters, since a long airport trip is extreme but real. Domain limits catch values that are impossible rather than just rare: a negative fare or a car averaging 300 km/h is a logging error, whatever the statistics say. A z-score cut at ±3 works on roughly bell-shaped columns, though very large outliers inflate the standard deviation and can hide themselves.\n\nBlindly deleting the tails of every column removes 2% per column, including real long trips and surge fares, which are exactly the cases a fare model must price well. It also leaves the model untrained on its most expensive mistakes. Dropping the rows the current model gets most wrong is circular. It deletes hard but valid trips and makes the model look better than it is.",
+  "deeper": "Interviewers like the follow-up: what do you do with a real but extreme value? Options include capping, a log transform, a robust loss such as Huber, or a separate model for that segment. Deletion is for values you have confirmed are errors.",
+  "tags": [
+   "outliers",
+   "cleaning"
+  ],
+  "concepts": [
+   "outliers",
+   "anomaly-detection"
+  ]
+ },
+ {
+  "id": "data-0021",
+  "topic": "data",
+  "subtopic": "the 1.5 IQR rule",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A warehouse team flags any order pick time that is more than 1.5 times the gap between the 25th and 75th percentiles below the 25th percentile, or that far above the 75th. This check, which also sets the whisker limits on a standard box plot, is usually called the ______ rule.",
+  "answer": "IQR",
+  "accept": [
+   "interquartile range",
+   "inter quartile range",
+   "inter-quartile range",
+   "interquartile",
+   "1.5 iqr",
+   "1.5 x iqr",
+   "1.5×iqr",
+   "1.5 × iqr",
+   "tukey",
+   "tukey's",
+   "tukeys",
+   "tukey's fences",
+   "tukey fences",
+   "box plot",
+   "boxplot"
+  ],
+  "explanation": "The gap between the 25th percentile (Q1) and the 75th percentile (Q3) is the interquartile range, or IQR. The rule flags anything below Q1 − 1.5 × IQR or above Q3 + 1.5 × IQR. These cut-offs are also called Tukey's fences. For example, if Q1 is 4 minutes and Q3 is 10 minutes, the IQR is 6, so the fences sit at 4 − 9 = −5 and 10 + 9 = 19 minutes. A 25-minute pick gets flagged.\n\nThe common mix-up is with the z-score rule, which flags values more than 3 standard deviations from the mean. That rule assumes a roughly bell-shaped column, and extreme values inflate the standard deviation, which can hide them. Quartiles barely move when a few huge values are added, so the IQR rule stays robust on skewed data such as pick times.",
+  "deeper": "On strongly skewed data the IQR rule flags many legitimate values in the long tail. A good answer suggests applying it after a log transform, or per segment, such as per warehouse zone, and treating flags as items to inspect rather than rows to delete.",
+  "tags": [
+   "outliers",
+   "statistics"
+  ],
+  "concepts": [
+   "outliers"
+  ]
+ },
+ {
+  "id": "data-0022",
+  "topic": "data",
+  "subtopic": "SMOTE inside cross-validation",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A factory's defect classifier is trained on sensor readings where 2% of parts are defective. An engineer applies SMOTE to the whole dataset, then runs 5-fold cross-validation and gets a defect recall of 0.93. On the next month of parts from the same line, with the same 2% defect rate, recall is 0.58. What is the most likely problem?",
+  "options": [
+   "SMOTE copies existing defects exactly, so the model memorised them, and random oversampling would avoid this",
+   "SMOTE was not also applied to next month's parts, so the live class mix no longer matches the training data",
+   "SMOTE interpolates between defective and normal parts, which blurs the boundary the model needs to learn",
+   "Synthetic defects came from rows that later sat in validation folds, so SMOTE must run per training fold"
+  ],
+  "answer": 3,
+  "explanation": "SMOTE makes a synthetic minority row by picking a real defect, picking one of its nearest defect neighbours, and placing a new point on the line between them. Run on the whole dataset, a validation fold can contain real defects whose near-copies sit in training, and synthetic points built from training defects. Both are easy to classify, so cross-validated recall is inflated. Resampling must happen inside each training fold, which `imblearn.pipeline.Pipeline` does for you.\n\nSMOTE does not copy rows exactly. Random oversampling does, so switching to it would not help. You never resample validation, test or live data, because those must keep the real 2% mix you will face. And SMOTE interpolates between minority neighbours, not between a defect and a normal part. Interpolation can still create points in the majority region when defects are scattered, but that is not what explains the gap here.",
+  "deeper": "Mention in interviews that SMOTE often adds little over class weights for tree models, and that it distorts predicted probabilities, so recalibrate if the scores are used as real chances. The rule generalises: any step that learns from data runs only on the training fold.",
+  "tags": [
+   "imbalance",
+   "resampling",
+   "leakage"
+  ],
+  "concepts": [
+   "resampling",
+   "preprocessing-leakage",
+   "class-imbalance"
+  ]
+ },
+ {
+  "id": "data-0023",
+  "topic": "data",
+  "subtopic": "balanced class weights",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A support team classifies ticket priority into low, medium and urgent. Using scikit-learn 1.x, what is the value of `w[2]`, the weight for urgent tickets, after this code runs? Give it as a decimal to 2 places.\n\n```python\nimport numpy as np\nfrom sklearn.utils.class_weight import compute_class_weight\n\n# 0 = low, 1 = medium, 2 = urgent\ny = np.array([0] * 900 + [1] * 240 + [2] * 60)\nw = compute_class_weight(\"balanced\", classes=np.array([0, 1, 2]), y=y)\n```",
+  "answer": 6.67,
+  "tolerance": 0.005,
+  "check": "import numpy as np\nfrom sklearn.utils.class_weight import compute_class_weight\n\n# 0 = low, 1 = medium, 2 = urgent\ny = np.array([0] * 900 + [1] * 240 + [2] * 60)\nw = compute_class_weight(\"balanced\", classes=np.array([0, 1, 2]), y=y)\nresult = float(w[2])",
+  "explanation": "The balanced rule gives class c the weight n / (k × n_c), where n is the number of rows, k is the number of classes and n_c is the count of class c.\n\nWorking: n = 900 + 240 + 60 = 1,200 and k = 3. For urgent, n_c = 60, so the weight is 1,200 / (3 × 60) = 1,200 / 180 ≈ 6.67. The other weights are 1,200 / 2,700 ≈ 0.44 for low and 1,200 / 720 ≈ 1.67 for medium.\n\nA common mistake is the simple ratio of the largest class to the rarest, 900 / 60 = 15. That gives the right relative sizes but on a different scale. The balanced formula is scaled so that each class carries the same total weight: 60 × 6.67, 240 × 1.67 and 900 × 0.44 each come to about 400. The weights over all 1,200 rows add up to 1,200, so the loss keeps its usual size and the learning rate and regularization behave as before.",
+  "deeper": "In practice you pass `class_weight=\"balanced\"` to the model directly. Fully balanced weights often over-correct and hurt precision on the rare class, so treat the weight as a hyperparameter, and remember the scores are no longer calibrated probabilities.",
+  "tags": [
+   "imbalance",
+   "sklearn"
+  ],
+  "concepts": [
+   "class-weights",
+   "class-imbalance"
+  ]
+ },
+ {
+  "id": "data-0024",
+  "topic": "data",
+  "subtopic": "undersampling shifts probabilities",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A click model is trained on data that keeps every click but only a random 10% of non-clicks. The real click rate is about 1%. The model is well calibrated on the sampled data. For one impression it outputs p′ = 0.5. What is the best estimate of the real click probability?",
+  "options": [
+   "About 0.909, from p′ / (p′ + 0.1 × (1 − p′))",
+   "About 0.091, from p′ / (p′ + (1 − p′) / 0.1)",
+   "About 0.050, from multiplying the score by the 0.1 keep rate",
+   "About 0.500, since dropping random negatives leaves scores unbiased"
+  ],
+  "answer": 1,
+  "explanation": "Think in odds. Keeping only 10% of non-clicks makes clicks look 10 times more common, so the model's odds are 10 times the real odds. The model's odds are 0.5 / 0.5 = 1. The real odds are 1 × 0.1 = 0.1, and turning odds back into a probability gives 0.1 / 1.1 ≈ 0.091. Written as one formula, p = p′ / (p′ + (1 − p′) / w) with keep rate w = 0.1.\n\nMultiplying the score by 0.1 is a shortcut that only works when p′ is small, because then the odds and the probability are almost equal. At p′ = 0.5 it is far off. Leaving the score at 0.5 confuses ranking with calibration. Undersampling keeps the order of the scores, so AUC is unchanged, but every probability is inflated. The 0.909 option applies the correction backwards, raising the probability when it should be lowered.",
+  "deeper": "This matters wherever the probability drives money, such as ad bids priced as expected value per click. Interviewers may ask how you would check the fix: compare the mean corrected prediction with the real click rate on unsampled data, and plot a reliability curve.",
+  "tags": [
+   "calibration",
+   "ads",
+   "resampling"
+  ],
+  "concepts": [
+   "resampling",
+   "calibration",
+   "class-imbalance"
+  ]
+ },
+ {
+  "id": "data-0025",
+  "topic": "data",
+  "subtopic": "keeping class proportions",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A sepsis screening dataset has one row per patient, and 3% of patients are positive. To make sure the train, validation and test sets each hold close to 3% positives instead of leaving it to chance, you use a ______ split.",
+  "answer": "stratified",
+  "accept": [
+   "stratified sampling",
+   "stratified split",
+   "stratify",
+   "stratified random",
+   "stratification",
+   "stratified train test"
+  ],
+  "explanation": "A stratified split samples separately within each class, so every part keeps the original class share. With rare positives this matters. Say there are 1,000 patients and 30 positives, and the test set is 200 patients. A plain random split expects 6 positives in test, but by chance it could hold 2 or 10, and recall measured on 2 positives is close to meaningless. Stratifying fixes the count at about 6. In scikit-learn you pass `stratify=y` to `train_test_split` or use `StratifiedKFold`.\n\nThe common mistake is answering \"balanced\". A balanced split forces 50% positives, which no longer looks like the 3% the model will face, so precision and every other metric read from it would be wrong.",
+  "deeper": "Stratification and grouping can be needed together. If patients could have several visits, you would use `StratifiedGroupKFold` to keep each patient on one side and the class share steady. Interviewers like candidates who notice both constraints.",
+  "tags": [
+   "splitting",
+   "imbalance"
+  ],
+  "concepts": [
+   "stratified-sampling",
+   "train-validation-test-split"
+  ]
+ },
+ {
+  "id": "data-0026",
+  "topic": "data",
+  "subtopic": "training only on approved loans",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A bank trains a loan default model on its past loans. Outcomes exist only for applicants the old policy approved, about 40% of everyone who applied. Explain how this biases the model when it scores all new applicants, and describe ways to reduce the bias.",
+  "answer": "The model only sees outcomes for loans the old policy approved, so it learns default patterns inside that approved group. Rejected applicants, often thinner files or riskier profiles, have no labels, so the model never learns how they behave. When it scores everyone who applies, it can be badly wrong on exactly those profiles. It often underestimates their risk, because the few approved members of a risky group were the ones that looked best on other signals. Ways to reduce the bias: approve a small random slice of would-be rejects under a loss budget to collect unbiased labels, reweight approved loans by the inverse of their approval probability if the old policy's scores were logged, and use credit bureau outcomes for rejected applicants who borrowed elsewhere. Reject inference methods help only roughly. Finally, evaluate on the full applicant population, not just on held-out approved loans.",
+  "points": [
+   "Labels exist only for approved applicants, a non-random sample chosen by the old policy",
+   "The model can misjudge, often underrate, risk for profiles that were usually rejected",
+   "Collect unbiased labels by approving a small random or controlled slice of would-be rejects",
+   "Reweight by inverse approval probability, or use outside outcome data such as bureau records",
+   "Evaluate on all applicants, and treat reject inference as a rough fix"
+  ],
+  "explanation": "This is selection bias: the training sample was picked by a process tied to the outcome. The old policy approved people it judged safe, so the labelled data covers mainly low-risk regions. Inside a risky segment, the approved few were chosen on extra evidence, so their default rate understates the segment's true rate. A model trained on them carries that optimism to new applicants.\n\nThe common mistake is to check the model on a held-out set of approved loans and conclude it works. That test set has the same bias, so it hides the problem. Another mistake is to think more data from the same process fixes it. More approved loans still say nothing about the rejected region. Random approvals cost money, which is why they run on a small, capped slice, but they are the cleanest source of truth. Reweighting needs the old approval probabilities, and outside data needs legal and privacy checks.",
+  "deeper": "There is also a feedback loop: the new model decides who gets approved next, so its blind spots shape the next training set. Interviewers like candidates who mention that the same pattern appears in fraud, where blocked transactions never get labels, and in recommenders, which only see clicks on items they showed.",
+  "tags": [
+   "bias",
+   "credit"
+  ],
+  "concepts": [
+   "selection-bias"
+  ]
+ },
+ {
+  "id": "data-0027",
+  "topic": "data",
+  "subtopic": "finding and handling mislabeled rows",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A retailer has 80,000 product photos, each labelled with one of 30 categories. Spot checks suggest about 8% of the labels are wrong. Which are sound ways to find and handle the mislabeled rows? Select all that apply.",
+  "options": [
+   "Drop every photo with a high training loss, since mislabeled rows are the only hard ones to fit",
+   "Flag disagreements using the final model's predictions on the same photos it was trained on",
+   "Flag photos where out-of-fold predictions from cross-validation confidently disagree with the label",
+   "Send the flagged photos to reviewers, starting with the most confident disagreements",
+   "Train with a noise-robust loss, such as generalized cross-entropy, that caps the pull of badly misfit rows"
+  ],
+  "answer": [
+   2,
+   3,
+   4
+  ],
+  "explanation": "Out-of-fold predictions come from a model that never saw that photo, so when it confidently predicts a different category than the label, the label is a good suspect. This is the core idea of confident learning. Sending the most confident disagreements to reviewers first spends the relabelling budget where errors are most likely, and reviewers can fix a label rather than lose the photo. A noise-robust loss handles the errors nobody reviews. Generalized cross-entropy scales each row's cross-entropy gradient by the predicted probability of its label raised to a small power, so rows the model is confident are labelled wrong pull the weights much less. Label smoothing is a milder cousin. It only stops the model from becoming fully certain of any label, and does not down-weight rows it badly misfits.\n\nHigh training loss also marks rare categories, unusual angles and other hard but correct photos. Dropping all of them removes the data the model most needs and can wipe out small classes. The final model's predictions on its own training photos are a poor detector, because a flexible model memorises wrong labels and then agrees with them.",
+  "deeper": "Fix the evaluation set first. If 8% of test labels are wrong, accuracy differences of a few points between models may be noise. Interviewers often ask how you would confirm the cleanup helped: retrain and compare on a small expert-checked test set.",
+  "tags": [
+   "labels",
+   "data-quality"
+  ],
+  "concepts": [
+   "label-noise",
+   "cross-validation"
+  ]
+ },
+ {
+  "id": "data-0028",
+  "topic": "data",
+  "subtopic": "Cohen's kappa",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "Two moderators each label the same 200 posts as toxic or fine:\n\n- Both say toxic: 42\n- Both say fine: 118\n- A says toxic, B says fine: 24\n- A says fine, B says toxic: 16\n\nWhat is Cohen's kappa for the two moderators? Give it as a decimal to 2 places.",
+  "answer": 0.53,
+  "tolerance": 0.005,
+  "check": "both_toxic, both_fine, a_only, b_only = 42, 118, 24, 16\nn = both_toxic + both_fine + a_only + b_only\npo = (both_toxic + both_fine) / n\na_toxic = (both_toxic + a_only) / n\nb_toxic = (both_toxic + b_only) / n\npe = a_toxic * b_toxic + (1 - a_toxic) * (1 - b_toxic)\nresult = (po - pe) / (1 - pe)",
+  "explanation": "Kappa compares observed agreement with the agreement you would expect by chance: κ = (pₒ − pₑ) / (1 − pₑ).\n\nObserved agreement: (42 + 118) / 200 = 0.80.\n\nChance agreement: A says toxic on 42 + 24 = 66 posts, a rate of 0.33. B says toxic on 42 + 16 = 58 posts, a rate of 0.29. Both saying toxic by chance is 0.33 × 0.29 = 0.0957. Both saying fine is 0.67 × 0.71 = 0.4757. So pₑ = 0.5714.\n\nKappa: (0.80 − 0.5714) / (1 − 0.5714) = 0.2286 / 0.4286 ≈ 0.53.\n\nThe common mistake is to stop at 0.80. Raw agreement looks high because most posts are fine, and two people who both said fine most of the time would agree often even without reading the posts. Kappa removes that chance share. A value around 0.53 usually counts as only moderate agreement, a sign the guidelines for toxic need work.",
+  "deeper": "Kappa drops sharply when one class is rare, even with high raw agreement, so report it alongside per-class agreement. For more than two annotators, Fleiss' kappa or Krippendorff's alpha is the usual choice.",
+  "tags": [
+   "labels",
+   "moderation"
+  ],
+  "concepts": [
+   "inter-annotator-agreement"
+  ]
+ },
+ {
+  "id": "data-0029",
+  "topic": "data",
+  "subtopic": "asking about the unsure cases",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "A legal document classifier is retrained each week. Each round, the team sends labelers the unlabelled documents where the model's top predicted probability is lowest, the ones closest to a coin flip between classes. This active learning strategy is called ______ sampling.",
+  "answer": "uncertainty",
+  "accept": [
+   "uncertainty-based",
+   "uncertainty based",
+   "uncertainty sampling",
+   "least confidence",
+   "least confident",
+   "least-confidence",
+   "least-confident"
+  ],
+  "explanation": "Uncertainty sampling picks the examples the model is least sure about, because a label there is most likely to change the decision boundary. A document the model already scores at 0.99 teaches it little. A document at 0.4 versus 0.35 sits right where the model is confused. Using the lowest top probability, as here, is the least-confidence version. Margin sampling, the gap between the top two classes, and entropy over all classes are close variants.\n\nA common wrong answer is random sampling, which is the baseline active learning tries to beat. Another is \"diversity sampling\", which picks examples that cover different parts of the data rather than the uncertain ones. The two are often combined, because pure uncertainty sampling can pick many near-identical confusing documents or chase noisy outliers.",
+  "deeper": "Keep a separate random, labelled test set. Data picked by active learning is deliberately unrepresentative, so scores measured on it mislead. Interviewers also like hearing that model scores must be reasonably calibrated for least-confidence picks to mean much.",
+  "tags": [
+   "active-learning",
+   "labels"
+  ],
+  "concepts": [
+   "active-learning"
+  ]
+ },
+ {
+  "id": "data-0030",
+  "topic": "data",
+  "subtopic": "checks on a new training batch",
+  "format": "multi",
+  "difficulty": 1,
+  "prompt": "Each night a new batch of store sales arrives to retrain a demand forecasting model. Which checks belong in the data validation step that runs before training? Select all that apply.",
+  "options": [
+   "Confirm the newest timestamps are from the expected day",
+   "Require each column's mean to match last week's mean exactly",
+   "Fill nulls with zero first, so that the null-rate check never fails",
+   "Confirm the expected columns are present with the expected types",
+   "Compare null rates and feature distributions with a reference window",
+   "Check value ranges, such as no negative quantities or prices"
+  ],
+  "answer": [
+   0,
+   3,
+   4,
+   5
+  ],
+  "explanation": "A schema check catches renamed, missing or retyped columns, such as a price arriving as text. Comparing null rates and distributions with a reference window, for example with PSI, catches quieter problems such as a store feed that stopped sending a field or a unit change. Range checks catch impossible values, since a negative quantity is a bug, not a sale. A freshness check catches a stale or replayed batch, which would silently train the model on old data.\n\nRequiring exact equality of means fails every night, because sales vary with weather, promotions and holidays. Checks need tolerances or statistical thresholds. Filling nulls with zero before checking hides the very problem the null-rate check exists to catch, and zero sales is a real value that would mislead the model.",
+  "deeper": "Decide in advance which failures block training and which only warn. A missing column should stop the run, while a small shift might only alert. Tools such as Great Expectations or TFX Data Validation store these rules as code next to the pipeline.",
+  "tags": [
+   "validation",
+   "pipelines"
+  ],
+  "concepts": [
+   "data-validation",
+   "data-drift"
+  ]
+ },
+ {
+  "id": "data-0031",
+  "topic": "data",
+  "subtopic": "selecting features without leaking",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A biotech team has 400 patients and 20,000 gene expression features. They pick the 50 genes most correlated with the outcome using all 400 patients, then run 5-fold cross-validation of a logistic regression on those 50 genes and get AUC 0.93. As a sanity check, they shuffle the labels and rerun the whole procedure. AUC is still 0.90. What should they change?",
+  "options": [
+   "Pick genes with an L1-penalised model fit once on all 400 patients, then cross-validate as before",
+   "Keep the top 500 genes instead of the top 50, so the selection depends less on random chance",
+   "Redo the gene ranking inside each training fold, such as a step in a scikit-learn `Pipeline`",
+   "Swap the correlation filter for recursive feature elimination, run once on all 400 patients first"
+  ],
+  "answer": 2,
+  "explanation": "With shuffled labels there is no real signal, so an honest procedure should score about 0.5. Getting 0.90 proves the evaluation is broken. With 20,000 genes and 400 patients, some genes correlate with any labels by pure chance. Ranking them on all patients picks those lucky genes using the validation patients' labels too, so each validation fold has already been used to choose the features. The fix is to treat selection as part of training: rerun it on the training part of each fold. A `Pipeline` with `SelectKBest` and the model does this automatically.\n\nRecursive feature elimination is a wrapper method and an L1 penalty is an embedded method, but run once on all patients both leak in exactly the same way. The choice of filter, wrapper or embedded does not matter if it sees the validation labels. Keeping 500 genes still selects them on all the data, so it still leaks.",
+  "deeper": "Interviewers love the shuffled-label test because it is cheap and decisive. If selection settings such as k are tuned too, use nested cross-validation, with tuning in the inner loop and the honest estimate from the outer loop.",
+  "tags": [
+   "feature-selection",
+   "leakage"
+  ],
+  "concepts": [
+   "feature-selection",
+   "preprocessing-leakage",
+   "cross-validation"
+  ]
+ },
+ {
+  "id": "data-0032",
+  "topic": "data",
+  "subtopic": "an upstream data change breaks the model",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A logistics company's shipping cost model sees its mean absolute error double overnight, with no model or code deploy. You learn that an upstream team changed `parcel_weight` from kilograms to grams in one warehouse's feed that same day. How would you confirm this is the cause and recover? What guards would you add so the next upstream change, such as a new category value or a spike in nulls, is caught before it hurts the model?",
+  "answer": "First I would confirm it. I would compare the live distribution of each input with the training reference, split by warehouse, and check the serving logs: weights from that feed should now be about 1,000 times larger, and the extra error should come from that warehouse's parcels. Then I would fix it at the source or convert the field in the pipeline, replay the affected window to measure the damage, and check whether bad rows reached the training data, retraining if they did. For guards, I would agree a data contract with the upstream team that fixes names, types and units, with a schema check that blocks a batch that breaks it. I would add per-source checks on value ranges, null rates, unseen category values and distribution shift such as PSI, with alerts. I would log the features the model actually received and compare them with training data to catch skew, and watch the prediction distribution, since true costs arrive late.",
+  "points": [
+   "Confirm with per-source feature distributions and serving logs before acting",
+   "Fix or convert the feed, then check whether bad rows reached training data",
+   "Data contract with the upstream team covering names, types and units",
+   "Automated checks per source on ranges, nulls, new categories and distribution shift",
+   "Log served features to detect training-serving skew",
+   "Monitor prediction distributions, since labels arrive late"
+  ],
+  "explanation": "A sudden jump with no deploy points at the data. The fastest proof is to slice by source: if the error spike and a 1,000-fold jump in `parcel_weight` both sit in one warehouse, the cause is clear. A strong answer then separates two harms. Live predictions are wrong now, which the fix stops. Bad rows may also have entered the training set and need removing before the next retrain.\n\nThe common mistake is to retrain right away on the latest data. That teaches the model that gram values are normal for one warehouse and buries the bug in the weights. Another mistake is to rely only on accuracy monitoring. Shipping costs may only be known days later, so input and prediction checks are what catch the problem early. Range checks would have caught grams. Category checks catch a new value, and null-rate checks catch a broken field.",
+  "deeper": "Interviewers often ask who owns the fix. A good answer covers both sides: a contract and change process with the producing team, plus defensive checks on the consuming side, because contracts get broken. Routing alerts to an owner with a runbook matters as much as the check.",
+  "tags": [
+   "validation",
+   "monitoring",
+   "debugging"
+  ],
+  "concepts": [
+   "data-validation",
+   "training-serving-skew",
+   "data-drift"
+  ]
+ },
+ {
+  "id": "data-0033",
+  "topic": "data",
+  "subtopic": "features from raw event logs",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A food delivery app wants to predict, at the moment a customer places an order, how many minutes until it arrives. You have raw logs of orders (time, restaurant, customer location, items), restaurant events (order accepted, food ready) and courier events (GPS pings, assignment, pickup, drop-off). What features would you build, and what mistakes would you avoid?",
+  "answer": "Time features: hour of day, day of week and a holiday flag, with cyclical encoding if the model is linear. Order features: number of items, basket value and distance from restaurant to customer. Rolling aggregates computed only from events before the order time: the restaurant's median prep time over the last 7 days and last hour, how many orders are in its queue now, couriers free within 2 km, and recent average delivery time in the zone. For restaurant and zone IDs, use out-of-fold or past-only target encoding with smoothing, or let a tree model handle them. Avoid anything known only after the order is placed, such as the food-ready time, courier assignment or pickup time. Build training rows with point-in-time joins so each aggregate matches what the live system could compute, and use the same feature code offline and online.",
+  "points": [
+   "Hour, weekday and holiday features",
+   "Distance and basket size from the order itself",
+   "Rolling prep time, queue length and courier supply computed only from earlier events",
+   "Leak-safe encoding of restaurant and zone IDs",
+   "Exclude post-order fields such as food-ready, assignment or pickup times",
+   "Point-in-time joins and shared feature code for training and serving"
+  ],
+  "explanation": "Delivery time is prep time plus courier wait plus travel, so good features describe each part as it looks at the moment of ordering. Rolling aggregates carry most of the signal: a restaurant that is slow tonight will likely stay slow for the next order.\n\nThe most common mistake is leakage from the logs themselves. Food-ready and pickup times are in the same tables and are extremely predictive, but they do not exist when the customer taps order. A model trained with them looks excellent offline and fails live. A subtler version is a rolling average computed over a full day, which includes deliveries that finished after this order was placed. Target encoding of restaurants leaks in the same way unless it uses only past data or other folds. Finally, if offline features come from a batch job and live ones from a different service, small differences in logic cause training-serving skew.",
+  "deeper": "A strong candidate also mentions updating the estimate after the order, when food-ready and pickup events arrive. That is a different model, or the same model with a prediction time per stage, and each stage may only use events before its own prediction time.",
+  "tags": [
+   "features",
+   "delivery",
+   "leakage"
+  ],
+  "concepts": [
+   "point-in-time-correctness",
+   "target-encoding",
+   "training-serving-skew"
+  ]
+ },
+ {
+  "id": "data-0034",
+  "topic": "data",
+  "subtopic": "labeling on a tight budget",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "Your team must ship a classifier that sorts incoming insurance claim emails into 6 categories. You have 200,000 unlabelled emails, no labels yet, and budget for about 3,000 expert labels. Plan how you would get enough good labels.",
+  "answer": "I would start with a random sample of about 500 emails labelled by experts with clear guidelines, and set it aside as the test set so it stays unbiased. Next I would write cheap labeling functions, such as keyword rules, sender domains and form fields, and combine their noisy votes with a label model to weakly label the whole pool. I would train a first model on those weak labels plus a small labelled seed. Then active learning: each round, experts label the emails the model is least sure about, mixed with some diverse or random picks so it does not chase outliers. Where the model is fairly confident, experts see its pre-label and confirm or correct it, which is faster than labelling from scratch. For quality, I would double-label a share to measure Cohen's kappa, mix in gold examples to catch drift, and track test score against labels spent to know when to stop.",
+  "points": [
+   "A random, expert-labelled test set kept out of the active learning loop",
+   "Weak labels from rules or heuristics, combined by a label model",
+   "Active learning on uncertain plus diverse examples",
+   "Model pre-labels that experts confirm or correct, watching for anchoring",
+   "Quality checks with double labelling, kappa and gold examples",
+   "A learning curve to decide when more labels stop paying off"
+  ],
+  "explanation": "With 3,000 labels for 200,000 emails, each label has to earn its place. Weak supervision gives broad but noisy coverage almost for free. Active learning spends expert time where the model is confused. Pre-labelling turns slow labelling into faster review. The random test set is what tells you whether any of this is working.\n\nThe most common mistake is to evaluate on data picked by active learning or labelled by rules. Those sets are biased toward hard cases or toward what the rules already know, so scores on them mislead. Another is to trust pre-labels blindly. Reviewers tend to accept what they are shown, so measure how often they change pre-labels and spot-check accepted ones. A third is spending the whole budget on random labels. That works, but it wastes many labels on easy, common categories while rare ones stay thin.",
+  "deeper": "Interviewers may ask about using an LLM as the pre-labeller. It can be a strong one for email text, but the same rules hold: measure its agreement with experts per category on the gold set before trusting it, and keep humans on the categories where it is weak.",
+  "tags": [
+   "labels",
+   "active-learning"
+  ],
+  "concepts": [
+   "active-learning",
+   "label-noise",
+   "inter-annotator-agreement"
+  ]
  }
 ]
