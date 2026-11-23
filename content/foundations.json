@@ -7,8 +7,8 @@
     "difficulty": 1,
     "prompt": "A gradient-boosted model predicts which parcels will arrive late. On the full training set its training error is 3% and its validation error is 17%. Experienced dispatchers make about 4% errors on the same task. What does this pattern show?",
     "options": [
-      "High variance: the model fits the training data closely but does not generalize, so it is overfitting.",
-      "High bias: the model is too simple to capture the real pattern, so it is underfitting.",
+      "High variance: it fits the training data closely but fails to generalize, so it is overfitting.",
+      "High bias: the model is too simple to capture the real pattern in the data, so it is underfitting.",
       "A good fit: the training error is already below the human level, so the model has learned the task.",
       "High bias and high variance together, because validation error sits far above the human level."
     ],
@@ -43,7 +43,7 @@
     "difficulty": 2,
     "prompt": "A grocery chain forecasts daily sales per store from three years of history. Features include sales lags and 7-day rolling averages. Shuffled 5-fold cross-validation gave an error of 6%, but the first month in production showed 14%. Which change to the validation setup best fixes the misleading estimate?",
     "options": [
-      "Use forward-chaining splits where each fold trains on earlier dates and validates on the dates right after.",
+      "Use forward-chaining splits that train on earlier dates and validate on the dates right after.",
       "Use stratified 5-fold so that each fold holds the same mix of high-sales and low-sales days.",
       "Move to 10 folds so each validation fold is smaller and the error estimate becomes less noisy.",
       "Keep the shuffled folds but fit feature scaling on each training fold only, never on validation rows."
@@ -59,10 +59,10 @@
     "subtopic": "naming the error of too-simple models",
     "format": "fill",
     "difficulty": 1,
-    "prompt": "A straight-line model predicts house prices from floor area alone. Prices really curve upward for large homes, so training and validation error are both high and close together. In the bias-variance decomposition, the error that comes from a model being too simple to capture the true pattern is called ______.",
+    "prompt": "A straight-line model predicts house prices from floor area alone. Prices really curve upward for large homes, so training and validation error are both high and close together. The bias-variance decomposition splits expected error into three named terms. The term for error that comes from a model being too simple to capture the true pattern is called ______.",
     "answer": "bias",
     "accept": ["bias error", "high bias", "squared bias", "bias squared", "bias²"],
-    "explanation": "Bias is the error from wrong assumptions built into the model. A straight line cannot bend, so however much data you give it, it will keep missing the curve for large homes. That is why training error stays high: the model is wrong even on data it has seen. Validation error is close to training error because the model is too simple to memorise anything.\n\nThe common mix-up is with variance. Variance is the error from a model being too sensitive to the particular training set, which shows up as low training error and much higher validation error. Some people also answer underfitting. Underfitting is the name of the situation, and bias is the name of the error term that causes it. Adding a squared term or a tree-based model would cut bias here, while more data alone would not help much.",
+    "explanation": "Bias is the error from wrong assumptions built into the model. A straight line cannot bend, so however much data you give it, it will keep missing the curve for large homes. That is why training error stays high: the model is wrong even on data it has seen. Validation error is close to training error because the model is too simple to memorise anything.\n\nThe common mix-up is with variance. Variance is the error from a model being too sensitive to the particular training set, which shows up as low training error and much higher validation error. Some people also answer underfitting. Underfitting is the name of the situation, not one of the three terms. The decomposition is bias squared plus variance plus irreducible noise, and bias is the term that causes underfitting. Adding a squared term or a tree-based model would cut bias here, while more data alone would not help much.",
     "deeper": "In interviews, tie the term to a fix. High bias calls for more capacity or better features, not more rows. A useful check is whether training error is far from a reasonable target, such as human-level error or the error of a stronger reference model.",
     "tags": ["bias", "underfitting"]
   },
@@ -72,7 +72,7 @@
     "subtopic": "k-fold cross-validation arithmetic",
     "format": "numeric",
     "difficulty": 1,
-    "prompt": "A churn team runs a grid search over 4 learning rates, 3 tree depths and 2 subsample values, scoring every combination with 5-fold cross-validation. After the search, they refit the best combination once on all the data. How many models are trained in total? Give a whole number.",
+    "prompt": "A churn team runs a grid search over 4 learning rates, 3 tree depths and 2 subsample values, scoring every combination with 5-fold cross-validation. After the search, they refit the best combination once on all the data. How many models are trained in total, counting that final refit? Give a whole number.",
     "answer": 121,
     "tolerance": 0.5,
     "check": "combos = 4 * 3 * 2\nfolds = 5\nrefit = 1\nresult = combos * folds + refit",

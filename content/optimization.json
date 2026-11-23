@@ -40,15 +40,15 @@
     "subtopic": "quantization tradeoffs",
     "format": "mcq",
     "difficulty": 2,
-    "prompt": "A mobile app runs an image classifier on the phone. Post-training quantization to int8 cost a small, acceptable drop in accuracy. Pushing the same method to 4-bit weights causes a large drop. You still have the training code and data. What is the best next step?",
+    "prompt": "A mobile app runs an image classifier on the phone. Post-training quantization to int8 cost a small, acceptable drop in accuracy. Pushing the same method to 4-bit weights causes a large drop. You still have the training code and data. Which of these steps is most likely to win back most of the lost accuracy?",
     "options": [
-      "Use quantization-aware training, which simulates low-precision rounding in the forward pass during training, so the weights learn to tolerate it and much of the accuracy comes back.",
-      "Switch to dynamic quantization, which quantizes the 4-bit weights only at inference time, so the model never sees any rounding error and keeps its full accuracy.",
-      "Keep post-training quantization but calibrate it on the test set, since matching the calibration data to the test data removes the rounding error at 4 bits.",
-      "Also quantize the activations to 4 bits, since the large drop comes from mixing 4-bit weights with higher-precision activations inside the same layers."
+      "Use quantization-aware training, which simulates the 4-bit rounding in the forward pass while training, so the weights adapt to it and much of the accuracy returns.",
+      "Switch to dynamic quantization, which computes activation scales on the fly for each input image, so every image gets scales that fit it and the 4-bit error goes away.",
+      "Rerun post-training quantization with a much larger calibration set of training images, so the value ranges are estimated better and the 4-bit rounding error mostly disappears.",
+      "Also quantize the activations to 4 bits, since the large drop comes from mixing 4-bit weights with higher-precision activations inside the same layers of the network."
     ],
     "answer": 0,
-    "explanation": "Post-training quantization rounds the weights of a model that was trained in full precision and never had to cope with rounding. At int8 the rounding steps are small, so the damage is small. At 4 bits there are only 16 levels, and the errors add up across layers. Quantization-aware training inserts simulated quantization into the forward pass and keeps training, passing gradients straight through the rounding, so the network adjusts its weights to work well at low precision. It costs extra training time but usually recovers much of the gap.\n\nDynamic quantization still rounds the weights, and it only changes how activation ranges are found, so it does not remove rounding error. Calibrating on the test set leaks test data into the model, and calibration only sets value ranges, which cannot restore the information lost by rounding to 16 levels. Quantizing activations to 4 bits adds more rounding error, which makes accuracy worse, not better.",
+    "explanation": "Post-training quantization rounds the weights of a model that was trained in full precision and never had to cope with rounding. At int8 the rounding steps are small, so the damage is small. At 4 bits there are only 16 levels, and the errors add up across layers. Quantization-aware training inserts simulated quantization into the forward pass and keeps training, passing gradients straight through the rounding, so the network adjusts its weights to work well at low precision. It costs extra training time but usually recovers much of the gap.\n\nDynamic quantization only computes activation scales on the fly for each input. The weights are still rounded to the same 16 levels, so their error stays. A bigger calibration set gives slightly better value ranges, but calibration only sets ranges. It cannot restore the information lost when trained weights are rounded to 16 levels, which is why int8 was fine and 4 bits was not. Quantizing activations to 4 bits adds more rounding error, which makes accuracy worse, not better. Keeping the most sensitive layers at higher precision is another sound fix, but it is not among the options.",
     "deeper": "In interviews, mention the cheaper options to try before full quantization-aware training: stronger post-training methods that minimize each layer's output error, keeping sensitive layers such as the first and last at higher precision, and per-channel scales. Always measure accuracy on slices, since quantization damage is often uneven across classes.",
     "tags": [
       "quantization",
@@ -61,7 +61,7 @@
     "subtopic": "knowledge distillation",
     "format": "fill",
     "difficulty": 1,
-    "prompt": "To serve a support-ticket classifier on cheaper hardware, you train a small model to match the softened output probabilities of a large, accurate model, along with the true labels. This technique is called ______.",
+    "prompt": "To serve a search-query intent classifier on cheaper hardware, you train a small model to match the softened output probabilities of a large, accurate model, along with the true labels. This technique is called ______.",
     "answer": "knowledge distillation",
     "accept": [
       "distillation",
@@ -70,7 +70,7 @@
       "teacher-student training",
       "teacher-student learning"
     ],
-    "explanation": "In knowledge distillation, a large teacher model's outputs become extra training targets for a small student. The teacher's probabilities are softened with a temperature above 1, so the student sees more than the top answer. For a ticket marked billing, the teacher might say 0.70 billing, 0.25 refunds and 0.05 login problems, which tells the student that billing and refunds are close. These soft targets carry far more information per example than a hard label, so a small student often gets much closer to the teacher than it would by training on labels alone.\n\nThe common mistake is to answer pruning or quantization. Those compress the same model by removing weights or lowering their precision. Distillation trains a separate, smaller model. Another near miss is fine-tuning, which adapts a model to new data but does not involve learning from a second model's outputs.",
+    "explanation": "In knowledge distillation, a large teacher model's outputs become extra training targets for a small student. The teacher's probabilities are softened with a temperature above 1, so the student sees more than the top answer. For a query labelled laptops, the teacher might say 0.70 laptops, 0.25 laptop accessories and 0.05 phones, which tells the student that laptops and accessories are close. These soft targets carry far more information per example than a hard label, so a small student often gets much closer to the teacher than it would by training on labels alone.\n\nThe common mistake is to answer pruning or quantization. Those compress the same model by removing weights or lowering their precision. Distillation trains a separate, smaller model. Another near miss is fine-tuning, which adapts a model to new data but does not involve learning from a second model's outputs.",
     "deeper": "In LLM work, distillation often means generating outputs from a large model and fine-tuning a small one on them. A strong candidate notes the limits: the student rarely beats the teacher, it inherits the teacher's errors, and the terms of use of some models restrict using their outputs to train others.",
     "tags": [
       "distillation",

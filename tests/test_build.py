@@ -75,6 +75,22 @@ class ValidateTests(unittest.TestCase):
         q["explanation"] = words(80)
         self.assertEqual(validate_question(q, "evaluation"), [])
 
+    def test_mcq_key_much_longer_than_distractors_is_error(self):
+        q = fixture("mcq")
+        q["options"] = ["a" * 130, "b" * 100, "c" * 100, "d" * 100]
+        q["answer"] = 0
+        errors = validate_question(q, "evaluation")
+        self.assertTrue(any("longer" in e for e in errors), errors)
+        q["options"][0] = "a" * 120
+        self.assertEqual(validate_question(q, "evaluation"), [])
+
+    def test_multi_keys_much_longer_than_distractors_is_error(self):
+        q = fixture("multi")
+        q["options"] = ["a" * 60, "b" * 60, "c" * 40, "d" * 40, "e" * 60]
+        q["answer"] = [0, 1, 4]
+        errors = validate_question(q, "evaluation")
+        self.assertTrue(any("longer" in e for e in errors), errors)
+
     def test_difficulty_is_1_2_or_3(self):
         q = fixture("mcq")
         q["difficulty"] = 4

@@ -7,10 +7,10 @@
     "difficulty": 1,
     "prompt": "A fraud model scores 99% accuracy on a test set where 1% of transactions are fraud. What is the best first reaction?",
     "options": [
-      "Check precision and recall on the fraud class, because a model that predicts \"not fraud\" every time would also score 99%.",
-      "Ship it, because 99% accuracy is excellent for fraud detection.",
-      "Retrain with more epochs, because accuracy should reach 100% on a clean test set.",
-      "Switch to mean squared error, because accuracy is only for regression."
+      "Check fraud recall and precision, since always saying \"not fraud\" scores 99% too.",
+      "Ship it, because 99% accuracy is excellent for a fraud detection model.",
+      "Retrain with more epochs, because a clean test set should reach 100%.",
+      "Switch to mean squared error, because accuracy is a regression metric."
     ],
     "answer": 0,
     "explanation": "When only 1% of cases are fraud, a model that always says \"not fraud\" is right 99% of the time while catching zero fraud. So 99% accuracy tells you almost nothing here. You need metrics that look at the fraud class directly: recall (how much real fraud you caught) and precision (how many of your alerts were real).\n\nShipping on accuracy alone is the classic mistake this question is testing. Training longer does not fix a misleading metric, and a perfect 100% on a test set is more often a sign of leakage than of a great model. Mean squared error is a regression loss, and accuracy is a classification metric, so the option about switching to it has the two the wrong way round.",
@@ -27,8 +27,8 @@
     "options": [
       "ROC-AUC",
       "PR-AUC (average precision)",
-      "F1 score",
-      "Precision",
+      "F1 score at the chosen cut-off",
+      "Precision at the chosen cut-off",
       "Log loss"
     ],
     "answer": [0, 1, 4],

@@ -7,7 +7,7 @@
     "difficulty": 1,
     "prompt": "A bank's loan default model has been live for a year. Monitoring shows the mix of applicants looks the same as in training: income, debt ratio and age have barely moved. But applicants with a given profile now default more often than the model predicts. What best describes this change?",
     "options": [
-      "Concept drift: the link between inputs and the label has changed, so P(y | x) is now different.",
+      "Concept drift: the same inputs now lead to different outcomes, so P(y | x) has changed.",
       "Data drift: the inputs have moved away from the training data, so P(x) is now different.",
       "Training-serving skew: production computes the features differently from the training pipeline.",
       "Overfitting: the model memorised its training set, and this only shows up after months live."
@@ -47,7 +47,7 @@
     "subtopic": "training-serving skew",
     "format": "fill",
     "difficulty": 2,
-    "prompt": "A churn model scored well offline but does poorly after launch. The team finds that `days_since_last_login` was computed for training by a nightly SQL job in UTC, while the live service computes it at request time, in local time, from a different table. A mismatch like this, between how features are built for training and how they are built at serving time, is called ______.",
+    "prompt": "A churn model scored well offline but does poorly after launch. The team finds that `days_since_last_login` was computed for training by a nightly SQL job in UTC, while the live service computes it at request time, in local time, from a different table. This kind of problem is called ______.",
     "answer": "training-serving skew",
     "accept": [
       "training serving skew",
@@ -73,7 +73,7 @@
     "subtopic": "monitoring without labels",
     "format": "multi",
     "difficulty": 2,
-    "prompt": "A lender's default model went live three months ago. The label, whether a loan defaults within 12 months, will not be known for most of these loans until next year. What can the team usefully monitor right now? Select all that apply.",
+    "prompt": "A lender's default model went live three months ago. The label is whether a loan defaults within 12 months, and no loan has reached the end of that window yet. What can the team usefully monitor right now? Select all that apply.",
     "options": [
       "The distribution of each input feature compared with training, for example with PSI",
       "The distribution of predicted risk scores and the share of applicants approved",
@@ -88,7 +88,7 @@
       2,
       4
     ],
-    "explanation": "Without labels you can still watch the inputs, the outputs and fast proxies for the outcome. Feature drift checks such as PSI show whether applicants now look different from the training data. Prediction drift, a shift in the score distribution or the approval rate, is often the first sign that something upstream changed. Data quality checks catch broken pipelines, such as a field that suddenly arrives empty, which can quietly wreck predictions. A missed first payment arrives within weeks and is strongly linked to later default, so it works as an early proxy.\n\nPrecision and recall on the 12-month label need that label, and it does not exist yet for these loans. The AUC idea is a trap. Using the model's own decision as the label measures how well the model agrees with itself, so it will look excellent whatever the true quality is. None of the label-free signals prove the model is still accurate. They tell you where to look and when to worry.",
+    "explanation": "Without labels you can still watch the inputs, the outputs and fast proxies for the outcome. Feature drift checks such as PSI show whether applicants now look different from the training data. Prediction drift, a shift in the score distribution or the approval rate, is often the first sign that something upstream changed. Data quality checks catch broken pipelines, such as a field that suddenly arrives empty, which can quietly wreck predictions. A missed first payment arrives within weeks and is strongly linked to later default, so it works as an early proxy.\n\nPrecision and recall on the 12-month label need that label, and no loan has it yet. Scoring the few early defaults against everyone else would count future defaulters as good loans. The AUC idea is a trap. Using the model's own decision as the label measures how well the model agrees with itself, so it will look excellent whatever the true quality is. None of the label-free signals prove the model is still accurate. They tell you where to look and when to worry.",
     "deeper": "A strong answer also raises the selection problem. Declined applicants never get a loan, so their outcome is never seen, and the labels that do arrive come only from people the model approved. Some lenders approve a small random slice of borderline applicants to keep a less biased view of performance.",
     "tags": [
       "monitoring",
@@ -100,7 +100,7 @@
     "topic": "mlops",
     "subtopic": "population stability index",
     "format": "numeric",
-    "difficulty": 3,
+    "difficulty": 2,
     "prompt": "A credit model's score is split into 5 bins. At training time the share of applicants in each bin was 0.10, 0.20, 0.40, 0.20 and 0.10. This month the shares are 0.05, 0.15, 0.35, 0.25 and 0.20. Compute the population stability index (PSI) using the natural log. Give it as a decimal to 3 places.",
     "answer": 0.136,
     "tolerance": 0.0005,

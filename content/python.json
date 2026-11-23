@@ -49,7 +49,7 @@
     "difficulty": 2,
     "prompt": "A teammate evaluates a churn model with this scikit-learn code. What is wrong, and what is the best fix?\n\n```python\nfrom sklearn.preprocessing import StandardScaler\nfrom sklearn.linear_model import LogisticRegression\nfrom sklearn.model_selection import cross_val_score\n\nX_scaled = StandardScaler().fit_transform(X)\nscores = cross_val_score(LogisticRegression(), X_scaled, y, cv=5)\n```",
     "options": [
-      "The scaler is fit on every row, validation folds included. Put the scaler and model in one Pipeline and pass that to `cross_val_score`.",
+      "The scaler is fit on all rows, held-out folds included. Wrap the scaler and model in a Pipeline and cross-validate that.",
       "Nothing leaks, because the scaler never looks at `y`. The scores are a fair estimate of new data, so the code can stay as it is.",
       "The scaler should be refit on each validation fold inside the loop, so that every fold is scaled by its own mean and variance.",
       "The folds are not stratified, so class balance varies between them. Pass `cv=StratifiedKFold(5)` to keep the scaling consistent."
@@ -85,7 +85,7 @@
     "topic": "python",
     "subtopic": "PyTorch eval mode",
     "format": "multi",
-    "difficulty": 3,
+    "difficulty": 2,
     "prompt": "A PyTorch model has dropout and batch norm layers, and you are writing its inference code. Which statements about `model.eval()` and `torch.no_grad()` are true? Select all that apply.",
     "options": [
       "`model.eval()` makes dropout layers pass their inputs through unchanged",

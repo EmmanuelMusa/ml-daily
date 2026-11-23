@@ -34,8 +34,8 @@
     "difficulty": 2,
     "prompt": "An A/B test of a new checkout button reports a difference in conversion rate between the two groups with p = 0.03. Which statement correctly interprets this p-value?",
     "options": [
-      "If the button truly had no effect, a difference at least this extreme would appear about 3% of the time.",
-      "There is a 3% probability that the new button truly has no effect on conversion rate.",
+      "Assuming no real effect, a difference at least this extreme would appear about 3% of the time.",
+      "There is a 3% probability that the new button truly has no effect on the conversion rate.",
       "There is a 97% probability that the new button truly raises conversion compared with the old one.",
       "If the test were run again, about 97% of repeats would also give a significant result."
     ],
@@ -49,7 +49,7 @@
     "topic": "math",
     "subtopic": "gradient descent step",
     "format": "numeric",
-    "difficulty": 1,
+    "difficulty": 2,
     "prompt": "A one-weight model predicts ŷ = w × x and uses the loss L(w) = (w × x − y)². For a single example with x = 2 and y = 10, the current weight is w = 3 and the learning rate is 0.05. What is w after one gradient descent step? Give it as a decimal to 2 places.",
     "answer": 3.8,
     "tolerance": 0.005,
@@ -66,7 +66,7 @@
     "difficulty": 2,
     "prompt": "You run PCA on unscaled housing data with two features: sale price in dollars (variance about 10¹⁰) and number of rooms (variance about 2). The first principal component explains 99.99% of the variance. What is the best reading of this result?",
     "options": [
-      "The first component points almost along the price axis, because PCA follows raw variance and price is in large units.",
+      "The first component lies almost along the price axis, because PCA follows variance measured in raw units.",
       "Price and room count are almost perfectly correlated, so one component is enough to capture both features.",
       "The data is truly one-dimensional, so the second component carries no information and can be dropped safely.",
       "PCA stopped before converging, and more iterations would spread the variance more evenly across components."
@@ -82,7 +82,7 @@
     "subtopic": "confidence intervals",
     "format": "multi",
     "difficulty": 3,
-    "prompt": "An e-commerce team samples 400 checkout sessions at random and reports a 95% confidence interval for the mean checkout time of 41 to 47 seconds, using the usual normal-based interval. Which statements are correct? Select all that apply.",
+    "prompt": "An e-commerce team samples 400 checkout sessions at random and reports a 95% confidence interval for the mean checkout time of 41 to 47 seconds, using the usual normal-based interval. Read the interval in the standard frequentist way, where the true mean is a fixed but unknown number. Which statements are correct? Select all that apply.",
     "options": [
       "If the sampling were repeated many times, about 95% of intervals built this way would contain the true mean.",
       "There is a 95% probability that the true mean checkout time lies between 41 and 47 seconds.",
@@ -92,7 +92,7 @@
       "A two-sided test at the 5% level would reject the claim that the true mean is 50 seconds."
     ],
     "answer": [0, 3, 5],
-    "explanation": "The 95% describes the method, not this one interval. Build intervals this way over many samples and about 95% of them will cover the true mean. That makes the repeated-sampling statement correct. The width scales with 1/√n, so going from 400 to 1,600 sessions divides the width by √4 = 2, which makes the half-width statement correct. A 95% interval holds exactly the null values that a two-sided test at the 5% level would not reject. 50 seconds lies outside 41 to 47, so the test rejects it.\n\nThe statement giving a 95% probability that the true mean lies in 41 to 47 is the classic misreading. In the frequentist view the true mean is fixed, so this particular interval either contains it or not. A probability statement like that needs a Bayesian credible interval. The interval is about the mean, not individual sessions, which vary far more. A 99% interval is wider, not narrower, because more confidence needs a larger range.",
+    "explanation": "The 95% describes the method, not this one interval. Build intervals this way over many samples and about 95% of them will cover the true mean. That makes the repeated-sampling statement correct. The width scales with 1/√n, so going from 400 to 1,600 sessions divides the width by √4 = 2, which makes the half-width statement correct. A 95% interval holds exactly the null values that a two-sided test at the 5% level would not reject. 50 seconds lies outside 41 to 47, so the test rejects it.\n\nThe statement giving a 95% probability that the true mean lies in 41 to 47 is the classic misreading. In the frequentist view the true mean is fixed, so this particular interval either contains it or not. A probability statement like that needs a Bayesian credible interval, which can match these numbers under a flat prior but rests on different assumptions. The interval is about the mean, not individual sessions, which vary far more. A 99% interval is wider, not narrower, because more confidence needs a larger range.",
     "deeper": "In A/B testing, interviewers prefer candidates who report an interval for the difference between groups, not just a p-value. A useful extra point is that the 1/√n rule makes precision expensive: halving the width needs four times the traffic, which often decides how long an experiment must run.",
     "tags": ["confidence-intervals", "statistics"]
   }

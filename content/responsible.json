@@ -7,7 +7,7 @@
     "difficulty": 2,
     "prompt": "A bank's loan model approves 30% of applicants in group X and 30% of applicants in group Y. Among applicants who would actually repay, it approves 60% in group X but only 40% in group Y. Which statement is correct?",
     "options": [
-      "It meets demographic parity but fails equal opportunity, since would-be repayers are approved at different rates.",
+      "It meets demographic parity but fails equal opportunity, since true repayers are approved at unequal rates.",
       "It meets equal opportunity, since applicants in both groups are approved at the same overall rate of 30%.",
       "It meets both criteria, since equal approval rates also mean equal approval rates among those who would repay.",
       "It fails demographic parity, since applicants who would repay are approved at a higher rate in group X."
@@ -30,7 +30,7 @@
     "answer": 0.7,
     "tolerance": 0.005,
     "check": "rate_a = 240 / 400\nrate_b = 105 / 250\nresult = min(rate_a, rate_b) / max(rate_a, rate_b)",
-    "explanation": "Compare rates, not counts. Group A's approval rate is 240 / 400 = 0.60. Group B's is 105 / 250 = 0.42. The ratio is 0.42 / 0.60 = 0.70.\n\nThe common mistake is to divide the raw counts, 105 / 240 ≈ 0.44. That mixes in the fact that the groups have different numbers of applicants, which says nothing about how each group is treated. Another slip is to put the higher rate on top and get 1.43.\n\nA ratio of 0.70 is below 0.8, so it fails the four-fifths rule, a rule of thumb from US hiring guidance that is widely borrowed elsewhere. Falling below 0.8 does not prove discrimination. It is a signal to investigate, for example by checking whether the gap comes from features that act as proxies for group membership.",
+    "explanation": "Compare rates, not counts. Group A's approval rate is 240 / 400 = 0.60. Group B's is 105 / 250 = 0.42. The ratio is 0.42 / 0.60 = 0.70.\n\nThe common mistake is to divide the raw counts, 105 / 240 ≈ 0.44. That mixes in the fact that the groups have different numbers of applicants, which says nothing about how each group is treated. Another slip is to put the higher rate on top and get 1.43.\n\nA ratio of 0.70 is below 0.8, the cutoff in the four-fifths rule. That rule comes from US guidance on hiring, not housing, so for tenant screening it is a screening flag many teams borrow, not the legal test. Even in hiring, falling below 0.8 does not prove discrimination. It is a signal to investigate, for example by checking whether the gap comes from features that act as proxies for group membership.",
     "deeper": "With small groups, the ratio swings a lot by chance, so strong candidates pair it with a significance test or a confidence interval. Interviewers may also ask what you would do next: look for proxy features, compare error rates by group, and talk to legal before changing anything.",
     "tags": [
       "fairness",
@@ -44,7 +44,7 @@
     "subtopic": "explainability",
     "format": "fill",
     "difficulty": 1,
-    "prompt": "A credit team wants to tell each applicant which features pushed their score up or down. They use a method that splits one prediction among the input features using Shapley values from cooperative game theory, so the contributions add up to the gap between that prediction and the average prediction. The method is usually called ______.",
+    "prompt": "A credit team wants to tell each applicant which features pushed their score up or down. They use a method borrowed from cooperative game theory. It treats features as players, averages each feature's contribution over every order in which features could be added, and makes the contributions add up to the gap between that prediction and the average prediction. The method is usually called ______.",
     "answer": "SHAP",
     "accept": [
       "shapley additive explanations",
@@ -53,9 +53,11 @@
       "kernelshap",
       "tree shap",
       "treeshap",
-      "shapley values"
+      "shapley values",
+      "shapley value",
+      "shapley"
     ],
-    "explanation": "SHAP treats the features as players in a game whose payout is the prediction. A feature's Shapley value is its average extra contribution across all the orders in which features could be added. A key property is additivity: the base value, the model's average output, plus all the feature contributions equals the prediction for that applicant. That makes the explanation easy to show as a list of pushes up and down.\n\nThe common wrong answer is LIME. LIME also explains single predictions, but it does so by fitting a simple local model to perturbed samples. It does not use Shapley values and its contributions are not guaranteed to add up to the prediction. Another slip is permutation importance, which ranks features for the whole model rather than explaining one prediction.",
+    "explanation": "SHAP, short for Shapley additive explanations, rests on the Shapley value from game theory. The payout is the prediction, and a fair share for each player is its average extra contribution over every order of joining. Answering \"Shapley values\" is also accepted, since that is the quantity SHAP computes. The property that suits a credit letter is additivity: the base value, the model's average output, plus all the feature contributions equals this applicant's prediction. So the explanation reads as a list of pushes up and down that sum exactly.\n\nThe common wrong answer is LIME. LIME also explains single predictions, but it does so by fitting a simple local model to perturbed samples. It does not use Shapley values and its contributions are not guaranteed to add up to the prediction. Another slip is permutation importance, which ranks features for the whole model rather than explaining one prediction.",
     "deeper": "Exact Shapley values are costly, so TreeSHAP is used for tree models and sampling methods for others. A good interview point: SHAP explains the model, not the world. Correlated features can share or swap credit, so a SHAP value is not a causal effect.",
     "tags": [
       "shap",
@@ -75,10 +77,10 @@
       "Recruitment ranking is a high-risk use under the EU AI Act, with duties such as risk management, data governance, logging and human oversight",
       "Fairness testing by group before launch and ongoing monitoring",
       "Meaningful human review, including of rejected candidates",
-      "Transparency to candidates and a route to contest or get human review",
+      "Transparency to candidates and a route to human review, since unread rejections may be solely automated decisions under GDPR",
       "Data minimisation and privacy controls on CV data"
     ],
-    "explanation": "The core problem is the label. A model trained on who was hired learns to copy past decisions, including their bias, and calling that ground truth hides it. Removing a protected attribute does not fix this, because other features often stand in for it. That is why fairness must be measured on outcomes by group, not assumed from the feature list.\n\nThe regulation point matters for an EU deployment. The EU AI Act lists AI used to filter, rank or evaluate job candidates as high-risk. Providers and deployers then carry duties around risk management, data quality, documentation, logs, transparency, human oversight and robustness.\n\nThe common mistake is to treat the human reviewer as the only safeguard. If recruiters only ever see the top 20%, nobody notices strong candidates the model buried. Reviewing a sample of rejections is what makes human oversight real. Another mistake is checking fairness once before launch and never again.",
+    "explanation": "The core problem is the label. A model trained on who was hired learns to copy past decisions, including their bias, and calling that ground truth hides it. Removing a protected attribute does not fix this, because other features often stand in for it. That is why fairness must be measured on outcomes by group, not assumed from the feature list.\n\nThe regulation point matters for an EU deployment. The EU AI Act lists AI used to filter, rank or evaluate job candidates as high-risk. The provider, here the company itself since it builds the tool, carries the main duties: risk management, data governance, documentation, logs, transparency, human oversight, accuracy and robustness. As the deployer it must also keep human oversight in place and tell people the system is used on them. Separately, under the GDPR, rejecting CVs that no person ever reads may count as a solely automated decision, which needs safeguards such as a right to human intervention.\n\nThe common mistake is to treat the human reviewer as the only safeguard. If recruiters only ever see the top 20%, nobody notices strong candidates the model buried. Reviewing a sample of rejections is what makes human oversight real. Another mistake is checking fairness once before launch and never again.",
     "deeper": "Strong candidates also question the target. Predicting who was hired copies the past, while predicting performance a year in is closer to the real goal, though it is only seen for people who were hired. That selection bias is a good follow-up topic in interviews.",
     "tags": [
       "fairness",

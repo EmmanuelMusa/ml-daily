@@ -7,10 +7,10 @@
     "difficulty": 2,
     "prompt": "Attention computes softmax(QKᵀ / √d_k)V. A teammate writing a custom attention layer with d_k = 128 drops the √d_k term, and training becomes slower and less stable. Why does the scaling matter?",
     "options": [
-      "Dot products of d_k-dimensional vectors have variance that grows with d_k, so unscaled scores push softmax toward one-hot outputs with tiny gradients. Dividing by √d_k keeps the variance near 1.",
-      "Dividing by √d_k turns each dot product into a cosine similarity, so every score lies between −1 and 1 no matter how long the query and key vectors are.",
-      "Without the √d_k term the attention weights in each row no longer sum to 1, so each output becomes a biased weighted average of the value vectors.",
-      "Dividing by √d_k cuts the cost of the score matrix from O(n²·d_k) to O(n²), so the layer runs faster and fits longer sequences into GPU memory."
+      "Unscaled dot products have variance that grows with d_k, so softmax saturates toward one-hot weights with tiny gradients. Dividing by √d_k brings it back near 1.",
+      "Dividing by √d_k turns each dot product into a cosine similarity, so every score stays between −1 and 1 however long the query and key vectors grow during training.",
+      "Without the √d_k term the attention weights in each row no longer sum to 1, so each output is a biased weighted average of the value vectors and its scale drifts.",
+      "Dividing by √d_k cuts the cost of building the score matrix from O(n²·d_k) to O(n²), so the layer runs faster and fits much longer sequences into GPU memory."
     ],
     "answer": 0,
     "explanation": "If the components of q and k are independent with mean 0 and variance 1, their dot product is a sum of d_k terms, each with variance 1, so it has variance d_k. With d_k = 128, typical scores have a standard deviation of about 11. A softmax over scores that far apart puts almost all weight on one key, and in that saturated region its gradients are close to zero, so learning slows and becomes unstable. Dividing by √128 brings the standard deviation back to about 1.\n\nThe cosine option is wrong because cosine similarity divides by the vectors' lengths, not by a fixed constant, so scaled scores can still take any size. The option about rows summing to 1 is wrong because softmax always normalizes each row, with or without scaling. The option about compute is wrong because dividing by a constant is a cheap elementwise step that changes neither the O(n²·d_k) cost nor the memory use.",
@@ -26,15 +26,15 @@
     "subtopic": "tokenization",
     "format": "mcq",
     "difficulty": 1,
-    "prompt": "A support bot serves customers in English and in Thai. The team notices that a Thai message uses about three times as many tokens as the same message written in English. What explains this, and what does it mean for the product?",
+    "prompt": "A tutoring app uses an LLM API to explain maths problems to students in English and in Thai. The team notices that a Thai explanation uses about three times as many tokens as the same explanation written in English. What explains this, and what does it mean for the product?",
     "options": [
-      "The subword tokenizer learned its vocabulary mostly from English text, so Thai splits into smaller pieces. Thai conversations cost more and fill the context window sooner.",
-      "Thai characters take more bytes in UTF-8 and tokens are simply bytes, so the count grows. Cost and context use stay the same because both are measured in words.",
-      "The tokenizer splits every language into single characters, and Thai words are longer. Cost stays the same because providers charge a flat price per message.",
-      "Token counts differ by language, but the model merges them back into words in its first layer. Cost and context use therefore depend on words, not tokens."
+      "The subword vocabulary was learned mostly from English text, so Thai splits into shorter pieces. Thai sessions cost more and use up the context window sooner.",
+      "Thai characters take three bytes each in UTF-8 and every byte is one token, so counts grow. Cost and context limits stay the same because both are counted in words.",
+      "The tokenizer splits every language into single characters, and Thai words are longer. Cost stays the same because the API charges a flat price per request.",
+      "Token counts differ by language, but the model merges them back into words in its first layer, so cost and context use depend on words, not tokens."
     ],
     "answer": 0,
-    "explanation": "Subword tokenizers such as BPE build their vocabulary from the text they were trained on. Languages and words that were common in that text get long, efficient tokens, while rarer languages and rare words get broken into many short pieces, sometimes single characters or bytes. Since usage is billed per token and the context window is a token limit, the same conversation in Thai costs more, takes longer to generate and leaves room for less history.\n\nThe UTF-8 option is wrong because tokens are learned subword units, not raw bytes, and cost does follow tokens. The single-character option is wrong because subword tokenizers keep common words whole, and token-priced APIs do not charge a flat rate per message. The option about merging tokens in the first layer is wrong because every token is its own position in the sequence, so it uses compute and context no matter what the model does with it later.",
+    "explanation": "Subword tokenizers such as BPE build their vocabulary from the text they were trained on. Languages that were common in that text get long, efficient tokens, while rarer languages get broken into many short pieces, sometimes single characters or bytes. Usage is billed per token and the context window is a token limit, so the same lesson in Thai costs more, takes longer to generate and leaves room for less history.\n\nThe UTF-8 option starts from a true fact, since a Thai character does take three bytes. But tokens are learned subword units, not one token per byte, and both price and context limits are counted in tokens, not words. The single-character option is wrong because subword tokenizers keep common words whole, and token-priced APIs do not charge a flat rate per request. The option about merging tokens in the first layer is wrong because every token is its own position in the sequence, so it uses compute and context no matter what the model does with it later.",
     "deeper": "In practice, measure token counts on real traffic in each language before setting budgets, limits and prices. A strong candidate also notes that product codes, IDs and some code formats split badly, and that comparing context windows across models needs care, because different tokenizers turn the same text into different token counts.",
     "tags": [
       "tokenization",
@@ -64,14 +64,14 @@
     "subtopic": "parameter-efficient fine-tuning",
     "format": "fill",
     "difficulty": 1,
-    "prompt": "A fine-tuning method keeps a pretrained weight matrix W frozen at its original precision and learns an update ΔW = BA, where B and A are thin matrices of rank r, much smaller than the dimensions of W. Only A and B are trained. This method is called ______.",
+    "prompt": "A fine-tuning method keeps a pretrained weight matrix W frozen and unquantized at its original precision, and learns an update ΔW = BA, where B and A are thin matrices of rank r, much smaller than the dimensions of W. Only A and B are trained. This method is called ______.",
     "answer": "LoRA",
     "accept": [
       "low-rank adaptation",
       "low rank adaptation",
       "lora fine-tuning"
     ],
-    "explanation": "LoRA, short for low-rank adaptation, assumes the change needed to adapt a model to a new task has low rank. Instead of updating W directly, it trains two thin matrices whose product BA has the same shape as W. For a 4,096 × 4,096 layer, full fine-tuning updates about 16.8 million weights. With r = 8, B is 4,096 × 8 and A is 8 × 4,096, which is 65,536 weights, about 0.4% of the layer. After training, BA can be merged into W, so inference costs nothing extra.\n\nA common mix-up is with QLoRA, which uses the same low-rank update but stores the frozen base model in 4-bit precision. The prompt says the base stays at its original precision, which rules it out. Adapters and prefix tuning are also parameter-efficient, but they add new layers or tokens rather than a low-rank update to existing weights.",
+    "explanation": "LoRA, short for low-rank adaptation, assumes the change needed to adapt a model to a new task has low rank. Instead of updating W directly, it trains two thin matrices whose product BA has the same shape as W. For a 4,096 × 4,096 layer, full fine-tuning updates about 16.8 million weights. With r = 8, B is 4,096 × 8 and A is 8 × 4,096, which is 65,536 weights, about 0.4% of the layer. After training, BA can be merged into W, so inference costs nothing extra.\n\nA common mix-up is with QLoRA, which uses the same low-rank update but stores the frozen base model in 4-bit precision. The prompt says the base stays unquantized at its original precision, which rules it out. Adapters and prefix tuning are also parameter-efficient, but they add new layers or tokens rather than a low-rank update to existing weights.",
     "deeper": "Interviewers often ask which layers to apply LoRA to and how to pick the rank. A strong answer mentions the attention projections as a common start, trying a few ranks on a validation set, and the serving benefit: one base model can host many small task adapters and swap them per request.",
     "tags": [
       "lora",
@@ -86,10 +86,10 @@
     "difficulty": 3,
     "prompt": "A bank has 50,000 preference pairs for its FAQ assistant. Each pair has a prompt, a reply raters preferred and a reply they rejected. One engineer proposes RLHF with a reward model and PPO. Another proposes DPO. What is the main way DPO differs?",
     "options": [
-      "It trains the policy directly on the pairs with a classification-style loss that raises the preferred reply's likelihood relative to the rejected one, measured against a frozen reference model.",
-      "It first fits a reward model on the pairs, as RLHF does, then swaps PPO for plain supervised fine-tuning on the sampled replies that the reward model scores highest.",
+      "It trains the policy directly on the pairs with a loss that pushes the preferred reply above the rejected one, each scored against a frozen reference model.",
+      "It first fits a reward model on the pairs, as RLHF does, then replaces PPO with supervised fine-tuning on sampled replies that the reward model scores highest.",
       "It drops the reference model and simply maximizes the likelihood of the preferred replies, ignoring the rejected ones, which makes it cheaper and more stable than RLHF.",
-      "It replaces the human pairs with scores the model gives its own replies, so the 50,000 pairs are kept only as a held-out set for evaluating the final model."
+      "It replaces the human pairs with scores the model gives its own sampled replies, and keeps the 50,000 pairs only as a held-out set for checking the final model."
     ],
     "answer": 0,
     "explanation": "DPO starts from the same objective as RLHF: maximize reward while staying close to a reference model. Its key step shows that the optimal policy for that objective implies a reward equal to β times the log ratio of the policy's probability to the reference model's probability, plus a term that cancels when two replies to the same prompt are compared. Putting that into the standard preference model gives a loss on the pairs alone. Training pushes the log ratio up for the preferred reply and down for the rejected one. There is no separate reward model, no sampling during training and no PPO loop, which makes it simpler and more stable to run.\n\nThe option about fitting a reward model and fine-tuning on top-scored samples describes rejection sampling, also called best-of-n fine-tuning, not DPO. The option about dropping the reference model is wrong twice: the frozen reference keeps the policy from drifting, and the rejected replies are half of the signal. The option about self-scoring describes AI-feedback or self-rewarding methods, which DPO does not need.",

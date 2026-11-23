@@ -7,7 +7,7 @@
     "difficulty": 1,
     "prompt": "A lender wants to predict loan default from 20 applicant features, a mix of numeric and categorical, across 50,000 past loans. The regulator requires a clear reason for every declined application. Which first model is most sensible?",
     "options": [
-      "Logistic regression on encoded features, since each coefficient shows how a feature moves the odds of default.",
+      "Logistic regression, since each coefficient shows how a feature moves the odds of default.",
       "A deep neural network, since deep models reliably beat simpler ones on tabular data of this size.",
       "A random forest of 1,000 deep trees, since averaging many trees makes each decision easy to trace.",
       "A support vector machine with an RBF kernel, since its support vectors give a simple rule per feature."
@@ -25,7 +25,7 @@
     "difficulty": 2,
     "prompt": "A single deep decision tree for card fraud gets 99% training accuracy, and its validation score swings a lot when the random seed changes. A random forest of 500 trees, each just as deep, gives higher and steadier validation scores. What is the main reason?",
     "options": [
-      "Averaging many decorrelated trees cuts variance, while bias stays about the same as for one tree.",
+      "Averaging many decorrelated trees cuts variance, while bias stays close to that of one tree.",
       "Each new tree is fit to the errors of the trees before it, which steadily drives the bias down.",
       "Bootstrap sampling hands each tree more training rows than the original dataset contains.",
       "Random feature subsets make each tree more accurate on its own than one tree using all features."
@@ -43,9 +43,9 @@
     "difficulty": 1,
     "prompt": "A k-nearest neighbours model for a food delivery app uses two features: distance to the restaurant in km (0 to 30) and order value in dollars (5 to 500). Before computing distances between orders, both features should go through ______ so that neither one dominates just because of its units.",
     "answer": "feature scaling",
-    "accept": ["scaling", "standardization", "standardisation", "normalization", "normalisation", "min-max scaling", "min max normalization", "z-score standardization", "z-score normalization", "z-score scaling", "standard scaling", "rescaling", "feature normalization", "feature standardization"],
+    "accept": ["scaling", "standardization", "standardisation", "normalization", "normalisation", "min-max scaling", "min max normalization", "z-score", "z-score standardization", "z-score standardisation", "z-score normalization", "z-score scaling", "standard scaling", "rescaling", "feature normalization", "feature normalisation", "feature standardization", "feature standardisation"],
     "explanation": "kNN finds neighbours by Euclidean distance, which adds up squared differences in each feature. A gap of 200 dollars in order value adds 40,000 to the squared distance, while the largest possible gap in km adds only 900. Without scaling, the model is effectively choosing neighbours by order value alone. Scaling puts both features on a similar range, for example by standardising each to mean 0 and standard deviation 1, or min-max scaling to 0 to 1.\n\nThe common mistake is to assume the model will learn to weight the features. kNN has no weights to learn. It uses the raw distances, so the units decide importance. Another slip is fitting the scaler on all the data. Fit it on the training rows only, then apply the same transform to validation and live data.",
-    "deeper": "The same issue hits any distance or margin based method: k-means, SVMs with RBF kernels, and PCA. Tree models do not care, because splits depend only on the order of values. A strong candidate also notes that outliers can wreck min-max scaling, so a robust scaler using the median and IQR may be safer.",
+    "deeper": "The same issue hits k-means and SVMs with RBF kernels, which use distances, and PCA, which follows raw variance. Tree models do not care, because splits depend only on the order of values. A strong candidate also notes that outliers can wreck min-max scaling, so a robust scaler using the median and IQR may be safer.",
     "tags": ["knn", "scaling"]
   },
   {

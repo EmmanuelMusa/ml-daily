@@ -7,13 +7,13 @@
     "difficulty": 1,
     "prompt": "A team automates expense-report checks. Every report goes through the same three steps: extract the line items with an LLM, compare them with the travel policy, then file the result in the finance system. A teammate proposes rebuilding it as an agent that decides for itself which tools to call and in what order. Which response is best?",
     "options": [
-      "Keep the fixed workflow, since the steps are known in advance and a workflow is cheaper, more predictable and easier to test.",
-      "Switch to an agent, since letting the model choose its own steps always makes a system more accurate on unusual reports.",
-      "Keep the fixed workflow, since an agent cannot call external systems such as the finance system without a human in between.",
+      "Keep the fixed workflow, since the steps never change and a fixed path is cheaper, faster and easier to test.",
+      "Switch to an agent, since it can adapt its steps to odd reports, which matters more here than cost or predictability.",
+      "Keep the fixed workflow, since an agent cannot write to a system like the finance system without a human.",
       "Switch to an agent, since a fixed workflow cannot use an LLM for a step like extraction and must rely on hand-written rules."
     ],
     "answer": 0,
-    "explanation": "In a workflow, your code fixes the path and the LLM is called at set points inside it. In an agent, the model looks at what has happened so far and decides the next action in a loop. That freedom is worth paying for when the path cannot be known in advance, such as debugging an unfamiliar failure or researching an open question. Here every report follows the same three steps, so an agent adds cost, latency, run-to-run variation and new ways to fail, such as skipping the policy check, while gaining nothing.\n\nThe claim that model-chosen steps are always more accurate is false. More freedom also means more room for mistakes, and a fixed path is far easier to test. Agents call external systems all the time, since that is what tools are for, so that option has the right choice for a wrong reason. Workflows can and often do include LLM steps, and this one already uses an LLM to extract line items.",
+    "explanation": "In a workflow, your code fixes the path and the LLM is called at set points inside it. In an agent, the model looks at what has happened so far and decides the next action in a loop. That freedom is worth paying for when the path cannot be known in advance, such as debugging an unfamiliar failure or researching an open question. Here every report follows the same three steps, so an agent adds cost, latency, run-to-run variation and new ways to fail, such as skipping the policy check, while gaining nothing.\n\nAdapting to odd reports sounds useful, but here there is nothing to adapt: every report takes the same three steps. The extra freedom brings more room for mistakes and makes testing harder, and odd reports are better caught by a check in the workflow that flags them for review. Agents call external systems all the time, since that is what tools are for, so that option has the right choice for a wrong reason. Workflows can and often do include LLM steps, and this one already uses an LLM to extract line items.",
     "deeper": "A strong candidate says \"start with the simplest thing that works\" and adds agency only where it earns its keep. A common design keeps the main workflow fixed and hands only the reports that fail a check to an agent that can investigate, such as by looking up past receipts.",
     "tags": ["agents", "workflows"]
   },
@@ -38,10 +38,10 @@
     "difficulty": 2,
     "prompt": "A logistics company gives its operations agent one tool, `run_sql(query)`, which runs any SQL against the warehouse database. The tool description says only \"Runs SQL.\" When a query fails, the tool returns a 60-line Python stack trace. In traces, the agent guesses table names, misreads errors and often retries the same broken query. Which redesign would help the agent most?",
     "options": [
-      "Add narrow tools such as `get_shipment_status(tracking_id)` with clear descriptions, and return short errors that say what went wrong and how to fix it.",
+      "Add narrow tools like `get_shipment_status(tracking_id)` with clear descriptions, and return short errors with a fix hint.",
       "Keep `run_sql` but return the full stack trace plus the database logs on failure, so the agent has every detail it could need to debug the query.",
       "Merge every action into one `do_task(instruction)` tool, so the agent has fewer choices to make and can never pick the wrong tool by mistake.",
-      "Return an empty result whenever a query fails, so the agent is not distracted by error text and moves on quickly to a different approach."
+      "Return an empty result whenever a query fails, so error text never distracts the agent from its task."
     ],
     "answer": 0,
     "explanation": "A model decides when and how to use a tool from its name, its description and its parameter schema, much like a new developer reading API docs. A narrow tool such as `get_shipment_status` puts the right tables and joins in code once, so the agent no longer has to guess the database schema. A typed parameter like `tracking_id` makes bad calls less likely, and a scoped tool is also safer than open SQL. Errors are input to the agent's next step. A message such as \"No shipment with tracking ID ABC123. IDs start with TRK followed by 8 digits.\" gives it a clear way to recover.\n\nA longer stack trace plus logs adds tokens and noise and buries the one line that matters. A single `do_task` tool does not remove the choice, it hides it inside free text with no schema, which is harder to check and to debug. Returning an empty result on failure is the most dangerous option, because the agent cannot tell \"no data\" from \"the query broke\" and may report a wrong answer with confidence.",
@@ -75,9 +75,9 @@
     "difficulty": 1,
     "prompt": "Three AI applications run inside one company: a chat assistant, a coding assistant and an analytics bot. Each one has its own hand-written connectors for GitHub, the ticketing system and the data warehouse, which makes nine connectors in all. An engineer proposes adopting the Model Context Protocol (MCP). What does MCP give them?",
     "options": [
-      "A standard interface, so each system is wrapped once as an MCP server and any MCP-capable application can then use it.",
+      "A shared standard, so each system is wrapped once as an MCP server that any MCP-capable application can use.",
       "A fine-tuning method that teaches each model the three systems' APIs, so the applications no longer need tool calls.",
-      "A much larger context window, so each application can load the full contents of all three systems into its prompt.",
+      "A much larger context window, so each application can load all three systems' contents into its prompt.",
       "A security layer that makes every tool call safe, so the servers no longer need any access controls of their own."
     ],
     "answer": 0,
@@ -95,7 +95,7 @@
     "prompt": "Suppose a data-cleaning agent completes a job in 20 steps, one after another. Each step succeeds with probability 0.97, independently of the others, and the job fails if any single step fails. What percentage of jobs succeed end to end? Give the answer as a percentage to 1 decimal place.",
     "answer": 54.4,
     "tolerance": 0.05,
-    "check": "p_step = 0.97\nn_steps = 20\nresult = round(p_step ** n_steps * 100, 1)",
+    "check": "p_step = 0.97\nn_steps = 20\nresult = p_step ** n_steps * 100",
     "explanation": "The job succeeds only if all 20 steps succeed. Because the steps are independent, you multiply their success probabilities: 0.97 raised to the power 20.\n\n- 0.97² = 0.9409\n- 0.97⁴ = 0.9409² ≈ 0.8853\n- 0.97⁵ ≈ 0.8853 × 0.97 ≈ 0.8587\n- 0.97¹⁰ ≈ 0.8587² ≈ 0.7374\n- 0.97²⁰ ≈ 0.7374² ≈ 0.5438, which is 54.4%\n\nThe most common mistake is to feel that 97% per step is \"high\" and expect most jobs to pass. Almost half fail. A second mistake is to subtract the error rates linearly: 20 × 3% = 60% failure, giving 40% success. That shortcut only works when the total error is small. For larger totals it overcounts, because once a job has failed, a second failure in the same job does not fail it again.\n\nThe same maths shows why small per-step gains matter so much. At 0.99 per step, 20 steps give about 81.8% success.",
     "deeper": "Interviewers may turn it around: what per-step rate gives 90% over 20 steps? The answer is 0.9^(1/20) ≈ 0.995. In practice agents beat this simple product by checking their own work and retrying failed steps, which breaks the assumption that one failure ends the job.",
     "tags": ["reliability", "probability"]
@@ -108,8 +108,8 @@
     "difficulty": 3,
     "prompt": "A research agent works through a task of about 200 steps. Each web page it reads adds thousands of tokens to its context. By step 80, cost per step has tripled, and the agent has started ignoring a constraint the user gave at the start: \"only use sources from 2024 onward\". Some page details will be needed again much later, when the agent writes its final report. Which memory design fits best?",
     "options": [
-      "Pin the user's constraints and the current plan in context, replace old page text with short notes, and save full pages to a store it can search.",
-      "Keep the full history and move to a model with a larger context window, since more context always means the model recalls more of the task.",
+      "Pin the constraints and plan in context, swap old page text for short notes, and keep full pages in a searchable store.",
+      "Keep the full history and move to a model with a larger context window, so every page and instruction stays in view.",
       "Every 10 steps, summarize the whole history, constraints included, into one paragraph, and then drop everything else from the context.",
       "Store every step in a vector database and keep only the latest step in context, so everything else is retrieved by similarity when needed."
     ],

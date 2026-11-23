@@ -7,7 +7,7 @@
     "difficulty": 1,
     "prompt": "A video app has 50 million videos. Its recommender first pulls a few hundred candidates per user with cheap methods, then scores only those with a large ranking model. What is the main reason for this two-stage split?",
     "options": [
-      "Scoring every video with the large model on each request is far too slow, so a cheap stage narrows the pool first.",
+      "Running the ranking model on every video for each request is far too slow, so retrieval cuts the pool first.",
       "Ranking models cannot use user features, so a retrieval stage is needed to add personalisation before ranking.",
       "The split removes the need for labels, because retrieval is unsupervised and ranking reuses the retrieval scores.",
       "Two stages give more diverse results, because each stage is trained on a different random half of the history."
@@ -28,7 +28,7 @@
     "difficulty": 3,
     "prompt": "A card issuer must answer each authorisation within 100 ms, and the fraud model gets 30 ms of that at p99. Two of its best features are the card's transaction count in the last hour and its average amount over 90 days. Today both come from SQL queries on the transaction database that take about 200 ms each. Which design best fits the budget?",
     "options": [
-      "Keep both aggregates in a feature store updated by a stream as payments arrive, read them by card ID, and use a rules fallback on timeout.",
+      "Stream both aggregates into a feature store as payments arrive, look them up by card ID, and fall back to rules on timeout.",
       "Run the two SQL queries in parallel on a read replica, so their time overlaps and the main database is not slowed down by them.",
       "Cache each card's feature values for 24 hours after its first transaction of the day, and read them from memory after that point.",
       "Approve each transaction at once and score it a few seconds later, then reverse the approval if the model flags it as likely fraud."
@@ -90,18 +90,19 @@
     "difficulty": 2,
     "prompt": "A recipe app recommends dishes from user ratings using matrix factorisation. New users and newly added recipes both get poor recommendations. Which strategies help with this cold-start problem? Select all that apply.",
     "options": [
-      "Ask new users to pick a few cuisines or diets at sign-up and seed their recommendations from those choices",
-      "Score new recipes with content features such as ingredients, text and photo embeddings before any ratings exist",
-      "Give new recipes a small, controlled share of impressions so that early feedback on them arrives quickly",
-      "Look up each new user's matrix factorisation embedding, which the model learns for them at sign-up time",
-      "Hide new recipes until they have 100 ratings, so the model only ever ranks items that are well measured"
+      "Ask new users to pick a few cuisines or diets at sign-up and seed their recommendations from those",
+      "Score new recipes from their ingredients, text and photo embeddings before any ratings exist",
+      "Show each new recipe to a small, controlled share of users so that early ratings for it arrive quickly",
+      "Look up each new user's factorisation embedding, which the model fits from their profile at sign-up time",
+      "Hide new recipes until they have 100 ratings, so the model only ever ranks items that are well measured",
+      "Raise the number of latent factors so the model has enough room to represent new users and new recipes"
     ],
     "answer": [
       0,
       1,
       2
     ],
-    "explanation": "Matrix factorisation learns an embedding for each user and each recipe from their ratings. With no ratings there is nothing to learn from, so cold start needs other signals or a way to gather data fast.\n\nOnboarding questions give a new user a starting profile from day one. Content features let the system score a recipe by what it is, using its ingredients, text and photo, instead of by who rated it. A small exploration budget shows new recipes to some users so real feedback arrives quickly, and it is how many production systems handle new items.\n\nThe idea of an embedding learned at sign-up is false. The embedding is fitted to a user's interactions, and at sign-up there are none, so it would be random or a default vector. Hiding recipes until they reach 100 ratings creates a trap. Hidden recipes cannot be rated, so many will never reach 100 and new content stays invisible.",
+    "explanation": "Matrix factorisation learns an embedding for each user and each recipe from their ratings. With no ratings there is nothing to learn from, so cold start needs other signals or a way to gather data fast.\n\nOnboarding questions give a new user a starting profile from day one. Content features let the system score a recipe by what it is, using its ingredients, text and photo, instead of by who rated it. A small exploration budget shows new recipes to some users so real feedback arrives quickly, and it is how many production systems handle new items.\n\nThe idea of an embedding fitted from the profile at sign-up is false. Matrix factorisation fits the embedding to a user's ratings, not their profile, and at sign-up there are none, so it would be random or a default vector. More latent factors do not help either. They give the model more capacity to fit existing ratings, but a user or recipe with no ratings still has nothing to fit. Hiding recipes until they reach 100 ratings creates a trap. Hidden recipes cannot be rated, so many will never reach 100 and new content stays invisible.",
     "deeper": "A strong answer separates user cold start from item cold start, since the fixes differ. It may also mention hybrid models that blend content features with collaborative signals, so a new item starts from a content-based embedding that moves toward a learned one as ratings arrive. Popular dishes by region are a simple, strong fallback.",
     "tags": [
       "recsys",

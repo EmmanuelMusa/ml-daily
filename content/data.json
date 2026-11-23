@@ -7,13 +7,13 @@
     "difficulty": 2,
     "prompt": "A hospital builds a model that predicts, at the moment a patient is discharged, whether they will be readmitted within 30 days. The training table was pulled from records six months later. Which feature should be removed because it would not be available when the model makes its prediction?",
     "options": [
-      "Whether the patient joined the home-care program, which nurses assign during the week after discharge",
-      "Number of emergency room visits the patient made in the 12 months before this admission",
-      "Length of the current stay in days, counted from admission up to the discharge decision",
-      "Kidney function results from the blood tests taken on the last morning of the current stay"
+      "Home-care program enrolment, which nurses decide during the week after discharge",
+      "Emergency room visits the patient made in the 12 months before this admission",
+      "Length of the current stay in days, from admission up to the discharge decision",
+      "Kidney function results from blood tests reported on the last morning of the stay"
     ],
     "answer": 0,
-    "explanation": "The test for leakage is simple: at the exact moment of prediction, does this value exist yet? Home-care enrolment is decided in the week after discharge, so at discharge time it is unknown. Because the training table was built months later, the column is filled in for every row, and the model can learn from it. It is also likely to be tied to the outcome, since nurses may enrol patients who look unwell at the first follow-up. The model would score well offline and then fail in use, where the field is always blank.\n\nThe other three are safe. Past emergency visits happened before this admission. The length of stay is known once the discharge decision is made. Blood results from the last morning of the stay are on record before the patient leaves. Each can look suspicious because it is close to the outcome in time, but closeness is not the test. Availability at prediction time is.",
+    "explanation": "The test for leakage is simple: at the exact moment of prediction, does this value exist yet? Home-care enrolment is decided in the week after discharge, so at discharge time it is unknown. Because the training table was built months later, the column is filled in for every row, and the model can learn from it. It is also likely to be tied to the outcome, since nurses may enrol patients who look unwell at the first follow-up. The model would score well offline and then fail in use, where the field is always blank.\n\nThe other three are safe. Past emergency visits happened before this admission. The length of stay is known once the discharge decision is made. Blood results reported on the last morning of the stay are on record before the patient leaves. Each can look suspicious because it is close to the outcome in time, but closeness is not the test. Availability at prediction time is.",
     "deeper": "A good habit is to store a timestamp for when each feature value became known, then build training rows with a point-in-time join. In interviews, say you would also be suspicious of any single feature with very high importance, since leaked features often stand out that way.",
     "tags": [
       "leakage",
@@ -53,7 +53,7 @@
     "subtopic": "high-cardinality categorical features",
     "format": "mcq",
     "difficulty": 3,
-    "prompt": "An ad click model uses gradient boosted trees. One feature, `merchant_id`, has 400,000 values. Many appear only a few times, and new merchants show up every day. An engineer replaced each ID with that merchant's mean click rate over the whole training set. Validation AUC jumped from 0.71 to 0.93, but the online gain was small. What is the best fix?",
+    "prompt": "An ad click model uses gradient boosted trees. One feature, `merchant_id`, has 400,000 values. Many appear only a few times, and new merchants show up every day. Before splitting off a validation set, an engineer replaced each ID with that merchant's mean click rate over the full labelled dataset. Validation AUC jumped from 0.71 to 0.93, but the online gain was small. What is the best fix?",
     "options": [
       "Compute each row's encoding out-of-fold or from earlier days only, smoothed toward the global click rate",
       "Keep the full-data encoding but smooth it toward the global click rate, which removes the leak for rare merchants",

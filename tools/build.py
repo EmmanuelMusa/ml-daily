@@ -38,6 +38,7 @@ FORMATS = ("mcq", "multi", "fill", "numeric", "open")
 REQUIRED = ("id", "topic", "subtopic", "format", "difficulty", "prompt", "answer", "explanation", "deeper")
 EXPLANATION_WORDS = (80, 250)
 DEEPER_WORDS = (20, 90)
+KEY_LENGTH_LIMIT = 1.25  # average key length may be at most 25% above the average distractor
 
 _FENCE = re.compile(r"```.*?```", re.S)
 _INLINE = re.compile(r"`[^`\n]*`")
@@ -142,6 +143,12 @@ def validate_question(q, topic_key):
         pts = q.get("points")
         if not isinstance(pts, list) or not 3 <= len(pts) <= 6:
             errors.append("open needs 3 to 6 points")
+    if fmt in ("mcq", "multi") and not errors:
+        keys = set(ans) if fmt == "multi" else {ans}
+        key_len = [len(o) for i, o in enumerate(opts) if i in keys]
+        other_len = [len(o) for i, o in enumerate(opts) if i not in keys]
+        if other_len and sum(key_len) / len(key_len) > KEY_LENGTH_LIMIT * sum(other_len) / len(other_len):
+            errors.append("key is much longer than the other options, which gives it away")
     if "check" in q and fmt not in ("numeric", "fill", "mcq"):
         errors.append(f"check is not allowed on {fmt}")
 

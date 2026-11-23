@@ -29,7 +29,7 @@
     "difficulty": 3,
     "prompt": "A chat platform trains a model to flag abusive messages. About 0.1% of messages are abusive. On a large test set the model has ROC-AUC 0.97 but PR-AUC (average precision) of only 0.18. A product manager asks how both numbers can be right. Which statement correctly explains the gap?",
     "options": [
-      "The false positive rate divides by the huge pool of clean messages, so a tiny rate can still mean more false alarms than true hits.",
+      "The false positive rate divides by the huge pool of clean messages, so even a tiny rate can swamp the few true hits.",
       "PR-AUC is measured only at the default 0.5 threshold, so it misses the better thresholds that ROC-AUC averages over.",
       "ROC-AUC also credits the model for ordering clean messages correctly among themselves, which inflates it when they dominate.",
       "PR-AUC has a random baseline of 0.5, the same as ROC-AUC, so a score of 0.18 means the model ranks worse than chance."
@@ -110,7 +110,7 @@
     "difficulty": 3,
     "prompt": "A lender trained a default model after downsampling non-default loans to balance the classes. On a holdout set with the natural default rate, ROC-AUC is 0.91. Among the 1,200 holdout loans the model scored between 0.8 and 0.9, only 40% defaulted. The pricing team wants to use the scores as default probabilities. What should you conclude?",
     "options": [
-      "Ranking is strong but the scores overstate risk, so recalibrate on natural-rate holdout data before using them for pricing.",
+      "Ranking is strong but the scores overstate risk, so fit a calibration map on natural-rate data before pricing.",
       "An AUC of 0.91 shows the scores are reliable probabilities, so the 40% default rate in that band is likely sampling noise.",
       "Recalibrating will also lift AUC well above 0.91, because AUC penalises probabilities that are badly scaled.",
       "Retrain with even heavier downsampling, so the model sees enough defaults to produce calibrated probabilities."
