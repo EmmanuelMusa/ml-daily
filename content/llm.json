@@ -572,5 +572,455 @@
   "concepts": [
    "lora"
   ]
+ },
+ {
+  "id": "llm-0024",
+  "topic": "llm",
+  "subtopic": "reward hacking and the KL penalty",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A team trains a support assistant with RLHF. To make the reward climb faster, they set the KL penalty coefficient to 0. Over the next few thousand PPO steps the reward model's average score keeps rising, but human reviewers find the replies getting longer, stuffed with apologies and reassurance, and often skipping the actual fix. What is happening, and what does the KL penalty do?",
+  "options": [
+   "The policy is exploiting gaps in the reward model, which is only reliable on text like its training data. The KL penalty charges the policy for drifting from the reference model.",
+   "The reward model keeps training on the new replies during PPO and overfits to them. The KL penalty freezes the reward model's weights so that its scores stop drifting upward.",
+   "The policy is taking PPO steps that are too large. The KL penalty is the same control as PPO's clipped ratio, so setting it to 0 removes the only limit on how far each step can move.",
+   "The raters disagreed with each other, so the reward model learned noise. The KL penalty measures rater disagreement and down-weights the noisiest pairs when the reward is computed."
+  ],
+  "answer": 0,
+  "explanation": "The reward model is a learned stand-in for human judgment. It was trained on comparisons between fairly normal replies, so it is only trustworthy on text that looks like those. If the policy is free to change, it finds outputs that score high for the wrong reasons, such as length and polite phrases the reward model happens to like. The score rises while real quality falls. This is reward hacking, an example of Goodhart's law. The KL penalty subtracts β × log(π(y|x) / π_ref(y|x)) from the reward, so moving far from the reference model costs reward. Setting β to 0 removed that brake.\n\nThe option about the reward model overfitting is wrong because in standard RLHF the reward model is frozen during PPO, and the KL term acts on the policy, not on the reward model. The option equating the KL penalty with PPO clipping mixes up two controls. Clipping limits how far one update moves from the previous policy, while the KL penalty limits total drift from the fixed reference model, so clipping alone still allows slow drift over many steps. The option about rater disagreement is wrong because the KL term compares two models' token probabilities and knows nothing about raters.",
+  "deeper": "Strong candidates name other defences too: retraining the reward model on fresh comparisons of the current policy's outputs, length penalties or length-controlled evaluation, and stopping based on held-out human ratings rather than reward. A common follow-up is how to pick β. Too small allows hacking, and too large stops the policy from improving at all.",
+  "tags": [
+   "rlhf",
+   "alignment"
+  ],
+  "concepts": [
+   "rlhf",
+   "kl-divergence"
+  ]
+ },
+ {
+  "id": "llm-0025",
+  "topic": "llm",
+  "subtopic": "temperature on logits",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "An email autocomplete model produces logits of 2.0, 1.0 and 0.0 for its three candidate next words. Sampling uses temperature T = 0.5, so each logit is divided by T before the softmax. What probability does the top candidate get? Give it as a decimal to 2 places.",
+  "answer": 0.87,
+  "tolerance": 0.005,
+  "check": "import math\nlogits = [2.0, 1.0, 0.0]\nT = 0.5\ne = [math.exp(l / T) for l in logits]\nresult = e[0] / sum(e)",
+  "explanation": "Divide each logit by 0.5, which doubles it, so the scaled logits are 4, 2 and 0. Exponentiate them: e⁴ ≈ 54.60, e² ≈ 7.39 and e⁰ = 1. The sum is about 62.99, so the top word gets 54.60 / 62.99 ≈ 0.87.\n\nFor comparison, at T = 1 the same logits give e² / (e² + e¹ + e⁰) = 7.39 / 11.11 ≈ 0.67. A temperature below 1 stretches the gaps between logits, so the softmax becomes sharper and the leader gains probability. The common mistake is to multiply by T instead of dividing. That gives logits of 1, 0.5 and 0 and a top probability of about 0.51, which flattens the distribution, as a temperature of 2 would. Another slip is to apply T to the probabilities after the softmax, which is not how temperature is defined.",
+  "deeper": "In an autocomplete product, a low temperature keeps suggestions safe and predictable, which users expect. An interviewer might ask what happens as T approaches 0 (sampling becomes greedy) or as T grows large (the distribution approaches uniform). A strong answer also notes that temperature never changes the ranking of tokens, only how much the top ones dominate.",
+  "tags": [
+   "sampling",
+   "softmax"
+  ],
+  "concepts": [
+   "temperature",
+   "softmax"
+  ]
+ },
+ {
+  "id": "llm-0026",
+  "topic": "llm",
+  "subtopic": "which tokens survive top-p",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "A story-writing app samples the next token with top-p (nucleus) sampling at p = 0.85. It sorts tokens by probability, keeps the smallest set of top tokens whose probabilities add up to at least p, then renormalizes the kept probabilities so they sum to 1. The model's sorted next-token probabilities are 0.42, 0.21, 0.14, 0.09, 0.06, 0.04, 0.02 and 0.02. After filtering and renormalizing, what probability does the most likely token have? Give it as a decimal to 2 places.",
+  "answer": 0.49,
+  "tolerance": 0.005,
+  "check": "probs = [0.42, 0.21, 0.14, 0.09, 0.06, 0.04, 0.02, 0.02]\np = 0.85\nkept = []\ntotal = 0.0\nfor x in sorted(probs, reverse=True):\n    kept.append(x)\n    total += x\n    if total >= p:\n        break\nresult = kept[0] / sum(kept)",
+  "explanation": "Add the sorted probabilities until the total reaches 0.85: 0.42, then 0.63, then 0.77, then 0.86. Three tokens give only 0.77, which is short of 0.85, so the fourth token is needed, and four tokens give 0.86. The kept set is the top four tokens. Renormalizing divides each kept probability by 0.86, so the top token gets 0.42 / 0.86 ≈ 0.49. The other four tokens get probability 0.\n\nThere are three common mistakes. Forgetting to renormalize leaves 0.42. Stopping at three tokens, on the idea that the total must not go past 0.85, gives 0.42 / 0.77 ≈ 0.55, but the rule asks for the smallest set that reaches p, so the set may overshoot. Keeping one token too many gives 0.42 / 0.92 ≈ 0.46. Note also that the number of kept tokens depends on the shape of the distribution, which is what separates top-p from top-k.",
+  "deeper": "Top-p adapts to the model's confidence. When one token holds 0.9 of the probability, only that token survives, and when the distribution is flat, dozens can. Interviewers often ask how top-p interacts with temperature. Many implementations apply temperature first and then filter, so a higher temperature flattens the distribution and lets more tokens through.",
+  "tags": [
+   "sampling",
+   "decoding"
+  ],
+  "concepts": [
+   "top-p-sampling",
+   "temperature"
+  ]
+ },
+ {
+  "id": "llm-0027",
+  "topic": "llm",
+  "subtopic": "few-shot as in-context learning",
+  "format": "mcq",
+  "difficulty": 1,
+  "prompt": "A support team puts three labelled example tickets at the start of every prompt, and an LLM's routing accuracy rises from 71% to 84%. A product manager asks whether the model has now learned the categories. Which answer is correct?",
+  "options": [
+   "No weights changed. The examples only steer predictions for the request that holds them, so they must be resent, and their order and format can matter.",
+   "Yes. The provider briefly fine-tunes a copy of the model on the examples it sees, so after a few requests the examples can safely be dropped from the prompt.",
+   "Partly. Attention updates the model's weights during the forward pass, and those updates stay in place for the rest of that user's session with the model.",
+   "No weights changed, but the model averages the examples, so their order and wording do not matter and only the number of examples affects the results."
+  ],
+  "answer": 0,
+  "explanation": "Few-shot prompting is in-context learning. The examples are just more input tokens. The model reads them in the same forward pass as the new ticket and uses them to infer the task and the output format, but no weights are updated. Once the request ends, nothing is kept, so every future request must include the examples again, which also adds tokens and cost.\n\nThe option about the provider fine-tuning a copy describes a training job, which only happens if you run one. The option about attention updating weights confuses activations with parameters. Attention computes temporary values from the input, and chat apps only seem to remember because they resend the history each turn. The option claiming order and wording do not matter is the tempting one, since its first half is right. In practice, few-shot results can shift noticeably when you reorder the examples, change their format or change the balance of labels, so the model is not simply averaging them.",
+  "deeper": "In an interview, add how you would make few-shot robust: pick examples that cover the hard categories, keep one consistent format, test a few orderings on a held-out set, or retrieve the most similar labelled tickets for each request. If the example block grows large, prompt caching or fine-tuning may become cheaper.",
+  "tags": [
+   "few-shot",
+   "prompting"
+  ],
+  "concepts": [
+   "in-context-learning",
+   "prompt-engineering"
+  ]
+ },
+ {
+  "id": "llm-0028",
+  "topic": "llm",
+  "subtopic": "when to pay for reasoning",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "A travel company is adding LLM features in three places: suggesting city names as the user types in the search box, sorting incoming customer emails into 12 categories, and an assistant that builds multi-city itineraries that must respect a budget, layover limits and visa rules. A teammate wants to use a reasoning model, or chain-of-thought prompting, everywhere. Which features would you give extra reasoning to, and how would you decide?",
+  "answer": "I would not use reasoning everywhere, because it adds output tokens, cost and seconds of latency. City suggestions need answers in well under a second and are simple lookups, so a small fast model or plain search fits. Email sorting is mostly pattern matching, so I would start without reasoning and add it only if a held-out test shows gains on a hard slice, such as emails that raise several issues. The itinerary planner is a true multi-step problem with constraints that interact, so reasoning is likely to cut errors there, and users accept a few seconds of wait for it. To decide, I would build an eval set for each feature, compare accuracy with and without reasoning, and weigh the gain against the latency budget and token cost per request. I could also route only hard cases to the reasoning path and cap its reasoning budget.",
+  "points": [
+   "Reasoning adds tokens, cost and latency, so it must earn its place",
+   "Autocomplete has a tight latency budget and a simple task, so no reasoning",
+   "Classification usually gains little, so test before adding it",
+   "Multi-step constrained planning is where reasoning helps most",
+   "Decide with per-feature evals that weigh accuracy against latency and cost",
+   "Route only hard cases or cap the reasoning budget"
+  ],
+  "explanation": "Chain-of-thought and reasoning models help when a task needs several dependent steps, such as checking a route against a budget, then a layover rule, then a visa rule. Writing out intermediate steps gives the model room to work before it commits to an answer. That help is paid for in generated tokens, which cost money and add latency roughly in proportion to their number.\n\nThe common mistake is to treat reasoning as a free accuracy boost and turn it on everywhere. For autocomplete, even a short reasoning trace breaks the response time users expect, and the task has no multi-step logic to gain from. For classification, gains are often small. The opposite mistake is to reject reasoning on cost alone, when one wrong itinerary that breaks a visa rule costs far more than a few thousand extra tokens. The right answer comes from measuring each feature, not from a blanket rule.",
+  "deeper": "Interviewers like candidates who frame this as a routing problem. A cheap model handles most traffic, and a classifier or confidence signal sends hard cases to the reasoning path. A strong answer also mentions tracking reasoning token counts in monitoring, since they can grow quietly and raise both latency and the bill.",
+  "tags": [
+   "reasoning",
+   "cost",
+   "latency"
+  ],
+  "concepts": [
+   "chain-of-thought",
+   "latency-budget",
+   "model-routing"
+  ]
+ },
+ {
+  "id": "llm-0029",
+  "topic": "llm",
+  "subtopic": "why models hallucinate",
+  "format": "multi",
+  "difficulty": 2,
+  "prompt": "A legal research assistant built on an LLM sometimes cites court cases that do not exist, in a perfectly convincing format. Which statements about why this happens, and how to reduce it, are correct? Select all that apply.",
+  "options": [
+   "Next-token training rewards fluent, likely-looking text, so when the model lacks a fact it still tends to produce a confident guess.",
+   "Cases that were rare or missing in the training data, or newer than it, are weakly stored, so the model fills the gap with plausible text.",
+   "Hallucination happens only when the prompt overflows the context window, so keeping prompts short is enough to remove it.",
+   "Setting temperature to 0 removes hallucination, because greedy decoding only outputs facts that the model has stored.",
+   "Grounding answers in retrieved case documents and letting the model say it does not know both reduce invented citations.",
+   "Fine-tuning on answers that never say \"I don't know\" reduces hallucination, since the model learns to commit to its best answer."
+  ],
+  "answer": [
+   0,
+   1,
+   4
+  ],
+  "explanation": "The statements about the training objective and about rare or missing facts give the main causes. Pretraining rewards the model for predicting likely next tokens, and a well-formatted citation is very likely text whether or not the case is real. Nothing in that objective rewards saying \"I am not sure\". When the needed fact was rare, missing or newer than the training data, the model has nothing solid stored and produces a plausible pattern instead. The statement about grounding and abstention is true because retrieved documents give the model real text to copy from, and allowing \"I don't know\" removes the pressure to guess.\n\nThe context-window statement is false because models hallucinate on short prompts too. Temperature 0 removes sampling randomness, which can cause some wrong details, but greedy decoding still outputs the model's single best guess, and that guess can be invented. Fine-tuning on answers that never abstain teaches the model that a guess is always expected, which tends to increase confident errors rather than reduce them.",
+  "deeper": "In production, teams pair grounding with verification: every citation is checked against a trusted case index before the answer is shown, and unverified ones are removed or flagged. Interviewers may ask how you would measure the hallucination rate, for example by sampling answers and having experts or an LLM judge check each claim against its source.",
+  "tags": [
+   "hallucination",
+   "grounding"
+  ],
+  "concepts": [
+   "hallucination",
+   "groundedness",
+   "retrieval-augmented-generation"
+  ]
+ },
+ {
+  "id": "llm-0030",
+  "topic": "llm",
+  "subtopic": "position of facts in long context",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A RAG assistant for insurance policies retrieves 20 chunks per question and pastes them into the prompt in order of document ID, with the question at the end. Error analysis shows the right chunk was in the prompt for every failed question, and that accuracy drops sharply when that chunk sits around positions 8 to 12. Which change best targets this problem?",
+  "options": [
+   "Rerank the chunks, keep fewer, and put the strongest at the start and end of the context, where models use information most reliably.",
+   "Retrieve 40 chunks instead of 20, so the right chunk is even more likely to appear and the model has more evidence to cross-check against.",
+   "Shuffle the chunk order on every request, so on average each chunk spends the same share of time in each position of the prompt.",
+   "Raise the sampling temperature, so the model explores more of the context and is less likely to fixate on the first chunks it reads."
+  ],
+  "answer": 0,
+  "explanation": "This pattern is often called \"lost in the middle\". Many LLMs use information at the start and end of a long context more reliably than information in the middle, so the same chunk can be used or ignored depending only on where it sits. Ordering by document ID puts the most relevant chunks wherever they happen to fall. Reranking by relevance, sending fewer chunks and putting the strongest at the edges of the context attacks the cause directly.\n\nRetrieving 40 chunks does not help, because the right chunk was already present. A longer context adds distracting text and pushes more chunks into the weak middle region. Shuffling only spreads the failures around. Each request still has the relevant chunk in the middle some of the time, so average accuracy barely changes and answers become less repeatable. Raising the temperature changes how the next token is sampled, not how the model weighs positions, and it adds randomness to answers that should be factual.",
+  "deeper": "A strong candidate proposes measuring it: plant the known answer chunk at each position and plot accuracy by position for your own model and prompt. The effect varies between models and context lengths, so test it rather than assume it. Fewer, better chunks also cut cost and latency.",
+  "tags": [
+   "rag",
+   "long-context"
+  ],
+  "concepts": [
+   "context-window",
+   "retrieval-augmented-generation",
+   "cross-encoder-reranking"
+  ]
+ },
+ {
+  "id": "llm-0031",
+  "topic": "llm",
+  "subtopic": "compute-optimal scaling",
+  "format": "mcq",
+  "difficulty": 3,
+  "prompt": "A lab has a fixed compute budget, equal to training a 60B-parameter model on 250B tokens. Training compute is about 6 × parameters × tokens. They want the lowest pretraining loss for this budget and do not care about serving cost. Which plan do empirical compute-optimal scaling results point to?",
+  "options": [
+   "About 27B parameters on about 550B tokens, since fitted scaling laws found size and data should grow together, near 20 tokens per parameter.",
+   "Keep 60B parameters on 250B tokens, since this split already sits close to the compute-optimal ratio of about 4 tokens per parameter.",
+   "About 120B parameters on about 125B tokens, since loss keeps falling faster from added parameters than from added data at this scale.",
+   "About 6B parameters on about 2.5T tokens, since loss depends mostly on how many tokens the model sees, so the smallest model wins."
+  ],
+  "answer": 0,
+  "explanation": "Compute-optimal scaling studies trained many models of different sizes on different amounts of data and fitted how loss depends on each. They found that, for a fixed budget, the lowest loss comes from growing model size and training tokens in roughly equal proportion. The resulting rule of thumb is about 20 training tokens per parameter. It is an empirical fit, not a law, and the exact ratio shifts with data and architecture, but it lands far from the other splits here. The budget is 6 × 60B × 250B = 9 × 10²² FLOPs. Setting tokens = 20 × parameters gives 6 × N × 20N = 120N² = 9 × 10²², so N ≈ 27B and D ≈ 550B tokens. Every option uses the same compute, so the only question is how to split it.\n\nThe plan that keeps 60B on 250B tokens is at only about 4 tokens per parameter, so it is undertrained rather than near the optimum. Earlier scaling work favoured big models like this, which is why the idea is tempting. The 120B plan goes further in that direction, at about 1 token per parameter. The 6B plan goes too far the other way, at over 400 tokens per parameter. Extra data then gives shrinking returns, while the small model's capacity limits how low the loss can go.",
+  "deeper": "The 6B plan is not silly in practice. When a model will serve huge numbers of requests, teams often train a smaller model far past 20 tokens per parameter, accepting a slightly worse loss for the compute spent in exchange for much cheaper inference. A strong candidate says which goal is being optimized before quoting the 20-to-1 rule.",
+  "tags": [
+   "scaling",
+   "pretraining"
+  ],
+  "concepts": [
+   "scaling-laws",
+   "pretraining"
+  ]
+ },
+ {
+  "id": "llm-0032",
+  "topic": "llm",
+  "subtopic": "training compute estimate",
+  "format": "numeric",
+  "difficulty": 2,
+  "prompt": "Estimate how long a pretraining run takes. The model has 8 × 10⁹ parameters and trains on 2 × 10¹² tokens. Use training compute ≈ 6 × parameters × tokens FLOPs. Each GPU sustains 4 × 10¹⁴ FLOP/s of useful throughput, the run uses 512 GPUs in parallel with no downtime, and a day is 86,400 seconds. How many days does training take? Give the answer to 1 decimal place.",
+  "answer": 5.4,
+  "tolerance": 0.05,
+  "check": "params = 8e9\ntokens = 2e12\nflops = 6 * params * tokens\nper_gpu = 4e14\ngpus = 512\nresult = flops / per_gpu / 86400 / gpus",
+  "explanation": "Step 1, total compute: 6 × 8 × 10⁹ × 2 × 10¹² = 9.6 × 10²² FLOPs. Step 2, single-GPU time: 9.6 × 10²² ÷ (4 × 10¹⁴) = 2.4 × 10⁸ GPU-seconds. Step 3, GPU-days: 2.4 × 10⁸ ÷ 86,400 ≈ 2,778 GPU-days. Step 4, wall-clock time: 2,778 ÷ 512 ≈ 5.43, which rounds to 5.4 days.\n\nThe factor 6 comes from about 2 FLOPs per parameter per token for the forward pass and about 4 for the backward pass. The most common mistake is to use 2 × parameters × tokens, the forward-only cost used for inference, which gives about 1.8 days and badly underestimates the run. Another slip is to plug in the GPU's peak FLOP/s from a spec sheet. Real runs sustain only a fraction of peak because of communication, memory traffic and idle time between pipeline stages, so the sustained figure is the one to use.",
+  "deeper": "In a planning interview, add buffers. Restarts after hardware failures, evaluation runs and checkpointing all take time, so real schedules pad the estimate. A strong candidate also mentions model FLOPs utilization, the share of peak throughput actually achieved, and that recomputing activations to save memory adds FLOPs the 6ND rule does not count.",
+  "tags": [
+   "compute",
+   "scaling"
+  ],
+  "concepts": [
+   "scaling-laws",
+   "pretraining"
+  ]
+ },
+ {
+  "id": "llm-0033",
+  "topic": "llm",
+  "subtopic": "how mixture of experts saves compute",
+  "format": "mcq",
+  "difficulty": 2,
+  "prompt": "A team plans to self-host a mixture-of-experts model with 16 experts in each MoE layer. A router sends every token to 2 of them. The model has 40B parameters in total, but only about 9B are used for any one token. What should they expect when serving it?",
+  "options": [
+   "Compute per token is close to a 9B dense model, but GPU memory must hold all 40B parameters, as any token can be routed to any expert.",
+   "GPU memory only needs about 9B parameters, because just the experts picked for the current token are loaded while the rest wait on disk.",
+   "Compute per token matches a 40B dense model, because every expert processes every token and the router only weights their outputs.",
+   "Each expert is a full separate model, so a request runs end to end on the 2 best-matched experts while the other 14 stay idle for it."
+  ],
+  "answer": 0,
+  "explanation": "In an MoE layer, the feed-forward block is replaced by many expert networks plus a router. For each token, at each MoE layer, the router picks the top 2 experts and only those run. That is why the active parameters, about 9B here, are far below the 40B total, and why compute per token is close to a 9B dense model. Shared parts such as attention and embeddings run for every token, which is why 9B is more than 2/16 of 40B.\n\nMemory is the catch. Different tokens in the same batch, and even the same token at different layers, go to different experts, so every expert must be loaded and ready. Swapping experts in from disk for each token would be far too slow, so the option about holding only 9B is wrong. The option where every expert runs describes a dense model and would remove the compute saving. The option about routing whole requests is wrong because routing happens per token and per layer, not once per request.",
+  "deeper": "Interviewers often follow up on load balancing. If the router sends most tokens to a few favourite experts, those experts become bottlenecks and the others barely train, so MoE training adds an auxiliary loss that spreads tokens out. In serving, experts are often spread across GPUs, called expert parallelism, which adds communication between devices.",
+  "tags": [
+   "moe",
+   "serving"
+  ],
+  "concepts": [
+   "mixture-of-experts"
+  ]
+ },
+ {
+  "id": "llm-0034",
+  "topic": "llm",
+  "subtopic": "choosing experts per token",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "In a mixture-of-experts layer, a small learned network looks at each token's hidden state, scores every expert, and sends the token to the top-scoring few. This component is called the ______.",
+  "answer": "router",
+  "accept": [
+   "gating network",
+   "gate",
+   "gating function",
+   "routing network",
+   "gating",
+   "token router",
+   "learned router",
+   "gate network",
+   "gating layer",
+   "router network",
+   "routing function",
+   "gating mechanism"
+  ],
+  "explanation": "The router, also called the gating network, is usually a single linear layer followed by a softmax over the experts. For each token it produces one score per expert, keeps the top k, and uses their scores to weight the chosen experts' outputs. It is trained together with the experts, so it learns which expert suits which kind of token.\n\nA common mix-up is to answer \"attention\". Attention mixes information between tokens, while the router makes a separate choice for each token about which feed-forward expert should process it. Another wrong answer is \"load balancer\". Load balancing is a goal, usually pushed by an extra loss term that stops the router from sending most tokens to a few experts. It is not the component that makes the choice.",
+  "deeper": "A good interview answer adds what goes wrong with routers. Early in training a router can collapse onto a few experts, so an auxiliary balancing loss or per-expert capacity limits are used. Some designs also add a shared expert that every token uses, so common knowledge does not have to be copied into every expert.",
+  "tags": [
+   "moe"
+  ],
+  "concepts": [
+   "mixture-of-experts"
+  ]
+ },
+ {
+  "id": "llm-0035",
+  "topic": "llm",
+  "subtopic": "prompting or fine-tuning",
+  "format": "open",
+  "difficulty": 2,
+  "prompt": "An HR software company wants an LLM to turn a manager's rough notes into a performance-review summary with a fixed structure and a warm, specific tone. A detailed instruction prompt gets the structure right, but the tone drifts between generic and stiff. The team has 300 summaries that their HR experts approved and a few weeks of engineering time. Would you improve the prompt, add few-shot examples, or fine-tune? Explain how you would decide.",
+  "answer": "I would start cheap and measure. First I would hold out about 50 approved summaries, plus a rubric for structure and tone, as an eval set scored by experts or a checked LLM judge. Then I would try few-shot: two or three approved examples in the prompt, ideally retrieved for being similar to the current notes, because tone is easier to show than to describe. If that closes most of the gap at an acceptable prompt length, I stop there. I would fine-tune if few-shot plateaus below the bar, if the long examples make each request too slow or costly at our volume, or if we need very consistent style. The remaining 250 summaries are enough for a small supervised fine-tune, for example with LoRA. Fine-tuning shapes style and format well, but it adds training, versioning and retraining work, so it must clearly beat few-shot on the eval.",
+  "points": [
+   "Build an eval set from held-out approved summaries before choosing",
+   "Try few-shot first, since tone is easier to show than describe",
+   "Fine-tune if few-shot plateaus or long prompts cost too much at volume",
+   "300 examples suit a small SFT or LoRA run for style",
+   "Weigh fine-tuning upkeep: retraining, versioning and serving"
+  ],
+  "explanation": "The behaviour wanted here is style, not new knowledge, and style is exactly what examples and fine-tuning teach well. Few-shot examples condition the model on the target tone with no training at all, so they are the fastest thing to try. Fine-tuning moves the style into the weights, which makes it more consistent and removes the need to send long examples with every request.\n\nThe common mistake is to jump straight to fine-tuning because it feels more serious, before there is any eval to show it helps. Without a held-out set, you cannot tell whether a fine-tuned model is better or just different. The reverse mistake is to keep adding instructions such as \"be warm and specific\", which rarely fixes tone because the words mean something vaguer to the model than to the HR team. A third slip is to train on all 300 examples and then test on the same ones, which hides overfitting.",
+  "deeper": "Interviewers often probe the data side. Approved summaries contain names and personal details, so they need PII handling before they are used for training or as examples. A strong candidate also asks what happens when the base model changes. A prompt usually moves to a new model with light edits, while a fine-tune must be redone.",
+  "tags": [
+   "fine-tuning",
+   "prompting"
+  ],
+  "concepts": [
+   "supervised-fine-tuning",
+   "in-context-learning",
+   "lora"
+  ]
+ },
+ {
+  "id": "llm-0036",
+  "topic": "llm",
+  "subtopic": "planning a domain fine-tune",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A company that makes industrial pumps wants an assistant for its field technicians. It should diagnose faults from symptom descriptions and write repair steps in the company's house format. The company has 15 years of service tickets, its repair manuals and a team of senior engineers. Plan the fine-tuning project from data to deployment.",
+  "answer": "First I would split the job. Specs and part numbers change, so I would serve them through retrieval from the manuals and fine-tune for diagnosis and the repair format. For data, I would mine resolved tickets into symptom and fix pairs, then clean them: remove duplicates and personal data, drop tickets with no confirmed fix, and have senior engineers rewrite a few thousand into the house format. Before training, I would set aside an engineer-written eval set kept apart from the training data. I would run supervised fine-tuning, likely with LoRA, with loss on the response tokens. To guard against forgetting, I would mix in general instruction data and track general benchmarks next to the domain eval. If engineers still prefer some answers over others, I would collect preference pairs and run DPO. Finally I would pilot with a few technicians, with safety warnings checked and a feedback button.",
+  "points": [
+   "Use retrieval for changing facts and fine-tune for behaviour and format",
+   "Clean ticket data: dedupe, remove PII, keep confirmed fixes, expert rewrites",
+   "Held-out expert eval set kept separate from training data",
+   "SFT, often with LoRA, with loss on response tokens",
+   "Guard against forgetting with mixed general data and general evals",
+   "Optional DPO on expert preference pairs, then a monitored pilot"
+  ],
+  "explanation": "A good plan treats fine-tuning as one step in a data and evaluation project. Most of the quality comes from the data. Old tickets are noisy, written in many styles, and sometimes record fixes that did not work, so engineer review turns them into reliable examples. The held-out eval set must exist before training, or there is no way to tell whether a run helped.\n\nThe most common mistake is to fine-tune on the manuals so the model will know the specs. Fine-tuning is a weak and hard-to-update way to store exact facts, and the model may still invent part numbers, so retrieval should handle those. Another mistake is to evaluate only on domain questions. Narrow fine-tuning can erode general skills such as following instructions, which is catastrophic forgetting, and only a general eval will catch it. Preference tuning comes last, after SFT is solid, because it refines choices between decent answers rather than teaching the task.",
+  "deeper": "Interviewers like to hear about safety in physical domains. A wrong repair step on high-pressure equipment can hurt someone, so a strong answer adds declining when unsure, required safety warnings checked by tests, and a path to a human expert. Versioning the dataset and the adapter makes it possible to roll back a bad run.",
+  "tags": [
+   "fine-tuning",
+   "planning"
+  ],
+  "concepts": [
+   "supervised-fine-tuning",
+   "dpo",
+   "catastrophic-forgetting",
+   "retrieval-augmented-generation"
+  ]
+ },
+ {
+  "id": "llm-0037",
+  "topic": "llm",
+  "subtopic": "majority vote over samples",
+  "format": "fill",
+  "difficulty": 2,
+  "prompt": "To raise accuracy on maths word problems, a tutoring app samples 10 chain-of-thought solutions for each problem at temperature 0.8, ignores the reasoning text, and returns the final answer that appears most often. This technique is called ______.",
+  "answer": "self-consistency",
+  "accept": [
+   "self consistency",
+   "self-consistency decoding",
+   "self-consistency sampling",
+   "cot self-consistency",
+   "chain-of-thought self-consistency",
+   "majority voting",
+   "majority vote",
+   "majority vote decoding",
+   "maj@k"
+  ],
+  "explanation": "Self-consistency samples several independent reasoning paths and takes a majority vote over their final answers. The idea is that a correct answer can be reached by many different lines of reasoning, while mistakes tend to scatter across different wrong answers. So the most common answer is right more often than a single sample. The same method is often called majority voting, and eval tables report it as maj@k.\n\nThe temperature matters. At temperature 0, all 10 samples would follow the same path and the vote would add nothing, so some randomness is needed to get varied reasoning. A common wrong answer is \"beam search\", which keeps the most probable partial sequences within one decoding run and returns the single most likely output, with no voting. Another is \"best-of-n\", which also samples several outputs but picks one with a scorer such as a reward model or verifier, rather than by counting matching answers. Self-consistency needs no scorer, but it only works when final answers can be compared, such as numbers or labels.",
+  "deeper": "The cost grows linearly with the number of samples, so 10 paths cost about 10 times as much as one. A strong candidate mentions stopping early once one answer has a clear majority, and using the vote share as a confidence signal, for example sending problems with split votes to a human or a stronger model.",
+  "tags": [
+   "reasoning",
+   "sampling"
+  ],
+  "concepts": [
+   "chain-of-thought",
+   "temperature"
+  ]
+ },
+ {
+  "id": "llm-0038",
+  "topic": "llm",
+  "subtopic": "the preference scorer in RLHF",
+  "format": "fill",
+  "difficulty": 1,
+  "prompt": "In RLHF, human raters compare pairs of responses to the same prompt and pick the better one. A separate model is trained on these comparisons to give any response a single score, and the policy is optimized against that score during reinforcement learning. This model is called the ______.",
+  "answer": "reward model",
+  "accept": [
+   "rm",
+   "preference model",
+   "reward models",
+   "reward network"
+  ],
+  "explanation": "The reward model turns human preferences into a number the RL algorithm can use. It is usually a transformer like the policy, with the output layer replaced by a head that gives one scalar. It is trained so that the preferred response in each pair scores higher than the rejected one, often with the loss -log σ(r_preferred - r_rejected). During PPO, the policy generates responses and the reward model scores them, which is far cheaper than asking humans each time.\n\nA common mistake is to answer \"value model\" or \"critic\". In PPO the critic estimates how much reward to expect from a point partway through a response, to make updates less noisy. It learns from the reward model's scores and does not judge quality itself. Another mix-up is the \"reference model\", the frozen copy of the starting policy that the KL penalty compares against.",
+  "deeper": "Because the policy is optimized against the reward model, its flaws become the policy's flaws. Interviewers may ask how you would check a reward model: its accuracy on held-out preference pairs, whether it simply prefers longer answers, and whether its scores still agree with humans on outputs from the newly trained policy.",
+  "tags": [
+   "rlhf",
+   "alignment"
+  ],
+  "concepts": [
+   "rlhf"
+  ]
+ },
+ {
+  "id": "llm-0039",
+  "topic": "llm",
+  "subtopic": "nondeterminism at temperature zero",
+  "format": "multi",
+  "difficulty": 3,
+  "prompt": "A team's regression tests call a hosted LLM API at temperature 0 and compare each reply with a stored expected string. About 5% of tests fail on reruns with no code change. Which statements are correct? Select all that apply.",
+  "options": [
+   "Batching with other users' requests can change the order of floating-point sums, shifting logits enough to flip a near tie between two tokens.",
+   "The provider can change the model weights, serving software or hardware behind the same endpoint, so outputs can also shift over time.",
+   "Tests are more robust when they check properties such as valid JSON, required fields or a rubric score, rather than exact strings.",
+   "Temperature 0 means pure greedy decoding with no numerical noise, so any variation proves the API is silently ignoring the setting.",
+   "Passing a fixed random seed guarantees identical outputs, because the seed controls every source of variation in the forward pass.",
+   "Variation at temperature 0 only appears in long replies, so tests that check just the first sentence of a reply will always be stable."
+  ],
+  "answer": [
+   0,
+   1,
+   2
+  ],
+  "explanation": "Temperature 0 removes sampling randomness, but the logits themselves can differ slightly between runs. Floating-point addition is not associative, and GPU kernels may split and order their sums differently depending on how many requests share a batch. The difference is tiny, but when the top two tokens are almost tied it can flip the choice, and every later token then follows the new path, so whole replies diverge. Providers also update weights, software and hardware over time. Property-based checks, such as schema validation, required facts or an LLM judge with a rubric, survive harmless wording changes while still catching real regressions.\n\nThe statement that variation proves the API ignores the setting is false, because numerical noise exists even with greedy decoding. A seed controls the random sampling step, not the order of GPU arithmetic, so it cannot guarantee identical outputs. Divergence can start at the very first token, so short checks are less exposed but never guaranteed stable.",
+  "deeper": "A strong candidate separates two kinds of test. Fast unit tests mock the LLM or replay recorded responses, so they are fully deterministic. Separate eval runs hit the real model, sample several replies per case and track pass rates against a threshold, which turns flakiness into a measured number instead of a surprise.",
+  "tags": [
+   "testing",
+   "determinism"
+  ],
+  "concepts": [
+   "temperature",
+   "reproducibility",
+   "llm-as-judge"
+  ]
+ },
+ {
+  "id": "llm-0040",
+  "topic": "llm",
+  "subtopic": "stretching the context window",
+  "format": "open",
+  "difficulty": 3,
+  "prompt": "A legal-tech team uses an open-weights model that was pretrained with rotary position embeddings and a 4,096-token context. They need it to read 32,000-token contracts. When they simply feed in full contracts, answers about clauses past the first few thousand tokens become incoherent. Explain why, and how they could extend the context window.",
+  "answer": "The model never saw positions beyond 4,096 in training. Rotary embeddings encode position as rotation angles, and at positions about 8 times larger some dimensions reach angles the model has never seen. The attention patterns it learned do not hold there, so scores become unreliable and output degrades. The model also never learned to use links that span tens of thousands of tokens. The standard fix has two parts. First, rescale positions so long inputs map into the familiar range, for example position interpolation, which shrinks positions by about 8, or a larger rotary base frequency. Second, run a short continued pretraining on long documents, mixed with normal-length data, so the model adapts. Then evaluate with retrieval tests at many depths, real long-contract questions and short-context benchmarks, and plan for the larger KV cache. If that is too costly, chunking with retrieval is the fallback.",
+  "points": [
+   "Positions beyond the training length are out of distribution",
+   "Rotary angles at unseen positions break learned attention patterns",
+   "Rescale positions with interpolation or a larger rotary base",
+   "Short fine-tune on long documents mixed with normal-length data",
+   "Test long-range retrieval at many depths and recheck short-context quality",
+   "Plan for KV cache memory, or fall back to chunking with retrieval"
+  ],
+  "explanation": "A transformer's weights put no hard limit on length, which is why it is tempting to just feed longer input. But the model only learned how attention behaves at the positions it was trained on. Rotary embeddings rotate query and key vectors by angles that grow with position, and the slowest-rotating dimensions never complete a cycle within 4,096 tokens. At position 30,000 they reach angles that were never seen in training, so the attention scores are out of distribution.\n\nThe common mistake is to think rescaling alone solves it. Interpolation squeezes positions together, so nearby tokens now differ by smaller angles than the model is used to, and quality suffers until a fine-tune adapts it. Another mistake is to fine-tune only on long documents, which can hurt short-context performance. A third is to judge success by perplexity alone, since a model can predict local text well while still failing to use a clause 20,000 tokens back.",
+  "deeper": "Interviewers often ask about cost. Attention compute grows quadratically with length and the KV cache grows linearly, so a 32,000-token request needs about 8 times the cache of a 4,096-token one. A strong candidate also asks whether the task truly needs the whole contract at once, or whether retrieving the relevant clauses would be cheaper and just as accurate.",
+  "tags": [
+   "long-context",
+   "positions"
+  ],
+  "concepts": [
+   "positional-encoding",
+   "context-window",
+   "kv-cache"
+  ]
  }
 ]
