@@ -14,7 +14,13 @@ export function isProgress(x) {
     && isObj(x.review) && Object.values(x.review).every((r) => isObj(r) && typeof r.due === 'string')
     && Array.isArray(x.learned) && x.learned.every((id) => typeof id === 'string')
     && (x.today === null || (isObj(x.today) && typeof x.today.day === 'string' && Array.isArray(x.today.items)))
-    && isObj(x.settings);
+    && isObj(x.settings)
+    && (x.saved === undefined || (Array.isArray(x.saved) && x.saved.every(isSavedItem)));
+}
+
+function isSavedItem(s) {
+  return isObj(s) && typeof s.day === 'string'
+    && (typeof s.concept === 'string' || typeof s.term === 'string');
 }
 
 export function loadProgress(storage) {
