@@ -1,0 +1,722 @@
+[
+ {
+  "id": "fnd-0001",
+  "topic": "foundations",
+  "subtopic": "bias and variance from learning curves",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Read train vs validation error and say whether the model is underfitting or overfitting"
+ },
+ {
+  "id": "fnd-0002",
+  "topic": "foundations",
+  "subtopic": "L1 vs L2 regularization",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know that L1 drives weights to exactly zero (sparsity) while L2 shrinks them smoothly, and when each helps"
+ },
+ {
+  "id": "fnd-0003",
+  "topic": "foundations",
+  "subtopic": "validation for time series",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain why shuffled k-fold leaks future information on time-ordered data and what to use instead"
+ },
+ {
+  "id": "fnd-0004",
+  "topic": "foundations",
+  "subtopic": "naming the error of too-simple models",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the error that comes from a model too simple to capture the real pattern (bias)"
+ },
+ {
+  "id": "fnd-0005",
+  "topic": "foundations",
+  "subtopic": "k-fold cross-validation arithmetic",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Work out how many rows train and validate per fold, or how many model fits a search needs"
+ },
+ {
+  "id": "fnd-0006",
+  "topic": "foundations",
+  "subtopic": "reducing overfitting",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick the actions that reduce overfitting and reject ones that add capacity"
+ },
+ {
+  "id": "fnd-0007",
+  "topic": "foundations",
+  "subtopic": "validation looked good, production did not",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Diagnose a gap between validation and production: leakage, distribution shift, tuning on the validation set, wrong split"
+ },
+ {
+  "id": "cls-0001",
+  "topic": "classic",
+  "subtopic": "choosing a model for tabular data",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Pick a sensible first model for a tabular problem with an interpretability need, and know why"
+ },
+ {
+  "id": "cls-0002",
+  "topic": "classic",
+  "subtopic": "why bagging works",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain that random forests mainly reduce variance by averaging decorrelated trees, not bias"
+ },
+ {
+  "id": "cls-0003",
+  "topic": "classic",
+  "subtopic": "kNN and feature scaling",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Know that distance-based models need features put on the same scale first"
+ },
+ {
+  "id": "cls-0004",
+  "topic": "classic",
+  "subtopic": "Gini impurity",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute the Gini impurity of a decision tree node, or the weighted impurity after a split, from class counts"
+ },
+ {
+  "id": "cls-0005",
+  "topic": "classic",
+  "subtopic": "k-means limits",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know k-means assumes roughly spherical, similar-sized clusters and is sensitive to scale and to k"
+ },
+ {
+  "id": "cls-0006",
+  "topic": "classic",
+  "subtopic": "unsupervised anomaly detection",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick methods that work for anomaly detection without labels"
+ },
+ {
+  "id": "cls-0007",
+  "topic": "classic",
+  "subtopic": "churn model end to end",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Choose a baseline, model, features, split and metric for a churn prediction problem and justify each"
+ },
+ {
+  "id": "eval-0001",
+  "topic": "evaluation",
+  "subtopic": "metric for rare-event screening",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Choose recall-oriented metrics when missing a positive is costly and positives are rare"
+ },
+ {
+  "id": "eval-0002",
+  "topic": "evaluation",
+  "subtopic": "ROC-AUC vs PR-AUC under imbalance",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain why ROC-AUC can look strong on heavily imbalanced data while PR-AUC exposes weak precision"
+ },
+ {
+  "id": "eval-0003",
+  "topic": "evaluation",
+  "subtopic": "precision from a confusion matrix",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Read a confusion matrix and compute precision"
+ },
+ {
+  "id": "eval-0004",
+  "topic": "evaluation",
+  "subtopic": "F1 score",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute F1 from counts, as the harmonic mean of precision and recall"
+ },
+ {
+  "id": "eval-0005",
+  "topic": "evaluation",
+  "subtopic": "ranking metrics",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the ranking metric that discounts gains by position and normalizes by the ideal ordering (NDCG)"
+ },
+ {
+  "id": "eval-0006",
+  "topic": "evaluation",
+  "subtopic": "calibration",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Know what a well-calibrated probability means and that a high-AUC model can be badly calibrated"
+ },
+ {
+  "id": "eval-0007",
+  "topic": "evaluation",
+  "subtopic": "A/B test significance",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Compute a pooled two-proportion z statistic for an A/B test on conversion"
+ },
+ {
+  "id": "eval-0008",
+  "topic": "evaluation",
+  "subtopic": "choosing a threshold from business costs",
+  "format": "open",
+  "difficulty": 2,
+  "skill": "Pick an operating threshold using the cost of false positives vs false negatives and team capacity"
+ },
+ {
+  "id": "data-0001",
+  "topic": "data",
+  "subtopic": "spotting target leakage",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Find the feature that would not exist at prediction time"
+ },
+ {
+  "id": "data-0002",
+  "topic": "data",
+  "subtopic": "handling class imbalance",
+  "format": "multi",
+  "difficulty": 1,
+  "skill": "Pick sound ways to handle class imbalance and reject harmful ones"
+ },
+ {
+  "id": "data-0003",
+  "topic": "data",
+  "subtopic": "high-cardinality categorical features",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Choose between one-hot, target encoding and hashing for a feature with many categories, and know the leakage risk of target encoding"
+ },
+ {
+  "id": "data-0004",
+  "topic": "data",
+  "subtopic": "preprocessing before the split",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the problem caused by fitting a scaler or imputer on the full dataset before splitting"
+ },
+ {
+  "id": "data-0005",
+  "topic": "data",
+  "subtopic": "pandas missing values",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Trace a pandas snippet with NaN values through fillna and an aggregate (pandas 3.x, needs a check)"
+ },
+ {
+  "id": "data-0006",
+  "topic": "data",
+  "subtopic": "label quality",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design a labeling process: guidelines, agreement checks, gold sets, handling noisy labels"
+ },
+ {
+  "id": "dl-0001",
+  "topic": "deep",
+  "subtopic": "vanishing gradients",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain why saturating activations like sigmoid cause vanishing gradients in deep nets and why ReLU helps"
+ },
+ {
+  "id": "dl-0002",
+  "topic": "deep",
+  "subtopic": "learning rate symptoms",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Recognise a learning rate that is too high from the loss curve"
+ },
+ {
+  "id": "dl-0003",
+  "topic": "deep",
+  "subtopic": "counting parameters",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Count the parameters of a small fully connected network including biases"
+ },
+ {
+  "id": "dl-0004",
+  "topic": "deep",
+  "subtopic": "normalization in transformers",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the normalization transformers apply per token, and know why batch norm fits poorly there"
+ },
+ {
+  "id": "dl-0005",
+  "topic": "deep",
+  "subtopic": "training loop bug",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Spot a PyTorch training loop that never zeroes gradients, and say what it does (concept level, no check)"
+ },
+ {
+  "id": "dl-0006",
+  "topic": "deep",
+  "subtopic": "NaN loss in mixed precision",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Debug a loss that turns NaN: learning rate, loss scaling, bad inputs, log of zero, gradient clipping"
+ },
+ {
+  "id": "llm-0001",
+  "topic": "llm",
+  "subtopic": "scaled dot-product attention",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain why attention scores are divided by the square root of the key dimension"
+ },
+ {
+  "id": "llm-0002",
+  "topic": "llm",
+  "subtopic": "tokenization",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Know that subword tokenizers split rare words and some languages into more tokens, which affects cost and context use"
+ },
+ {
+  "id": "llm-0003",
+  "topic": "llm",
+  "subtopic": "attention cost and context length",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Work out how self-attention score computation grows when sequence length grows"
+ },
+ {
+  "id": "llm-0004",
+  "topic": "llm",
+  "subtopic": "parameter-efficient fine-tuning",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the method that trains small low-rank matrices added to frozen weights (LoRA)"
+ },
+ {
+  "id": "llm-0005",
+  "topic": "llm",
+  "subtopic": "RLHF vs DPO",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain how DPO learns from preference pairs directly without a separate reward model and RL loop"
+ },
+ {
+  "id": "llm-0006",
+  "topic": "llm",
+  "subtopic": "decoding settings",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Know what temperature, top-p and greedy decoding do to output diversity and determinism"
+ },
+ {
+  "id": "int-0001",
+  "topic": "integration",
+  "subtopic": "chunking for RAG",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Reason about chunk size and overlap tradeoffs for retrieval quality"
+ },
+ {
+  "id": "int-0002",
+  "topic": "integration",
+  "subtopic": "cosine similarity",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute cosine similarity between two small embedding vectors"
+ },
+ {
+  "id": "int-0003",
+  "topic": "integration",
+  "subtopic": "reliable structured output",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Get valid JSON reliably: schema-constrained output or tool calling plus validation and retry"
+ },
+ {
+  "id": "int-0004",
+  "topic": "integration",
+  "subtopic": "two-stage retrieval and reranking",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Explain why a cross-encoder reranker is used after a fast vector search"
+ },
+ {
+  "id": "int-0005",
+  "topic": "integration",
+  "subtopic": "indirect prompt injection",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the attack where retrieved or tool content carries instructions to the model"
+ },
+ {
+  "id": "int-0006",
+  "topic": "integration",
+  "subtopic": "cutting LLM latency and cost",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Pick effective levers: caching, routing to smaller models, streaming, shorter prompts"
+ },
+ {
+  "id": "int-0007",
+  "topic": "integration",
+  "subtopic": "LLM cost estimate",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Estimate monthly token cost from traffic and hypothetical per-token prices"
+ },
+ {
+  "id": "int-0008",
+  "topic": "integration",
+  "subtopic": "evaluating a RAG support bot",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design an evaluation: retrieval quality, groundedness, answer quality, LLM judges checked against humans, regression sets, online signals"
+ },
+ {
+  "id": "agt-0001",
+  "topic": "agents",
+  "subtopic": "agent vs workflow",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Tell an agent (model chooses next steps and tools in a loop) from a fixed workflow, and know when the simpler one is better"
+ },
+ {
+  "id": "agt-0002",
+  "topic": "agents",
+  "subtopic": "ReAct pattern",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the pattern that interleaves reasoning, tool calls and observations"
+ },
+ {
+  "id": "agt-0003",
+  "topic": "agents",
+  "subtopic": "tool design",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know what makes tools easy for a model to use: clear names and descriptions, narrow scope, structured errors"
+ },
+ {
+  "id": "agt-0004",
+  "topic": "agents",
+  "subtopic": "agent safeguards",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick guardrails against runaway loops and harmful actions: step limits, budgets, approval for irreversible actions"
+ },
+ {
+  "id": "agt-0005",
+  "topic": "agents",
+  "subtopic": "Model Context Protocol",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Know MCP as an open standard for connecting models to tools and data through servers (add asof)"
+ },
+ {
+  "id": "agt-0006",
+  "topic": "agents",
+  "subtopic": "reliability over many steps",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute end-to-end success when each step succeeds independently with a given probability"
+ },
+ {
+  "id": "agt-0007",
+  "topic": "agents",
+  "subtopic": "agent memory",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Choose between keeping full context, summarizing and retrieving from long-term memory as a task grows"
+ },
+ {
+  "id": "agt-0008",
+  "topic": "agents",
+  "subtopic": "evaluating an agent",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design an evaluation: task success in a sandbox, trajectory and tool-call checks, cost and latency, safety cases, human review"
+ },
+ {
+  "id": "opt-0001",
+  "topic": "optimization",
+  "subtopic": "model weight memory",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute the memory needed to hold model weights at a given precision"
+ },
+ {
+  "id": "opt-0002",
+  "topic": "optimization",
+  "subtopic": "KV cache size",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Compute KV cache memory from layers, heads, head size, sequence length, batch and precision"
+ },
+ {
+  "id": "opt-0003",
+  "topic": "optimization",
+  "subtopic": "quantization tradeoffs",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know post-training quantization vs quantization-aware training and the tradeoffs of lower bit widths"
+ },
+ {
+  "id": "opt-0004",
+  "topic": "optimization",
+  "subtopic": "knowledge distillation",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name training a small student model to match a large teacher model's outputs"
+ },
+ {
+  "id": "opt-0005",
+  "topic": "optimization",
+  "subtopic": "batching, throughput and latency",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Explain how dynamic batching raises throughput but can raise per-request latency"
+ },
+ {
+  "id": "opt-0006",
+  "topic": "optimization",
+  "subtopic": "training memory savers",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick techniques that cut GPU memory during training: mixed precision, gradient checkpointing, gradient accumulation"
+ },
+ {
+  "id": "opt-0007",
+  "topic": "optimization",
+  "subtopic": "bringing down LLM latency",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Walk through finding and fixing high p95 latency for an LLM endpoint: measure, prompt length, batching, quantization, caching, speculative decoding"
+ },
+ {
+  "id": "ops-0001",
+  "topic": "mlops",
+  "subtopic": "data drift vs concept drift",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Tell a change in inputs apart from a change in the input-to-label relationship"
+ },
+ {
+  "id": "ops-0002",
+  "topic": "mlops",
+  "subtopic": "shadow vs canary release",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know when to use a shadow deployment vs a canary rollout"
+ },
+ {
+  "id": "ops-0003",
+  "topic": "mlops",
+  "subtopic": "training-serving skew",
+  "format": "fill",
+  "difficulty": 2,
+  "skill": "Name the mismatch between features computed in training and in serving"
+ },
+ {
+  "id": "ops-0004",
+  "topic": "mlops",
+  "subtopic": "monitoring without labels",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick what you can monitor before labels arrive: input drift, prediction drift, data quality, proxy business metrics"
+ },
+ {
+  "id": "ops-0005",
+  "topic": "mlops",
+  "subtopic": "population stability index",
+  "format": "numeric",
+  "difficulty": 3,
+  "skill": "Compute PSI from expected and actual bin shares"
+ },
+ {
+  "id": "ops-0006",
+  "topic": "mlops",
+  "subtopic": "reproducible training",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Know what must be versioned to reproduce a model: data, code, config, environment, seeds"
+ },
+ {
+  "id": "ops-0007",
+  "topic": "mlops",
+  "subtopic": "slow decay in production",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Investigate a model whose performance fell over weeks and set a retraining and alerting policy"
+ },
+ {
+  "id": "sysd-0001",
+  "topic": "design",
+  "subtopic": "two-stage recommender",
+  "format": "mcq",
+  "difficulty": 1,
+  "skill": "Explain why recommenders split candidate generation from ranking"
+ },
+ {
+  "id": "sysd-0002",
+  "topic": "design",
+  "subtopic": "real-time fraud scoring",
+  "format": "mcq",
+  "difficulty": 3,
+  "skill": "Design around a tight latency budget: precomputed features, a feature store, fallbacks"
+ },
+ {
+  "id": "sysd-0003",
+  "topic": "design",
+  "subtopic": "capacity estimate",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Back-of-envelope peak queries per second from daily users and requests"
+ },
+ {
+  "id": "sysd-0004",
+  "topic": "design",
+  "subtopic": "content moderation system",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Design image moderation: policy, model cascade, thresholds, human review, appeals, metrics, feedback loop"
+ },
+ {
+  "id": "sysd-0005",
+  "topic": "design",
+  "subtopic": "cold start",
+  "format": "multi",
+  "difficulty": 2,
+  "skill": "Pick cold-start strategies for new users and new items"
+ },
+ {
+  "id": "math-0001",
+  "topic": "math",
+  "subtopic": "Bayes theorem",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Compute the probability of disease given a positive test from prevalence, sensitivity and false positive rate"
+ },
+ {
+  "id": "math-0002",
+  "topic": "math",
+  "subtopic": "distributions",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the distribution of the number of successes in n independent yes or no trials"
+ },
+ {
+  "id": "math-0003",
+  "topic": "math",
+  "subtopic": "p-values",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Interpret a p-value correctly and reject common misreadings"
+ },
+ {
+  "id": "math-0004",
+  "topic": "math",
+  "subtopic": "gradient descent step",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute a gradient and one gradient descent update by hand"
+ },
+ {
+  "id": "math-0005",
+  "topic": "math",
+  "subtopic": "PCA",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Know that principal components are eigenvectors of the covariance matrix ordered by explained variance, and that scaling matters"
+ },
+ {
+  "id": "math-0006",
+  "topic": "math",
+  "subtopic": "confidence intervals",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Separate correct from common wrong statements about confidence intervals"
+ },
+ {
+  "id": "rai-0001",
+  "topic": "responsible",
+  "subtopic": "fairness metrics",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Tell demographic parity from equal opportunity and know they can conflict"
+ },
+ {
+  "id": "rai-0002",
+  "topic": "responsible",
+  "subtopic": "disparate impact ratio",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Compute the selection rate ratio between groups and compare it with the four-fifths rule"
+ },
+ {
+  "id": "rai-0003",
+  "topic": "responsible",
+  "subtopic": "explainability",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Name the feature attribution method based on Shapley values"
+ },
+ {
+  "id": "rai-0004",
+  "topic": "responsible",
+  "subtopic": "high-risk use case",
+  "format": "open",
+  "difficulty": 3,
+  "skill": "Lay out risks and controls for a resume screening model, including that hiring is high-risk under the EU AI Act (add asof)"
+ },
+ {
+  "id": "py-0001",
+  "topic": "python",
+  "subtopic": "NumPy broadcasting",
+  "format": "fill",
+  "difficulty": 1,
+  "skill": "Predict the result shape of a broadcast operation (needs a check)"
+ },
+ {
+  "id": "py-0002",
+  "topic": "python",
+  "subtopic": "pandas copy-on-write",
+  "format": "numeric",
+  "difficulty": 2,
+  "skill": "Predict a value after chained assignment under pandas 3.x copy-on-write (needs a check)"
+ },
+ {
+  "id": "py-0003",
+  "topic": "python",
+  "subtopic": "scikit-learn leakage bug",
+  "format": "mcq",
+  "difficulty": 2,
+  "skill": "Spot fitting a transformer on test data and fix it with a Pipeline"
+ },
+ {
+  "id": "py-0004",
+  "topic": "python",
+  "subtopic": "NumPy axis",
+  "format": "numeric",
+  "difficulty": 1,
+  "skill": "Predict an aggregate along an axis of a 2D array (needs a check)"
+ },
+ {
+  "id": "py-0005",
+  "topic": "python",
+  "subtopic": "PyTorch eval mode",
+  "format": "multi",
+  "difficulty": 3,
+  "skill": "Know what model.eval() and torch.no_grad() each do and do not do (concept level, no check)"
+ }
+]
