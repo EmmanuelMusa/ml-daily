@@ -14,14 +14,14 @@
       if (saved && saved.settings && saved.settings.theme === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
     } catch (e) {}
   </script>
-  <link rel="stylesheet" href="assets/css/style.css?v=6">
-  <script type="module" src="assets/js/app.js?v=6"></script>
+  <link rel="stylesheet" href="assets/css/style.css?v=7">
+  <script type="module" src="assets/js/app.js?v=7"></script>
 </head>
 <body>
   <a class="skip" href="#main">Skip to content</a>
   <header class="top">
     <div class="top-row">
-      <a class="brand" href="#today">ML Daily</a>
+      <a class="brand" href="#today"><img class="brand-mark" src="assets/icons/icon.svg?v=1" alt="" width="24" height="24">ML Daily</a>
       <span class="day" id="day-label"></span>
     </div>
     <nav class="tabs" aria-label="Sections">
@@ -30,7 +30,9 @@
       <a href="#progress" data-view="progress"><span class="ico" data-icon="progress"></span><span>Progress</span></a>
       <a href="#settings" data-view="settings"><span class="ico" data-icon="settings"></span><span>Settings</span></a>
     </nav>
+    <section class="side-panel" id="side-panel" aria-label="Your practice at a glance"></section>
   </header>
+  <div class="sr" id="announce" role="status" aria-live="polite"></div>
   <p class="notice" id="notice" hidden>Progress can't be saved in this browser window.</p>
   <main id="main" tabindex="-1">
     <p class="loading">Loading questions</p>

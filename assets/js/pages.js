@@ -6,7 +6,7 @@ import { stats } from './schedule.js';
 import { exportCode, importCode, pruneUnknown } from './store.js';
 import { isSaved, saveConcept, saveTerm, removeSaved, savedItems } from './saved.js';
 import { activityByDay, coverage, dueForecast, byDifficulty, topicMastery } from './insights.js';
-import { normalizeFill } from './grade.js';
+import { searchGlossary } from './search.js?v=7';
 import { INTERVALS } from './schedule.js';
 
 const LEVEL = { 1: 'Easy', 2: 'Medium', 3: 'Hard' };
@@ -58,19 +58,25 @@ export function renderConcept(ctx, id) {
     .map((r) => `<li><a class="chip" href="#concept/${encodeURIComponent(r)}">${escapeHtml(G.byId.get(r).name)}</a></li>`).join('');
   main.innerHTML = `<article class="page concept" aria-labelledby="concept-name">
     <a class="back" href="${S.cameFromQuestion ? '#today' : '#concepts'}" data-act="back">${ctx.icon('back')}${back}</a>
-    <header class="concept-head">
-      <p class="concept-topic">${escapeHtml(topic)}</p>
-      <h2 id="concept-name" tabindex="-1">${escapeHtml(c.name)}</h2>
-      ${c.aka?.length ? `<p class="aka">Other names and variants: ${c.aka.map(escapeHtml).join(', ')}</p>` : ''}
-      <button type="button" class="btn ${saved ? '' : 'quiet'} save-btn" data-act="save-concept">
-        ${ctx.icon(saved ? 'bookmarkFilled' : 'bookmark')}<span>${saved ? 'Saved' : 'Save for later'}</span></button>
-    </header>
-    <p class="concept-summary">${escapeHtml(c.summary)}</p>
-    ${c.svg ? `<figure class="diagram">${c.svg}</figure>` : ''}
-    <div class="explain concept-body">${renderMarkup(c.body)}</div>
-    ${c.mixup ? `<div class="deeper mixup"><h3>Common mix-up</h3>${renderMarkup(c.mixup)}</div>` : ''}
-    ${related ? `<h3 class="sub-head">Related</h3><ul class="chips">${related}</ul>` : ''}
-    <p class="used">${used ? `Comes up in ${plural(used, 'question')} in the bank.` : 'Not used by a question yet.'}</p>
+    <div class="concept-grid">
+      <div class="concept-main">
+        <header class="concept-head">
+          <p class="concept-topic">${escapeHtml(topic)}</p>
+          <h2 id="concept-name" tabindex="-1">${escapeHtml(c.name)}</h2>
+          ${c.aka?.length ? `<p class="aka">Other names and variants: ${c.aka.map(escapeHtml).join(', ')}</p>` : ''}
+          <button type="button" class="btn ${saved ? '' : 'quiet'} save-btn" data-act="save-concept">
+            ${ctx.icon(saved ? 'bookmarkFilled' : 'bookmark')}<span>${saved ? 'Saved' : 'Save for later'}</span></button>
+        </header>
+        <p class="concept-summary">${escapeHtml(c.summary)}</p>
+        ${c.svg ? `<figure class="diagram">${c.svg}</figure>` : ''}
+        <div class="explain concept-body">${renderMarkup(c.body)}</div>
+        ${c.mixup ? `<div class="deeper mixup"><h3>Common mix-up</h3>${renderMarkup(c.mixup)}</div>` : ''}
+      </div>
+      <aside class="concept-side" aria-label="Related">
+        ${related ? `<h3 class="sub-head">Related</h3><ul class="chips">${related}</ul>` : ''}
+        <p class="used">${used ? `Comes up in ${plural(used, 'question')} in the bank.` : 'Not used by a question yet.'}</p>
+      </aside>
+    </div>
   </article>`;
   main.querySelector('[data-act="save-concept"]').addEventListener('click', () => {
     if (isSaved(S.progress, id)) removeSaved(S.progress, { concept: id });
@@ -79,6 +85,7 @@ export function renderConcept(ctx, id) {
     main.className = 'fx-save'; // one-shot cue: the bookmark settles in, the page does not fade again
     renderConcept(ctx, id);
     main.querySelector('[data-act="save-concept"]').focus();
+    ctx.announce(isSaved(S.progress, id) ? `${c.name} saved to your list.` : `${c.name} removed from your list.`);
   });
   main.querySelector('[data-act="back"]').addEventListener('click', (e) => {
     // Back to the question unwinds every concept card opened from it. Otherwise the link's own href applies.
@@ -91,25 +98,33 @@ export function renderConcept(ctx, id) {
 
 // ------------------------------------------------------------------ concepts tab
 
+function glossaryItemsHtml(ctx, list) {
+  return `<ul class="g-list">${list.map((c) => `<li><a href="#concept/${encodeURIComponent(c.id)}">
+        <span class="g-name"><span class="g-title">${escapeHtml(c.name)}</span>${c.svg ? `<span class="g-fig" title="Has a diagram" aria-hidden="true">${ctx.ICONS.diagram}</span><span class="sr">, has a diagram</span>` : ''}${isSaved(ctx.S.progress, c.id) ? `<span class="g-saved" title="Saved" aria-hidden="true">${ctx.ICONS.bookmarkFilled}</span><span class="sr">, saved</span>` : ''}</span>
+        <span class="g-sum">${escapeHtml(c.summary)}</span></a></li>`).join('')}</ul>`;
+}
+
+// Name matches are grouped by topic. Matches found only in a summary follow
+// in one group of their own.
 function glossaryListHtml(ctx, query) {
   const G = ctx.S.glossary;
-  const q = normalizeFill(query);
+  const { byName, bySummary } = searchGlossary(G.index, query);
+  const count = byName.length + bySummary.length;
+  if (!count) return { count, html: `<p class="empty g-none">No concept matches "${escapeHtml(query.trim())}". You can save it as your own term.</p>` };
   const groups = new Map();
-  for (const c of G.list) {
-    if (q) {
-      const hay = [c.name, ...(c.aka ?? []), c.summary].map(normalizeFill).join(' | ');
-      if (!hay.includes(q)) continue;
-    }
+  for (const c of byName) {
     if (!groups.has(c.topic)) groups.set(c.topic, []);
     groups.get(c.topic).push(c);
   }
-  if (!groups.size) return `<p class="empty g-none">No concept matches "${escapeHtml(query)}". You can save it as your own term above.</p>`;
-  return [...groups].map(([topic, list]) => `<section class="g-group">
-      <h4>${escapeHtml(ctx.S.titles[topic] ?? topic)} <span class="count">${list.length}</span></h4>
-      <ul class="g-list">${list.map((c) => `<li><a href="#concept/${encodeURIComponent(c.id)}">
-        <span class="g-name"><span class="g-title">${escapeHtml(c.name)}</span>${c.svg ? `<span class="g-fig" title="Has a diagram" aria-hidden="true">${ctx.ICONS.diagram}</span><span class="sr">, has a diagram</span>` : ''}${isSaved(ctx.S.progress, c.id) ? `<span class="g-saved" title="Saved" aria-hidden="true">${ctx.ICONS.bookmarkFilled}</span><span class="sr">, saved</span>` : ''}</span>
-        <span class="g-sum">${escapeHtml(c.summary)}</span></a></li>`).join('')}</ul>
+  const head = (title, n) => `<h4>${title} <span class="count">${n}</span></h4>`;
+  let html = [...groups].map(([topic, list]) => `<section class="g-group" data-topic="${escapeHtml(topic)}">
+      ${head(escapeHtml(ctx.S.titles[topic] ?? topic), list.length)}
+      ${glossaryItemsHtml(ctx, list)}
     </section>`).join('');
+  if (bySummary.length) {
+    html += `<section class="g-group g-also">${head('Mentioned in the meaning', bySummary.length)}${glossaryItemsHtml(ctx, bySummary)}</section>`;
+  }
+  return { count, html };
 }
 
 function myListHtml(ctx) {
@@ -147,22 +162,33 @@ export function renderConcepts(ctx, state = {}) {
   main.innerHTML = `<section class="page concepts-page">
     <h2 tabindex="-1">Concepts</h2>
     <p class="lede">${G.list.length} concepts explained in plain words. Save the ones you want to read up on.</p>
-    <form class="save-term" autocomplete="off">
-      <label for="term">Save a word or idea</label>
-      <div class="inline">
-        <input id="term" type="text" maxlength="80" placeholder="For example, Platt scaling" spellcheck="false">
-        <button type="submit" class="btn">Save</button>
+    <div class="concepts-layout">
+      <div class="c-side">
+        <form class="save-term" autocomplete="off">
+          <label for="term">Save a word or idea</label>
+          <div class="inline">
+            <input id="term" type="text" maxlength="80" placeholder="For example, Platt scaling" spellcheck="false">
+            <button type="submit" class="btn">Save</button>
+          </div>
+          <p class="msg ${state.msgGood ? 'good' : ''}">${escapeHtml(state.msg ?? '')}</p>
+        </form>
+        <h3 class="sub-head" id="my-list" tabindex="-1">My list <span class="count">${count}</span></h3>
+        ${myListHtml(ctx)}
+        <nav class="c-topics" aria-label="Jump to a topic">
+          <h3 class="sub-head">Topics</h3>
+          <ul>${topicCounts(G.list).map(([topic, n]) => `<li><button type="button" data-jump="${escapeHtml(topic)}"><span>${escapeHtml(S.titles[topic] ?? topic)}</span><span class="count">${n}</span></button></li>`).join('')}</ul>
+        </nav>
       </div>
-      <p class="msg ${state.msgGood ? 'good' : ''}" role="status">${escapeHtml(state.msg ?? '')}</p>
-    </form>
-    <h3 class="sub-head" id="my-list" tabindex="-1">My list <span class="count">${count}</span></h3>
-    ${myListHtml(ctx)}
-    <h3 class="sub-head">Glossary <span class="count">${G.list.length}</span></h3>
-    <div class="field search"><label for="g-search" class="sr">Search the glossary</label>
-      <span class="search-ico" aria-hidden="true">${ctx.ICONS.search}</span>
-      <input id="g-search" type="search" placeholder="Search concepts" value="${escapeHtml(query)}" spellcheck="false" autocomplete="off"></div>
-    <div id="g-results">${glossaryListHtml(ctx, query)}</div>
+      <div class="c-main">
+        <h3 class="sub-head g-head">Glossary <span class="count">${G.list.length}</span></h3>
+        <div class="field search"><label for="g-search" class="sr">Search the glossary</label>
+          <span class="search-ico" aria-hidden="true">${ctx.ICONS.search}</span>
+          <input id="g-search" type="search" placeholder="Search concepts" value="${escapeHtml(query)}" spellcheck="false" autocomplete="off"></div>
+        <div id="g-results">${glossaryListHtml(ctx, query).html}</div>
+      </div>
+    </div>
   </section>`;
+  if (state.msg) ctx.announce(state.msg);
 
   main.querySelector('.save-term').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -178,35 +204,85 @@ export function renderConcepts(ctx, state = {}) {
     renderConcepts(ctx, { msg, msgGood: Boolean(result), query: main.querySelector('#g-search').value });
     main.querySelector('#term').focus();
   });
-  main.querySelectorAll('[data-remove-concept]').forEach((b) => b.addEventListener('click', () => {
-    removeSaved(S.progress, { concept: b.dataset.removeConcept });
+  // After a removal, focus moves to the row that took its place, or to the
+  // row above when the last one went, or to the heading when the list is empty.
+  const removeAt = (button, what, name) => {
+    const rows = [...main.querySelectorAll('.saved-list li')];
+    const at = rows.indexOf(button.closest('li'));
+    removeSaved(S.progress, what);
     ctx.save();
     main.className = '';
     renderConcepts(ctx, { query: main.querySelector('#g-search').value });
-    main.querySelector('#my-list').focus();
+    const left = main.querySelectorAll('.saved-list li');
+    const row = left[Math.min(at, left.length - 1)];
+    (row?.querySelector('a.s-main, .icon-btn') ?? main.querySelector('#my-list')).focus();
+    ctx.announce(`${name} removed from your list.`);
+  };
+  main.querySelectorAll('[data-remove-concept]').forEach((b) => b.addEventListener('click', () => {
+    const id = b.dataset.removeConcept;
+    removeAt(b, { concept: id }, G.byId.get(id)?.name ?? id);
   }));
   main.querySelectorAll('[data-remove-term]').forEach((b) => b.addEventListener('click', () => {
-    removeSaved(S.progress, { term: b.dataset.removeTerm });
-    ctx.save();
-    main.className = '';
-    renderConcepts(ctx, { query: main.querySelector('#g-search').value });
-    main.querySelector('#my-list').focus();
+    removeAt(b, { term: b.dataset.removeTerm }, b.dataset.removeTerm);
   }));
+
+  // Typing redraws the list at most once a frame. The match count is read out
+  // once the person pauses.
   const search = main.querySelector('#g-search');
+  const results = main.querySelector('#g-results');
+  let frame = 0;
+  let pause = 0;
   search.addEventListener('input', () => {
     S.conceptQuery = search.value;
-    main.querySelector('#g-results').innerHTML = glossaryListHtml(ctx, search.value);
+    cancelAnimationFrame(frame);
+    frame = requestAnimationFrame(() => {
+      const { html, count: n } = glossaryListHtml(ctx, search.value);
+      results.innerHTML = html;
+      clearTimeout(pause);
+      pause = setTimeout(() => {
+        if (main.contains(search)) ctx.announce(search.value.trim() ? `${plural(n, 'concept')} ${n === 1 ? 'matches' : 'match'}.` : `Showing all ${n} concepts.`);
+      }, 500);
+    });
   });
+
+  // Topic list on wide screens: scrolls to that topic, clearing a search that hides it.
+  const groupOf = (topic) => [...results.querySelectorAll('.g-group[data-topic]')].find((g) => g.dataset.topic === topic);
+  main.querySelectorAll('[data-jump]').forEach((b) => b.addEventListener('click', () => {
+    let group = groupOf(b.dataset.jump);
+    if (!group) {
+      search.value = '';
+      S.conceptQuery = '';
+      results.innerHTML = glossaryListHtml(ctx, '').html;
+      group = groupOf(b.dataset.jump);
+    }
+    group?.scrollIntoView({ block: 'start' });
+    group?.querySelector('a')?.focus({ preventScroll: true });
+  }));
+}
+
+function topicCounts(list) {
+  const counts = new Map();
+  for (const c of list) counts.set(c.topic, (counts.get(c.topic) ?? 0) + 1);
+  return [...counts];
 }
 
 // ------------------------------------------------------------------ progress
+
+// Wide screens show half a year of practice, phones a quarter.
+const calWeeks = () => (window.matchMedia?.('(min-width: 1024px)').matches ? 26 : 12);
+
+function dayDetail(d, t) {
+  const when = d.day === t ? 'Today' : shortDate(d.day);
+  return `${when}: ${d.answered ? `${d.answered} answered, ${d.right} right` : 'no practice'}`;
+}
 
 export function renderProgress(ctx) {
   const { S, main } = ctx;
   const t = ctx.today();
   const st = stats(S.progress, S.bank, t);
   const cov = coverage(S.progress, S.bank);
-  const days = activityByDay(S.progress, S.bank, t, 12);
+  const span = calWeeks();
+  const days = activityByDay(S.progress, S.bank, t, span);
   const forecast = dueForecast(S.progress, S.bank, t, 7);
   const diff = byDifficulty(S.progress, S.bank);
   const mastery = topicMastery(S.progress, S.bank);
@@ -215,7 +291,8 @@ export function renderProgress(ctx) {
   const level = (n) => (n === 0 ? 0 : n <= 3 ? 1 : n <= 6 ? 2 : n <= 9 ? 3 : 4);
   // Week grid: one column per week, Monday at the top. --w drives the entrance stagger.
   const weeks = Math.ceil(days.length / 7);
-  const cells = days.map((d, n) => `<li class="l${level(d.answered)}${d.day === t ? ' today' : ''}" style="--w:${Math.floor(n / 7)}" title="${shortDate(d.day)}: ${d.answered ? `${d.answered} answered, ${d.right} right` : 'no practice'}"></li>`).join('');
+  const cells = days.map((d, n) => `<li class="l${level(d.answered)}${d.day === t ? ' today' : ''}" style="--w:${Math.floor(n / 7)}" data-n="${n}"></li>`).join('');
+  const practised = days.filter((d) => d.answered).map((d) => `<li>${dayDetail(d, t)}</li>`).join('');
   const monthOf = (day) => new Date(`${day}T12:00:00`).toLocaleDateString(undefined, { month: 'short' });
   const months = Array.from({ length: weeks }, (_, w) => {
     const m = monthOf(days[w * 7].day);
@@ -226,7 +303,7 @@ export function renderProgress(ctx) {
   }).join('');
   const weekAnswers = days.slice(-(((days.length - 1) % 7) + 1)).reduce((s, d) => s + d.answered, 0);
   const totalAnswers = days.reduce((s, d) => s + d.answered, 0);
-  const calLabel = `Practice by day, last 12 weeks. ${activeDays ? `You practised on ${plural(activeDays, 'day')}.` : 'No practice yet.'}`;
+  const calLabel = `Practice by day, last ${span} weeks. ${activeDays ? `You practised on ${plural(activeDays, 'day')}, listed below.` : 'No practice yet.'}`;
 
   const maxDue = Math.max(1, ...forecast.map((f) => f.count));
   const dueTotal = forecast.reduce((s, f) => s + f.count, 0);
@@ -246,6 +323,7 @@ export function renderProgress(ctx) {
 
   main.innerHTML = `<section class="page progress-page${fresh ? ' is-fresh' : ''}">
     <h2 tabindex="-1">Progress</h2>
+    <div class="dash">
     <div class="headline">
       <div><span class="h-num">${st.streak}</span><span class="h-label">day streak</span></div>
       <div><span class="h-num">${st.answered ? `${Math.round(st.accuracy * 100)}%` : 'None'}</span><span class="h-label">accuracy</span></div>
@@ -254,18 +332,20 @@ export function renderProgress(ctx) {
     ${fresh ? `<div class="first-run"><p><strong>This page fills in as you practise.</strong> Answer today's questions and your streak, calendar and topics start here.</p>
       <a class="btn quiet first-go" href="#today">Go to today's questions</a></div>` : ''}
 
-    <section class="card">
-      <div class="card-head"><h3>Last 12 weeks</h3>${activeDays ? `<span class="card-fig">${activeDays} <span>${activeDays === 1 ? 'day' : 'days'} practised</span></span>` : ''}</div>
+    <section class="card card-cal">
+      <div class="card-head"><h3>Last ${span} weeks</h3>${activeDays ? `<span class="card-fig">${activeDays} <span>${activeDays === 1 ? 'day' : 'days'} practised</span></span>` : ''}</div>
       <p class="card-sub">${activeDays ? `${plural(totalAnswers, 'answer')} in that time${weekAnswers ? `, ${weekAnswers} of them this week` : ''}.` : 'Each day you practise fills a square.'}</p>
       <div class="cal" role="img" aria-label="${calLabel}" style="--weeks:${weeks}">
         <div class="cal-months" aria-hidden="true">${months}</div>
         <div class="cal-days" aria-hidden="true"><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span><span>Sun</span></div>
         <ol class="calendar" aria-hidden="true">${cells}</ol>
       </div>
+      ${practised ? `<ul class="sr">${practised}</ul>` : ''}
+      <p class="cal-read" aria-hidden="true">${dayDetail(days[days.length - 1], t)}</p>
       <div class="legend" aria-hidden="true"><span>Less</span><i class="l0"></i><i class="l1"></i><i class="l2"></i><i class="l3"></i><i class="l4"></i><span>More</span><span class="lg-today"><i class="l0 today"></i>Today</span></div>
     </section>
 
-    <section class="card">
+    <section class="card card-bank">
       <div class="card-head"><h3>The bank</h3><span class="card-fig">${pct(cov.seen, cov.total)}% <span>seen</span></span></div>
       <div class="coverage" role="img" aria-label="${cov.seen} of ${cov.total} questions seen, ${cov.learned} learned">
         <i class="cov-learned" style="width:${pct(cov.learned, cov.total)}%"></i><i class="cov-seen" style="width:${pct(cov.seen - cov.learned, cov.total)}%"></i>
@@ -277,23 +357,35 @@ export function renderProgress(ctx) {
       </dl>
     </section>
 
-    <section class="card">
+    <section class="card card-due">
       <div class="card-head"><h3>Reviews coming up</h3>${dueTotal ? `<span class="card-fig">${dueTotal} <span>due in 7 days</span></span>` : ''}</div>
       <p class="card-sub">${cov.inReview ? `${plural(cov.inReview, 'question')} in review. Each one comes back on the day shown.` : 'Nothing in review. A miss comes back here the next day.'}</p>
       <ol class="forecast${dueTotal ? '' : ' is-empty'}" aria-label="Reviews due over the next 7 days">${bars}</ol>
     </section>
 
-    <section class="card">
+    <section class="card card-topics">
       <h3>Topics, weakest first</h3>
       ${fresh ? '<p class="card-sub">Each topic gets a bar once you answer a question from it.</p>' : ''}
       <ul class="topics">${topics}</ul>
     </section>
 
-    <section class="card">
+    <section class="card card-diff">
       <h3>By difficulty</h3>
       <ul class="diff">${diffRows}</ul>
     </section>
+    </div>
   </section>`;
+
+  // Pointing at or tapping a square shows that day under the calendar.
+  const read = main.querySelector('.cal-read');
+  const show = (e) => {
+    const cell = e.target.closest?.('.calendar li');
+    if (cell) read.textContent = dayDetail(days[Number(cell.dataset.n)], t);
+  };
+  const cal = main.querySelector('.calendar');
+  cal.addEventListener('pointerover', show);
+  cal.addEventListener('click', show);
+  cal.addEventListener('pointerleave', () => { read.textContent = dayDetail(days[days.length - 1], t); });
 }
 
 // ------------------------------------------------------------------ settings
@@ -304,7 +396,8 @@ export function renderSettings(ctx, msg = null) {
   const savedCount = savedItems(S.progress).length;
   main.innerHTML = `<section class="page settings-page">
     <h2 tabindex="-1">Settings</h2>
-
+    <div class="cols">
+    <div class="col">
     <section class="card">
       <h3>Appearance</h3>
       <div class="setting-row">
@@ -331,10 +424,11 @@ export function renderSettings(ctx, msg = null) {
         <div class="field"><label for="import-code" class="sr">Progress code</label>
           <textarea id="import-code" class="code-box" spellcheck="false" autocomplete="off" placeholder="Paste a code that starts with MLD1.">${escapeHtml(msg?.keep ?? '')}</textarea></div>
         <div class="actions"><button type="button" class="btn quiet" data-act="import">Load this code</button></div>
-        ${msg?.where === 'import' ? `<p class="msg ${msg.good ? 'good' : 'bad'}" role="status">${escapeHtml(msg.text)}</p>` : ''}
+        ${msg?.where === 'import' ? `<p class="msg ${msg.good ? 'good' : 'bad'}">${escapeHtml(msg.text)}</p>` : ''}
       </div>
     </section>
-
+    </div>
+    <div class="col">
     <section class="card">
       <h3>About</h3>
       <dl class="about">
@@ -351,9 +445,12 @@ export function renderSettings(ctx, msg = null) {
       <h3>Start over</h3>
       <p class="s-desc">Clears your history, reviews, streak and saved concepts on this device. Your theme stays.</p>
       <div class="actions"><button type="button" class="btn quiet danger" data-act="reset">Clear my progress</button></div>
-      ${msg?.where === 'reset' ? `<p class="msg good" role="status">${escapeHtml(msg.text)}</p>` : ''}
+      ${msg?.where === 'reset' ? `<p class="msg good">${escapeHtml(msg.text)}</p>` : ''}
     </section>
+    </div>
+    </div>
   </section>`;
+  if (msg?.text) ctx.announce(msg.text);
 
   main.querySelectorAll('[data-theme-choice]').forEach((b) => b.addEventListener('click', () => {
     S.progress.settings.theme = b.dataset.themeChoice;
@@ -362,12 +459,13 @@ export function renderSettings(ctx, msg = null) {
     main.className = '';
     renderSettings(ctx);
     main.querySelector(`[data-theme-choice="${b.dataset.themeChoice}"]`).focus();
+    ctx.announce(`${b.dataset.themeChoice === 'dark' ? 'Dark' : 'Light'} theme on.`);
   }));
   main.querySelector('[data-act="export"]').addEventListener('click', () => {
     const area = main.querySelector('#export-area');
     area.innerHTML = `<textarea class="code-box" readonly aria-label="Your progress code">${escapeHtml(exportCode(S.progress))}</textarea>
       <div class="actions"><button type="button" class="btn quiet" data-act="copy">Copy code</button></div>
-      <p class="msg good" id="copy-msg" role="status"></p>`;
+      <p class="msg good" id="copy-msg"></p>`;
     const box = area.querySelector('textarea');
     box.select();
     area.querySelector('[data-act="copy"]').addEventListener('click', async () => {
@@ -379,6 +477,7 @@ export function renderSettings(ctx, msg = null) {
         box.select();
         msgEl.textContent = 'Select the code and copy it.';
       }
+      ctx.announce(msgEl.textContent);
     });
   });
   main.querySelector('[data-act="import"]').addEventListener('click', () => {

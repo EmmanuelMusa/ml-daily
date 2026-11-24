@@ -176,4 +176,4 @@ Re-renders after an action (save, remove, theme, load code, clear) now clear the
 ### Not done
 
 - No bank question lists concepts yet, so the answer screen chips were checked by injecting the block on a live answer screen.
-- Removing an item from My list re-renders the page and focus falls to the body. Moving focus to the next row would change behaviour, so it is left for the feature owner.
+- Removing an item from My list now moves focus to the row that took its place, or to the My list heading when the list is empty (added later).

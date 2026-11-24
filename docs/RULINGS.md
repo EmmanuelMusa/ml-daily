@@ -20,3 +20,7 @@ Builder calls the owner can reverse. Newest at the bottom.
 16. "Back to the question" on a concept card unwinds every card opened from that question in one step. A card opened from a link or from the glossary goes back to the Concepts tab instead.
 17. Card label "Other names and variants" replaces "Also called", because some entries list variants such as ReLU that are not true synonyms.
 18. Bank size: 500 questions (mcq 190, fill 78, multi 60, numeric 100, open 72), easy 149, medium 228, hard 123, using all 267 concepts.
+19. Screens 1024 px and wider get a sidebar with the tabs and a small panel for today's set, streak, accuracy, reviews due tomorrow and saved concepts. At 1200 px and wider, pages use two columns: on Today the question sits on the left and the explanation on the right, with Next pinned level with the end of the explanation. Phones keep the earlier layout.
+20. On Today, the number keys pick options and Enter presses the main button (Check, Next, Show model answer or Do 3 more). Enter never presses Got it, Partly or Missed, so a self mark is always a deliberate click. Keys do nothing while typing in a box.
+21. Glossary search matches names and other names first, grouped by topic. Concepts that match only in their one line meaning follow in a group of their own, so searching for an idea still finds the terms that explain it.
+22. The Progress calendar shows 26 weeks on wide screens and 12 on phones. Pointing at or tapping a square shows that day under the calendar, and screen readers get a list of the days practised.

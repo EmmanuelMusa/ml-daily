@@ -3,13 +3,16 @@ import { renderMarkup, escapeHtml } from './markup.js';
 import { grade, hasResponse, optionOrder } from './grade.js';
 import { dayKey, ensureToday, dealMore, nextNew, recordResult, overrideResult, stats, emptyProgress } from './schedule.js';
 import { loadProgress, saveProgress, pruneUnknown } from './store.js';
-import { ICONS } from './icons.js?v=6';
+import { ICONS } from './icons.js?v=7';
 import { isMidAnswer } from './session.js';
-import { makeLookup } from './saved.js';
-import { conceptChipsHtml, renderConcept, renderConcepts, renderProgress, renderSettings } from './pages.js?v=6';
+import { makeLookup, savedItems } from './saved.js';
+import { buildSearchIndex } from './search.js?v=7';
+import { conceptChipsHtml, renderConcept, renderConcepts, renderProgress, renderSettings } from './pages.js?v=7';
 
 const main = document.getElementById('main');
 const dayLabel = document.getElementById('day-label');
+const sidePanel = document.getElementById('side-panel');
+const announcer = document.getElementById('announce');
 
 const FORMAT = {
   mcq: 'Multiple choice',
@@ -45,6 +48,7 @@ const ctx = {
   today: () => today(),
   save: () => save(),
   applyTheme: (t) => applyTheme(t),
+  announce: (text) => announce(text),
   replaceProgress(p) {
     S.progress = p;
     S.ui = freshUi();
@@ -83,6 +87,16 @@ function takeFx() {
 function save() {
   if (S.persistent) S.persistent = saveProgress(S.progress);
   document.getElementById('notice').hidden = S.persistent;
+  renderSide();
+}
+
+// One live region that stays in the page. Views put their visible messages
+// in place and also pass them here, so screen readers hear each one once.
+let announceTimer = 0;
+function announce(text) {
+  clearTimeout(announceTimer);
+  announcer.textContent = '';
+  if (text) announceTimer = setTimeout(() => { announcer.textContent = text; }, 60);
 }
 
 // Builds the new day's set, unless the person is partway through a question.
@@ -98,6 +112,33 @@ function rollover() {
 
 function setDayLabel() {
   dayLabel.textContent = `Day ${stats(S.progress, S.bank, today()).day}`;
+  renderSide();
+}
+
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+// Desktop sidebar: today's set and a few running figures. CSS hides it on
+// narrow screens, where the same figures live on Progress.
+function renderSide() {
+  if (!S.bank || !S.progress.today) return;
+  const st = stats(S.progress, S.bank, today());
+  const items = S.progress.today.items.filter((it) => S.byId.has(it.id));
+  const done = items.filter((it) => it.result !== null).length;
+  const cells = items.map((it) => {
+    const cls = it.result === true ? 'right' : it.result === false ? 'wrong' : '';
+    return `<i class="${cls}"></i>`;
+  }).join('');
+  const saved = savedItems(S.progress).length;
+  const row = (label, value) => `<div><dt>${label}</dt><dd>${value}</dd></div>`;
+  sidePanel.innerHTML = `<p class="sp-title">Today</p>
+    <p class="sp-set">${items.length ? `${done} of ${items.length} answered` : 'Nothing due'}</p>
+    ${items.length ? `<p class="sp-cells" aria-hidden="true">${cells}</p>` : ''}
+    <dl class="sp-figs">
+      ${row('Streak', plural(st.streak, 'day'))}
+      ${row('Accuracy', st.answered ? `${Math.round(st.accuracy * 100)}%` : 'None yet')}
+      ${row('Due tomorrow', st.dueTomorrow)}
+      ${row('Saved concepts', saved)}
+    </dl>`;
 }
 
 // Plain text of a prompt for the summary list. CSS clamps it to two lines,
@@ -150,12 +191,35 @@ function pipsHtml(level) {
   return `<span class="pips" aria-hidden="true">${[1, 2, 3].map((n) => `<i class="${n <= level ? 'on' : ''}"></i>`).join('')}</span>`;
 }
 
+// Desktop only: what the format expects and the keys that work. CSS hides it
+// on narrow screens. After Check the explanation takes its place.
+const HOW = {
+  mcq: 'Pick one option, then check it.',
+  multi: 'Pick every option that applies. It counts as right only when the picks match exactly.',
+  fill: 'Type a word or short phrase. Capitals, hyphens and extra spaces do not matter.',
+  numeric: 'Type a number. Forms such as 0.5, .5, 1,000, 75% and 3/4 all work.',
+  open: 'Write an answer if you like, then compare it with the model answer and mark how you did.',
+};
+
+function helpHtml(q) {
+  const keys = [];
+  if (q.format === 'mcq' || q.format === 'multi') keys.push(`<li><span><kbd>1</kbd> to <kbd>${q.options.length}</kbd></span><span>${q.format === 'multi' ? 'Pick or unpick' : 'Pick'} an option</span></li>`);
+  if (q.format === 'open') keys.push('<li><span><kbd>Enter</kbd></span><span>Show the model answer</span></li>');
+  else keys.push('<li><span><kbd>Enter</kbd></span><span>Check, then go to the next question</span></li>');
+  return `<aside class="q-help" aria-label="How to answer">
+    <p class="qh-title">${FORMAT[q.format]}</p>
+    <p class="qh-how">${HOW[q.format]}</p>
+    <ul class="qh-keys">${keys.join('')}</ul>
+    <p class="qh-wait">The explanation appears here once you check.</p>
+  </aside>`;
+}
+
 function optionsHtml(q) {
   const order = optionOrder(q.id, q.options.length);
   const multi = q.format === 'multi';
   const key = new Set(multi ? q.answer : [q.answer]);
   const picked = new Set(multi ? (S.ui.response ?? []) : S.ui.response === null ? [] : [S.ui.response]);
-  const rows = order.map((orig) => {
+  const rows = order.map((orig, n) => {
     const cls = ['opt'];
     if (multi) cls.push('multi');
     if (picked.has(orig)) cls.push('picked');
@@ -173,7 +237,7 @@ function optionsHtml(q) {
     const type = multi ? 'checkbox' : 'radio';
     return `<li><label class="${cls.join(' ')}">
       <input type="${type}" name="opt" value="${orig}" ${picked.has(orig) ? 'checked' : ''} ${S.ui.checked ? 'disabled' : ''}>
-      <span class="mark"></span><span class="txt">${renderMarkup(q.options[orig])}</span>${flag}
+      <span class="mark"></span><span class="txt">${renderMarkup(q.options[orig])}</span>${flag}${S.ui.checked ? '' : `<kbd class="opt-key" aria-hidden="true">${n + 1}</kbd>`}
     </label></li>`;
   });
   return `<ul class="options" role="${multi ? 'group' : 'radiogroup'}" aria-label="Options">${rows.join('')}</ul>`;
@@ -249,7 +313,7 @@ function renderQuestion(q, item, items) {
   const redo = item.kind === 'practice' ? '<span class="tag-review">Redo</span>' : '';
   takeFx();
   main.innerHTML = `${railHtml(items, item)}
-    <article class="question" aria-labelledby="prompt">
+    <article class="question${S.ui.checked ? ' is-answered' : ''}" aria-labelledby="prompt">
       <div class="meta">
         <span class="topic">${escapeHtml(S.titles[q.topic] ?? q.topic)}</span>
         <span>${pipsHtml(q.difficulty)}${LEVEL[q.difficulty]}</span>
@@ -258,7 +322,7 @@ function renderQuestion(q, item, items) {
       </div>
       <div class="prompt" id="prompt" tabindex="-1">${renderMarkup(q.prompt)}</div>
       ${answerHtml(q)}
-      ${S.ui.checked ? feedbackHtml(q) : ''}
+      ${S.ui.checked ? feedbackHtml(q) : helpHtml(q)}
       ${actionsHtml(q)}
     </article>`;
   bindQuestion(q);
@@ -380,15 +444,16 @@ function renderSummary() {
   // Arriving from the last Next replays the rail once. Other visits only fade in.
   if (takeFx() === 'enter') main.className = 'fx-done';
   main.innerHTML = `${items.length ? railHtml(S.progress.today.items, null) : ''}
-    <section class="summary">
+    <section class="summary${answered.length ? ' has-list' : ''}">
       <h2 tabindex="-1">${title}</h2>
       ${lede}
-      ${answered.length ? `<ul class="done-list">${list.join('')}</ul>` : ''}
+      ${answered.length ? `<ul class="done-list" aria-label="Today's answers">${list.join('')}</ul>` : ''}
       ${note}
       ${due}
       ${button ? `<div class="actions">${button}</div>` : ''}
-      <p class="msg" id="more-msg" role="status">${escapeHtml(S.ui.flash)}</p>
+      <p class="msg" id="more-msg">${escapeHtml(S.ui.flash)}</p>
     </section>`;
+  announce(S.ui.flash);
   S.ui.flash = '';
   main.querySelector('[data-act="more"]')?.addEventListener('click', () => {
     const added = dealMore(S.progress, S.ids, today());
@@ -453,7 +518,7 @@ function buildGlossary(data) {
   const list = data.concepts ?? [];
   const usage = new Map();
   for (const q of S.bank.questions) for (const c of q.concepts ?? []) usage.set(c, (usage.get(c) ?? 0) + 1);
-  return { list, byId: new Map(list.map((c) => [c.id, c])), lookup: makeLookup(list), usage };
+  return { list, byId: new Map(list.map((c) => [c.id, c])), lookup: makeLookup(list), usage, index: buildSearchIndex(list) };
 }
 
 // The glossary is fetched after the first screen is up, or straight away when a concept view needs it.
@@ -483,6 +548,29 @@ function trackConceptVisit(prevView) {
   S.cameFromQuestion = fromQuestion || (chained && S.cameFromQuestion);
   S.conceptDepth = chained ? (S.conceptDepth || 0) + 1 : 1;
   history.replaceState({ conceptDepth: S.conceptDepth, fromQuestion: S.cameFromQuestion }, '');
+}
+
+// Keys on Today: a number picks an option, Enter presses the main button.
+// They stay out of the way while the person types in a box, holds a modifier
+// or has focus on a button or link, which Enter already presses.
+function onKey(e) {
+  if (S.view !== 'today' || e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+  const t = e.target;
+  if (t instanceof HTMLElement && (t.isContentEditable || t.matches('textarea, input[type="text"], input[type="search"], button, a, select'))) return;
+  if (/^[1-9]$/.test(e.key)) {
+    const input = main.querySelectorAll('input[name="opt"]:not(:disabled)')[Number(e.key) - 1];
+    if (!input) return;
+    e.preventDefault();
+    input.click();
+    input.focus({ preventScroll: true });
+    return;
+  }
+  if (e.key === 'Enter') {
+    const btn = main.querySelector('[data-act="check"]:not(:disabled), [data-act="next"], [data-act="reveal"], [data-act="more"]');
+    if (!btn) return;
+    e.preventDefault();
+    btn.click();
+  }
 }
 
 async function boot() {
@@ -524,6 +612,7 @@ async function boot() {
     }
     main.querySelector('h2, #prompt')?.focus();
   });
+  document.addEventListener('keydown', onKey);
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'visible' && rollover() && S.view === 'today') renderToday();
   });
