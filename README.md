@@ -12,7 +12,7 @@ Open it at **https://emmanuelmusa.github.io/ml-daily/** on a phone or a laptop.
 - A glossary of 267 concepts, 41 with diagrams. Save any concept or your own term to read up on later.
 - Reviews of misses after 1, 3, 7 and 21 days, a "Do more" button, and a Progress page with a practice calendar and topic mastery.
 
-Progress stays in your browser. Use Settings to copy a progress code and move it to another device.
+Progress stays in your browser. To use more than one device, either turn on sync in Settings or copy a progress code across. Sync keeps your progress in a secret Gist in your own GitHub account, using a token you make yourself. The site has no server, so your progress never goes anywhere else. Loading a progress code adds it to what the device already has. It never replaces it.
 
 ## How the questions were checked
 

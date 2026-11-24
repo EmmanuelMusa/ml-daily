@@ -107,3 +107,16 @@ test('default storage that throws on access gives persistent false', () => {
     else delete globalThis.localStorage;
   }
 });
+
+test('isProgress accepts sync fields and rejects bad ones', () => {
+  const p = sample();
+  p.touched = { a: 1700000000000 };
+  p.epoch = 1700000000000;
+  p.unsaved = { 'c:precision': 1700000000000 };
+  p.saved = [{ concept: 'recall', from: null, day: '2026-11-01', at: 1700000000000 }];
+  assert.equal(isProgress(p), true);
+  assert.equal(isProgress({ ...p, touched: { a: 'soon' } }), false);
+  assert.equal(isProgress({ ...p, epoch: '1' }), false);
+  assert.equal(isProgress({ ...p, unsaved: [] }), false);
+  assert.equal(isProgress({ ...p, saved: [{ concept: 'recall', from: null, day: '2026-11-01', at: 'x' }] }), false);
+});

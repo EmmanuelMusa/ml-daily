@@ -2,12 +2,14 @@
 import { renderMarkup, escapeHtml } from './markup.js';
 import { grade, hasResponse, optionOrder } from './grade.js';
 import { dayKey, ensureToday, dealMore, nextNew, recordResult, overrideResult, stats, emptyProgress } from './schedule.js';
-import { loadProgress, saveProgress, pruneUnknown } from './store.js';
+import { loadProgress, saveProgress, pruneUnknown } from './store.js?v=8';
+import { mergeProgress, mergeCode, stableStringify, touch } from './merge.js?v=8';
+import { syncOnce, loadSyncConfig, saveSyncConfig, clearSyncConfig } from './sync.js?v=8';
 import { ICONS } from './icons.js?v=7';
 import { isMidAnswer } from './session.js';
-import { makeLookup, savedItems } from './saved.js';
+import { makeLookup, savedItems } from './saved.js?v=8';
 import { buildSearchIndex } from './search.js?v=7';
-import { conceptChipsHtml, renderConcept, renderConcepts, renderProgress, renderSettings } from './pages.js?v=7';
+import { conceptChipsHtml, renderConcept, renderConcepts, renderProgress, renderSettings, syncStatusText, updateSyncStatus } from './pages.js?v=8';
 
 const main = document.getElementById('main');
 const dayLabel = document.getElementById('day-label');
@@ -49,10 +51,10 @@ const ctx = {
   save: () => save(),
   applyTheme: (t) => applyTheme(t),
   announce: (text) => announce(text),
-  replaceProgress(p) {
-    S.progress = p;
-    S.ui = freshUi();
-    applyTheme(S.progress.settings.theme === 'dark' ? 'dark' : 'light');
+  // Adds progress from a code to what this device has.
+  mergeIn(p) {
+    S.progress = pruneUnknown(mergeCode(S.progress, p), S.ids);
+    if (!isMidAnswer(S.ui)) S.ui = freshUi();
     rollover();
     save();
     setDayLabel();
@@ -61,10 +63,19 @@ const ctx = {
     const theme = S.progress.settings.theme;
     S.progress = emptyProgress();
     S.progress.settings.theme = theme;
+    // The reset time travels with sync, so older progress on other devices is dropped too.
+    S.progress.epoch = Date.now();
     S.ui = freshUi();
     rollover();
     save();
     setDayLabel();
+  },
+  sync: {
+    config: () => SYNC.cfg,
+    status: () => SYNC.status,
+    connect: (token) => connectSync(token),
+    disconnect: () => disconnectSync(),
+    now: () => runSync(),
   },
 };
 
@@ -88,6 +99,105 @@ function save() {
   if (S.persistent) S.persistent = saveProgress(S.progress);
   document.getElementById('notice').hidden = S.persistent;
   renderSide();
+  if (!SYNC.applying) scheduleSync();
+}
+
+// ------------------------------------------------------------------ sync
+
+// state: off, waiting, working, ok or error. at: when the last good sync ended.
+const SYNC = { cfg: null, status: { state: 'off', at: 0, error: null }, busy: false, again: false, timer: 0, applying: false };
+const SYNC_DELAY = 4000;
+
+function setSyncStatus(next) {
+  SYNC.status = { ...SYNC.status, ...next };
+  renderSide();
+  if (S.view === 'settings') updateSyncStatus(ctx);
+}
+
+// Waits for a pause in activity, so a run of answers goes up in one write.
+// Problems only the person can fix stop automatic syncing until they press Sync now.
+const STUCK = new Set(['auth', 'scope', 'bad-remote']);
+
+function scheduleSync(delay = SYNC_DELAY) {
+  if (!SYNC.cfg || (SYNC.status.state === 'error' && STUCK.has(SYNC.status.error?.code))) return;
+  clearTimeout(SYNC.timer);
+  SYNC.timer = setTimeout(runSync, delay);
+}
+
+// Takes progress that came back from sync, if it differs from what is on screen.
+function applySynced(p) {
+  const next = pruneUnknown(p, S.ids);
+  if (stableStringify(next) === stableStringify(S.progress)) return;
+  S.progress = next;
+  SYNC.applying = true;
+  try {
+    rollover();
+    save();
+  } finally {
+    SYNC.applying = false;
+  }
+  setDayLabel();
+  // Redraw only what cannot be in use: never a half-answered question or a form.
+  if (S.view === 'today' && !isMidAnswer(S.ui)) renderToday();
+  else if (S.view === 'progress') renderProgress(ctx);
+}
+
+async function runSync() {
+  clearTimeout(SYNC.timer);
+  SYNC.timer = 0;
+  if (!SYNC.cfg) return { ok: false };
+  if (SYNC.busy) {
+    SYNC.again = true;
+    return { ok: false };
+  }
+  SYNC.busy = true;
+  setSyncStatus({ state: 'working' });
+  const sent = stableStringify(S.progress);
+  try {
+    const r = await syncOnce({ local: S.progress, token: SYNC.cfg.token, gistId: SYNC.cfg.gistId });
+    if (!SYNC.cfg) return { ok: false }; // turned off while the request was out
+    let next = r.progress;
+    // Answers made while the request was out are combined in and sent on the next round.
+    if (stableStringify(S.progress) !== sent) {
+      next = mergeProgress(S.progress, r.progress);
+      SYNC.again = true;
+    }
+    applySynced(next);
+    SYNC.cfg = { ...SYNC.cfg, gistId: r.gistId, last: Date.now() };
+    saveSyncConfig(SYNC.cfg);
+    setSyncStatus({ state: 'ok', at: SYNC.cfg.last, error: null });
+    return { ok: true };
+  } catch (error) {
+    setSyncStatus({ state: 'error', error });
+    return { ok: false, error };
+  } finally {
+    SYNC.busy = false;
+    if (SYNC.again) {
+      SYNC.again = false;
+      scheduleSync(1000);
+    }
+  }
+}
+
+// Checks the token with a first sync and keeps it only if that works.
+async function connectSync(token) {
+  SYNC.cfg = { token, gistId: null, last: 0 };
+  const r = await runSync();
+  if (!r.ok) {
+    SYNC.cfg = null;
+    SYNC.status = { state: 'off', at: 0, error: null };
+    renderSide();
+  }
+  return r;
+}
+
+function disconnectSync() {
+  clearTimeout(SYNC.timer);
+  SYNC.timer = 0;
+  SYNC.cfg = null;
+  SYNC.again = false;
+  clearSyncConfig();
+  setSyncStatus({ state: 'off', at: 0, error: null });
 }
 
 // One live region that stays in the page. Views put their visible messages
@@ -138,7 +248,8 @@ function renderSide() {
       ${row('Accuracy', st.answered ? `${Math.round(st.accuracy * 100)}%` : 'None yet')}
       ${row('Due tomorrow', st.dueTomorrow)}
       ${row('Saved concepts', saved)}
-    </dl>`;
+    </dl>
+    ${SYNC.cfg ? `<p class="sp-sync${SYNC.status.state === 'error' ? ' bad' : ''}">${escapeHtml(syncStatusText(SYNC.status, true))}</p>` : ''}`;
 }
 
 // Plain text of a prompt for the summary list. CSS clamps it to two lines,
@@ -376,6 +487,7 @@ function bindQuestion(q) {
       }
       if (act === 'override') {
         overrideResult(S.progress, q.id, today());
+        touch(S.progress, q.id, Date.now());
         S.ui.ok = true;
         save();
         S.fx = 'override';
@@ -391,6 +503,7 @@ function check(q) {
   if (S.ui.checked || !hasResponse(q, S.ui.response)) return;
   const ok = grade(q, S.ui.response);
   recordResult(S.progress, q.id, ok, today());
+  touch(S.progress, q.id, Date.now());
   S.ui.checked = true;
   S.ui.ok = ok;
   save();
@@ -589,6 +702,8 @@ async function boot() {
   const loaded = loadProgress();
   S.progress = pruneUnknown(loaded.progress, S.ids);
   S.persistent = loaded.persistent;
+  SYNC.cfg = loadSyncConfig();
+  if (SYNC.cfg) SYNC.status = { state: 'waiting', at: SYNC.cfg.last ?? 0, error: null };
   applyTheme(S.progress.settings.theme === 'dark' ? 'dark' : 'light');
   rollover();
   save();
@@ -614,13 +729,22 @@ async function boot() {
   });
   document.addEventListener('keydown', onKey);
   document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible' && rollover() && S.view === 'today') renderToday();
+    if (document.visibilityState === 'visible') {
+      if (rollover() && S.view === 'today') renderToday();
+      // Coming back: fetch whatever the other device did meanwhile.
+      if (SYNC.cfg) runSync();
+    } else if (SYNC.cfg && SYNC.timer) {
+      // Leaving with changes not yet sent: send them now rather than in a few seconds.
+      runSync();
+    }
   });
+  window.addEventListener('online', () => { if (SYNC.cfg) runSync(); });
   S.fx = 'page';
   if (parseHash().view === 'concept') trackConceptVisit(null);
   route(true);
   const later = window.requestIdleCallback ?? ((fn) => setTimeout(fn, 800));
   later(() => ensureGlossary());
+  if (SYNC.cfg) runSync();
 }
 
 boot();

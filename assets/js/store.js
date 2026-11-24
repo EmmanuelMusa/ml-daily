@@ -15,8 +15,15 @@ export function isProgress(x) {
     && Array.isArray(x.learned) && x.learned.every((id) => typeof id === 'string')
     && (x.today === null || (isObj(x.today) && typeof x.today.day === 'string' && Array.isArray(x.today.items)))
     && isObj(x.settings)
-    && (x.saved === undefined || (Array.isArray(x.saved) && x.saved.every(isSavedItem)));
+    && (x.saved === undefined || (Array.isArray(x.saved) && x.saved.every(isSavedItem)))
+    && (x.touched === undefined || isTimes(x.touched))
+    && (x.unsaved === undefined || isTimes(x.unsaved))
+    && (x.epoch === undefined || isTime(x.epoch));
 }
+
+// Times are milliseconds since 1970, as Date.now() gives them.
+const isTime = (t) => Number.isFinite(t) && t >= 0;
+const isTimes = (o) => isObj(o) && Object.values(o).every(isTime);
 
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
 const filled = (v, max) => typeof v === 'string' && v.trim() !== '' && v.length <= max;
@@ -24,6 +31,7 @@ const filled = (v, max) => typeof v === 'string' && v.trim() !== '' && v.length 
 // Exactly one of concept or term, a real day, and a term no longer than the save form allows.
 function isSavedItem(s) {
   if (!isObj(s) || typeof s.day !== 'string' || !DAY.test(s.day)) return false;
+  if (s.at !== undefined && !isTime(s.at)) return false;
   const hasConcept = s.concept !== undefined;
   const hasTerm = s.term !== undefined;
   if (hasConcept === hasTerm) return false;

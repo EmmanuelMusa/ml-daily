@@ -3,8 +3,9 @@
 //   { S, main, save, today, icon, ICONS, setDayLabel, afterProgressChange }
 import { renderMarkup, escapeHtml } from './markup.js';
 import { stats } from './schedule.js';
-import { exportCode, importCode, pruneUnknown } from './store.js';
-import { isSaved, saveConcept, saveTerm, removeSaved, savedItems } from './saved.js';
+import { exportCode, importCode } from './store.js?v=8';
+import { TOKEN_URL, FILE_NAME, syncMessage } from './sync.js?v=8';
+import { isSaved, saveConcept, saveTerm, removeSaved, savedItems } from './saved.js?v=8';
 import { activityByDay, coverage, dueForecast, byDifficulty, topicMastery } from './insights.js';
 import { searchGlossary } from './search.js?v=7';
 import { INTERVALS } from './schedule.js';
@@ -79,8 +80,8 @@ export function renderConcept(ctx, id) {
     </div>
   </article>`;
   main.querySelector('[data-act="save-concept"]').addEventListener('click', () => {
-    if (isSaved(S.progress, id)) removeSaved(S.progress, { concept: id });
-    else saveConcept(S.progress, id, S.cameFromQuestion ? S.ui.id : null, ctx.today());
+    if (isSaved(S.progress, id)) removeSaved(S.progress, { concept: id }, Date.now());
+    else saveConcept(S.progress, id, S.cameFromQuestion ? S.ui.id : null, ctx.today(), Date.now());
     ctx.save();
     main.className = 'fx-save'; // one-shot cue: the bookmark settles in, the page does not fade again
     renderConcept(ctx, id);
@@ -193,7 +194,7 @@ export function renderConcepts(ctx, state = {}) {
   main.querySelector('.save-term').addEventListener('submit', (e) => {
     e.preventDefault();
     const input = main.querySelector('#term');
-    const result = saveTerm(S.progress, input.value, null, ctx.today(), G.lookup);
+    const result = saveTerm(S.progress, input.value, null, ctx.today(), G.lookup, Date.now());
     let msg;
     if (!input.value.trim()) msg = 'Type a word or idea first.';
     else if (!result) msg = 'That is already in your list.';
@@ -209,7 +210,7 @@ export function renderConcepts(ctx, state = {}) {
   const removeAt = (button, what, name) => {
     const rows = [...main.querySelectorAll('.saved-list li')];
     const at = rows.indexOf(button.closest('li'));
-    removeSaved(S.progress, what);
+    removeSaved(S.progress, what, Date.now());
     ctx.save();
     main.className = '';
     renderConcepts(ctx, { query: main.querySelector('#g-search').value });
@@ -390,6 +391,73 @@ export function renderProgress(ctx) {
 
 // ------------------------------------------------------------------ settings
 
+function when(at) {
+  const d = new Date(at);
+  const time = d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  if (d.toDateString() === new Date().toDateString()) return `at ${time}`;
+  return `on ${d.toLocaleDateString([], { day: 'numeric', month: 'short' })} at ${time}`;
+}
+
+const SHORT_ERRORS = { offline: 'Offline. Sync resumes when you reconnect.', limit: 'Sync will try again soon.', http: 'Sync will try again soon.' };
+
+// What the sync line says. Short is for the desktop sidebar.
+export function syncStatusText(status, short = false) {
+  if (status.state === 'off') return 'Sync is off.';
+  if (status.state === 'working') return 'Syncing now.';
+  if (status.state === 'error') {
+    if (!short) return syncMessage(status.error);
+    return SHORT_ERRORS[status.error?.code] ?? 'Sync needs a look in Settings.';
+  }
+  if (!status.at) return 'Waiting to sync.';
+  return `${short ? 'Synced' : 'Last synced'} ${when(status.at)}.`;
+}
+
+// Updates the sync line in Settings without redrawing the page.
+export function updateSyncStatus(ctx) {
+  const el = ctx.main.querySelector('#sync-status');
+  if (!el) return;
+  const status = ctx.sync.status();
+  el.textContent = syncStatusText(status);
+  el.classList.toggle('bad', status.state === 'error');
+  const now = ctx.main.querySelector('[data-act="sync-now"]');
+  if (now) now.disabled = status.state === 'working';
+}
+
+function syncCardHtml(ctx, msg) {
+  const cfg = ctx.sync.config();
+  const note = msg?.where === 'sync' ? `<p class="msg ${msg.good ? 'good' : 'bad'}">${escapeHtml(msg.text)}</p>` : '';
+  if (cfg) {
+    const status = ctx.sync.status();
+    const gist = cfg.gistId ? `<a href="https://gist.github.com/${encodeURIComponent(cfg.gistId)}" target="_blank" rel="noopener noreferrer">a secret Gist</a>` : 'a secret Gist';
+    return `<section class="card sync-card">
+      <h3>Sync between devices</h3>
+      <p class="sync-line${status.state === 'error' ? ' bad' : ''}" id="sync-status">${escapeHtml(syncStatusText(status))}</p>
+      <p class="s-desc">Changes go up a few seconds after you make them, and this device checks for news whenever you come back to it. Your progress is kept in ${gist} named ${FILE_NAME} on your GitHub account.</p>
+      <div class="actions">
+        <button type="button" class="btn quiet" data-act="sync-now"${status.state === 'working' ? ' disabled' : ''}>Sync now</button>
+        <button type="button" class="btn quiet" data-act="sync-off">Turn off sync here</button>
+      </div>
+      ${note}
+    </section>`;
+  }
+  return `<section class="card sync-card">
+    <h3>Sync between devices</h3>
+    <p class="s-desc">Keep the same progress on your phone and computer without copying codes. It is saved to a secret Gist in your own GitHub account and nowhere else. You need a free GitHub account.</p>
+    <ol class="steps">
+      <li><a href="${TOKEN_URL}" target="_blank" rel="noopener noreferrer">Open the new token page on GitHub</a>. The gist box is already ticked, and nothing else is needed.</li>
+      <li>Under Expiration, pick No expiration or a date far ahead. Then press Generate token at the bottom.</li>
+      <li>Copy the token and paste it below. On your other device, paste the same token, or make a second one the same way.</li>
+    </ol>
+    <form class="sync-form">
+      <div class="field"><label for="sync-token">GitHub token</label>
+        <input id="sync-token" type="password" autocomplete="off" spellcheck="false" autocapitalize="off"></div>
+      <div class="actions"><button type="submit" class="btn">Turn on sync</button></div>
+    </form>
+    <p class="s-desc">The token stays in this browser. It can read and write your Gists and nothing else.</p>
+    ${note}
+  </section>`;
+}
+
 export function renderSettings(ctx, msg = null) {
   const { S, main } = ctx;
   const theme = S.progress.settings.theme === 'dark' ? 'dark' : 'light';
@@ -409,9 +477,11 @@ export function renderSettings(ctx, msg = null) {
       </div>
     </section>
 
+    ${syncCardHtml(ctx, msg)}
+
     <section class="card">
       <h3>Your data</h3>
-      <p class="s-desc">Progress stays in this browser. It includes your answers, reviews and ${plural(savedCount, 'saved concept')}. Use a progress code to move it to another device.</p>
+      <p class="s-desc">Progress is saved in this browser. It includes your answers, reviews and ${plural(savedCount, 'saved concept')}. Without sync, a progress code moves it to another device.</p>
       <div class="setting-block">
         <p class="s-title">Copy my progress code</p>
         <p class="s-desc">Shows a code you can paste on your other device.</p>
@@ -420,10 +490,10 @@ export function renderSettings(ctx, msg = null) {
       </div>
       <div class="setting-block">
         <p class="s-title">Load a progress code</p>
-        <p class="s-desc">This replaces the progress saved on this device.</p>
+        <p class="s-desc">Adds the code's progress to this device, and nothing here is lost. Where both answered the same question, the later answer counts.</p>
         <div class="field"><label for="import-code" class="sr">Progress code</label>
           <textarea id="import-code" class="code-box" spellcheck="false" autocomplete="off" placeholder="Paste a code that starts with MLD1.">${escapeHtml(msg?.keep ?? '')}</textarea></div>
-        <div class="actions"><button type="button" class="btn quiet" data-act="import">Load this code</button></div>
+        <div class="actions"><button type="button" class="btn quiet" data-act="import">Add this progress</button></div>
         ${msg?.where === 'import' ? `<p class="msg ${msg.good ? 'good' : 'bad'}">${escapeHtml(msg.text)}</p>` : ''}
       </div>
     </section>
@@ -443,7 +513,7 @@ export function renderSettings(ctx, msg = null) {
 
     <section class="card danger-zone">
       <h3>Start over</h3>
-      <p class="s-desc">Clears your history, reviews, streak and saved concepts on this device. Your theme stays.</p>
+      <p class="s-desc">Clears your history, reviews, streak and saved concepts on this device${ctx.sync.config() ? ' and on every device that syncs with it' : ''}. Your theme stays.</p>
       <div class="actions"><button type="button" class="btn quiet danger" data-act="reset">Clear my progress</button></div>
       ${msg?.where === 'reset' ? `<p class="msg good">${escapeHtml(msg.text)}</p>` : ''}
     </section>
@@ -490,15 +560,51 @@ export function renderSettings(ctx, msg = null) {
       renderSettings(ctx, { where: 'import', good: false, text: e.message, keep: code });
       return;
     }
-    if (!window.confirm('Replace the progress on this device with this code?')) return;
-    ctx.replaceProgress(pruneUnknown(incoming, S.ids));
+    ctx.mergeIn(incoming);
     main.className = '';
-    renderSettings(ctx, { where: 'import', good: true, text: 'Progress loaded.' });
+    renderSettings(ctx, { where: 'import', good: true, text: 'Progress added.' });
   });
   main.querySelector('[data-act="reset"]').addEventListener('click', () => {
-    if (!window.confirm('Clear all progress and saved concepts on this device? This cannot be undone.')) return;
+    const where = ctx.sync.config() ? 'on this device and on every device that syncs with it' : 'on this device';
+    if (!window.confirm(`Clear all progress and saved concepts ${where}? This cannot be undone.`)) return;
     ctx.resetProgress();
     main.className = '';
     renderSettings(ctx, { where: 'reset', text: 'Progress cleared.' });
+  });
+
+  const form = main.querySelector('.sync-form');
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const input = form.querySelector('#sync-token');
+    const token = input.value.trim();
+    if (!token) {
+      renderSettings(ctx, { where: 'sync', good: false, text: 'Paste your GitHub token first.' });
+      main.querySelector('#sync-token').focus();
+      return;
+    }
+    const btn = form.querySelector('button');
+    btn.disabled = true;
+    btn.textContent = 'Connecting to GitHub';
+    const r = await ctx.sync.connect(token);
+    if (S.view !== 'settings') return;
+    main.className = '';
+    if (r.ok) {
+      renderSettings(ctx, { where: 'sync', good: true, text: 'Sync is on. This device and GitHub now hold the same progress.' });
+      main.querySelector('[data-act="sync-now"]')?.focus();
+    } else {
+      renderSettings(ctx, { where: 'sync', good: false, text: r.error ? syncMessage(r.error) : 'Sync could not start. Try again.' });
+      main.querySelector('#sync-token')?.focus();
+    }
+  });
+  main.querySelector('[data-act="sync-now"]')?.addEventListener('click', async () => {
+    const r = await ctx.sync.now();
+    if (r.ok) ctx.announce('Synced.');
+    else if (r.error) ctx.announce(syncMessage(r.error));
+  });
+  main.querySelector('[data-act="sync-off"]')?.addEventListener('click', () => {
+    ctx.sync.disconnect();
+    main.className = '';
+    renderSettings(ctx, { where: 'sync', good: true, text: 'Sync is off on this device. Your progress here and the copy on GitHub are both kept.' });
+    main.querySelector('#sync-token')?.focus();
   });
 }
